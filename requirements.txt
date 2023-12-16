@@ -1,0 +1,6 @@
+pip==23.3.1
+setuptools==69.0.2
+pytest==7.4.3
+packaging~=23.2
+twine >=4.0.2
+
