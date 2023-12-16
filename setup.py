@@ -44,7 +44,11 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     license='MIT License',
-
+    project_urls={
+        'Source Code': 'https://github.com/muhammad-fiaz/logly.git',
+        'Bug Tracker': 'https://github.com/muhammad-fiaz/logly/issues',
+        'Documentation': 'https://github.com/muhammad-fiaz/logly#readme',
+    },
 )
 
 print("Happy Coding!")
