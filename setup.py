@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 from logly.version import get_Version
 
-VERSION = "0.0.0"
+VERSION = "0.0.1"
 
 get_Version(VERSION)
 
