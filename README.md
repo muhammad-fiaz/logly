@@ -26,7 +26,11 @@ Logly is a Python logging package designed to simplify and enhance your logging 
 
 - Easy-to-use logging for Python applications.
 - Customizable log levels and formatting.
-
+- Customizable log colors.
+- Log to file and/or console.
+- Log to file with automatic file rotation.
+- Log to file with automatic file size management.
+- Log to file with automatic file deletion.
 ## Getting Started
 
 ## Installation
@@ -34,6 +38,7 @@ Logly is a Python logging package designed to simplify and enhance your logging 
 ```bash
 pip install logly
 ```
+
 ## Usage
 
 ```python
@@ -67,19 +72,24 @@ logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
 # Start logging again
 logly.start_logging()
 
+# Set default file path and max file size
+logly.set_default_file_path("log.txt") # set default file path is "log.txt" if you want to set the file path where you want to save the log file.
+logly.set_default_max_file_size(50) # set default max file size is 50 MB
+
 # Log messages with default settings (using default file path and max file size)
 logly.info("DefaultKey1", "DefaultValue1")
 logly.warn("DefaultKey2", "DefaultValue2")
 logly.error("DefaultKey3", "DefaultValue3", log_to_file=False)
 
-# Log messages with custom file path and max file size
-logly.info("CustomKey1", "CustomValue1", file_path="path/c.txt", max_file_size=25)
-logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=25)
+#DEFAULT FILE SIZE IS 100 MB in txt file
+# Log messages with custom file path and max file size(optional)
+logly.info("CustomKey1", "CustomValue1", file_path="path/c.txt", max_file_size=25) # max_file_size is in MB and create a new file when the file size reaches max_file_size
+logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=25,auto=True) # auto=True will automatically delete the file data when it reaches max_file_size
 
 # Access color constants directly
 logly.info("Accessing color directly", "DirectColorValue", color=logly.COLOR.RED)
 
-# Display logged messages
+# Display logged messages (this will display all the messages logged so far)
 print("Logged Messages:")
 for message in logly.logged_messages:
     print(message)

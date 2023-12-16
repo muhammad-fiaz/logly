@@ -1,9 +1,7 @@
-# logly.py
-
 import os
 from colorama import Fore, Style, init
 from datetime import datetime
-import re  # Add this line for color code removal
+import re
 
 from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError, LoglyException
 
@@ -49,7 +47,7 @@ class Logly:
         YELLOW = Fore.YELLOW
         RED = Fore.RED
         CRITICAL = f"{Fore.RED}{Style.BRIGHT}"
-        WHITE = Fore.WHITE  # Add this line
+        WHITE = Fore.WHITE
 
     DEFAULT_MAX_FILE_SIZE_MB = 100  # 100MB
 
@@ -133,7 +131,7 @@ class Logly:
         """
         return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
-    def _log(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def _log(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Internal method to log a message.
 
@@ -146,6 +144,7 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
         color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
         log_message = f"[{self.get_current_datetime()}] {level}: {color}{key}: {value}{Style.RESET_ALL}"
@@ -182,12 +181,17 @@ class Logly:
 
                 # Check if the file size limit is reached
                 if max_file_size and file_exists and os.path.getsize(file_path) >= max_file_size_bytes:
-                    # Find the next available file name with a number appended
-                    file_base, file_ext = os.path.splitext(file_path)
-                    count = 1
-                    while os.path.exists(f"{file_base}_{count}{file_ext}"):
-                        count += 1
-                    file_path = f"{file_base}_{count}{file_ext}"
+                    if auto:
+                        # Auto-delete log file data by truncating the file
+                        with open(file_path, 'w'):
+                            pass
+                    else:
+                        # Find the next available file name with a number appended
+                        file_base, file_ext = os.path.splitext(file_path)
+                        count = 1
+                        while os.path.exists(f"{file_base}_{count}{file_ext}"):
+                            count += 1
+                        file_path = f"{file_base}_{count}{file_ext}"
 
                 # Open the file in append mode, creating it if it doesn't exist
                 with open(file_path, "a" if file_exists else "w") as log_file:
@@ -200,7 +204,7 @@ class Logly:
             except Exception as e:
                 raise FileCreationError(f"Error creating or writing to the log file: {e}")
 
-    def log_function(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def log_function(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a message with exception handling.
 
@@ -213,13 +217,14 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
         try:
-            self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size)
+            self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
         except LoglyException as e:
             print(f"LoglyException: {e}")
 
-    def info(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def info(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a message with the INFO level.
 
@@ -231,10 +236,11 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
-        self.log_function("INFO", key, value, color, log_to_file, file_path, file_name, max_file_size)
+        self.log_function("INFO", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def warn(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def warn(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a message with the WARNING level.
 
@@ -246,10 +252,11 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
-        self.log_function("WARNING", key, value, color, log_to_file, file_path, file_name, max_file_size)
+        self.log_function("WARNING", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def error(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def error(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a message with the ERROR level.
 
@@ -261,10 +268,11 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
-        self.log_function("ERROR", key, value, color, log_to_file, file_path, file_name, max_file_size)
+        self.log_function("ERROR", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def debug(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def debug(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a message with the DEBUG level.
 
@@ -276,9 +284,11 @@ class Logly:
         - file_path (str): File path for logging.
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
-        self.log_function("DEBUG", key, value, color, log_to_file, file_path, file_name, max_file_size)
-    def critical(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+        self.log_function("DEBUG", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+
+    def critical(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a critical message.
 
@@ -290,9 +300,11 @@ class Logly:
         - file_path (str, optional): The path to the log file. Defaults to None.
         - file_name (str, optional): The name of the log file. Defaults to None.
         - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
+        self.log_function("CRITICAL", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def fatal(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def fatal(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a fatal message.
 
@@ -304,9 +316,11 @@ class Logly:
         - file_path (str, optional): The path to the log file. Defaults to None.
         - file_name (str, optional): The name of the log file. Defaults to None.
         - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
+        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
         """
+        self.log_function("FATAL", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def trace(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+    def trace(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log a trace message.
 
@@ -318,9 +332,13 @@ class Logly:
         - file_path (str, optional): The path to the log file. Defaults to None.
         - file_name (str, optional): The name of the log file. Defaults to None.
         - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
+        - auto (bool, optional): Whether to automatically delete log file data if it reaches the file size limit
+          and start storing again from scratch. Defaults to True.
         """
+        self.log_function("TRACE", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
 
-    def log(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None):
+
+    def log(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
         """
         Log an info message.
 
@@ -332,4 +350,7 @@ class Logly:
         - file_path (str, optional): The path to the log file. Defaults to None.
         - file_name (str, optional): The name of the log file. Defaults to None.
         - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
+        - auto (bool, optional): Whether to automatically delete log file data if it reaches the file size limit
+          and start storing again from scratch. Defaults to True.
         """
+        self.log_function("LOG", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)

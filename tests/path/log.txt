@@ -1,0 +1,2 @@
+[2023-12-16 21:07:28] INFO: CustomKey1: CustomValue1
+[2023-12-16 21:07:28] WARNING: CustomKey2: CustomValue2

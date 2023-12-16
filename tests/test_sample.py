@@ -52,7 +52,7 @@ def test_logly_integration(logly_instance):
 
     # Log messages with custom file path and max file size
     logly_instance.info("CustomKey1", "CustomValue1", file_path="path/log.txt", max_file_size=25)
-    logly_instance.warn("CustomKey2", "CustomValue2", file_path="path/log.txt", max_file_size=25)
+    logly_instance.warn("CustomKey2", "CustomValue2", file_path="path/log.txt",auto=True, max_file_size=25)
 
     # Access color constants directly
     logly_instance.info("Accessing color directly", "DirectColorValue", color=logly_instance.COLOR.RED)
