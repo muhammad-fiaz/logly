@@ -2,7 +2,7 @@
 
 # Logly
 
-[![Run Tests](https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yml/badge.svg)](https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yml)
+[![Run Tests](https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yaml/badge.svg)](https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yaml)
 [![PyPI Version](https://img.shields.io/pypi/v/logly)](https://pypi.org/project/logly/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/logly)](https://pypi.org/project/logly/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
