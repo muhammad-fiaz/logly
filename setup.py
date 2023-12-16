@@ -1,13 +1,8 @@
 from setuptools import setup, find_packages
 
-from logly.version import get_Version
-
 VERSION = "0.0.2"
 
-get_Version(VERSION)
-
-DESCRIPTION = ('Logly: Python logging utility with color-coded messages and file support. Easily log and trace '
-               'messages with customizable colors. Simple integration for effective debugging and monitoring.')
+DESCRIPTION = 'Logly: Python logging utility with color-coded messages and file support. Easily log and trace messages with customizable colors. Simple integration for effective debugging and monitoring.'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -36,10 +31,9 @@ setup(
     ],
     python_requires='>=3.8',
     install_requires=[
-        'setuptools==69.0.2',
         'pytest==7.4.3',
         'packaging==23.2',
-        'colorama>=0.4.4'
+        'colorama>=0.4.4',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
