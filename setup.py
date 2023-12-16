@@ -6,7 +6,8 @@ VERSION = "0.0.1"
 
 get_Version(VERSION)
 
-DESCRIPTION = 'logly is a Python package for logging.'
+DESCRIPTION = ('Logly: Python logging utility with color-coded messages and file support. Easily log and trace '
+               'messages with customizable colors. Simple integration for effective debugging and monitoring.')
 
 with open("README.md", "r", encoding="utf-8") as fh:
     LONG_DESCRIPTION = fh.read()
