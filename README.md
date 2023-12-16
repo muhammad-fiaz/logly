@@ -110,6 +110,18 @@ for message in logly.logged_messages:
 9. Access color constants directly.
 10. Display logged messages.
 
+Note:-
+follow the below example, if the file path can not be located in a project
+```python3
+logly = Logly()
+logly.start_logging()
+
+logly.set_default_max_file_size(50)
+logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
+logly.set_default_file_path(logger)
+```
+the above will used to set the default path for the log.txt in the project
+
 ## Color Options:
 
 ### Default Color Options:
