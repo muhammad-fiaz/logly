@@ -40,6 +40,11 @@ Logly is a simple logging utility for Python that provides an easy way to log me
 ```bash
 pip install logly
 ```
+if you want to download the latest updates and features before the official release then you can install this package by
+
+```
+pip install git+https://github.com/muhammad-fiaz/logly.git
+```
 
 ## Usage
 
