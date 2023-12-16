@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 
 DESCRIPTION = 'Logly: Python logging utility with color-coded messages and file support. Easily log and trace messages with customizable colors. Simple integration for effective debugging and monitoring.'
 
