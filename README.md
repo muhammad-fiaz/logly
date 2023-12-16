@@ -31,6 +31,8 @@ Logly is a Python logging package designed to simplify and enhance your logging 
 - Log to file with automatic file rotation.
 - Log to file with automatic file size management.
 - Log to file with automatic file deletion.
+- Log to file with automatic deletion and rewriting of the file when it reaches max_file_size.
+
 ## Getting Started
 
 ## Installation
