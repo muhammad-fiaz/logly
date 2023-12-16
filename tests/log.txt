@@ -12,3 +12,59 @@
 [2023-12-16 21:07:28] INFO: DefaultKey1: DefaultValue1
 [2023-12-16 21:07:28] WARNING: DefaultKey2: DefaultValue2
 [2023-12-16 21:07:28] INFO: Accessing color directly: DirectColorValue
+[2023-12-16 21:16:19] INFO: blackKey1: Value1
+[2023-12-16 21:16:19] WARNING: Key2: Value2
+[2023-12-16 21:16:19] ERROR: Key3: Value3
+[2023-12-16 21:16:19] DEBUG: Key4: Value4
+[2023-12-16 21:16:19] CRITICAL: Key5: Value5
+[2023-12-16 21:16:19] FATAL: Key6: Value6
+[2023-12-16 21:16:19] TRACE: Key7: Value7
+[2023-12-16 21:16:19] LOG: Key8: Value8
+[2023-12-16 21:16:19] INFO: AnotherKey1: AnotherValue1
+[2023-12-16 21:16:19] WARNING: AnotherKey2: AnotherValue2
+[2023-12-16 21:16:19] ERROR: AnotherKey3: AnotherValue3
+[2023-12-16 21:16:19] INFO: DefaultKey1: DefaultValue1
+[2023-12-16 21:16:19] WARNING: DefaultKey2: DefaultValue2
+[2023-12-16 21:16:19] INFO: Accessing color directly: DirectColorValue
+[2023-12-16 21:17:08] INFO: greenKey1: Value1
+[2023-12-16 21:17:08] WARNING: Key2: Value2
+[2023-12-16 21:17:08] ERROR: Key3: Value3
+[2023-12-16 21:17:08] DEBUG: Key4: Value4
+[2023-12-16 21:17:08] CRITICAL: Key5: Value5
+[2023-12-16 21:17:08] FATAL: Key6: Value6
+[2023-12-16 21:17:08] TRACE: Key7: Value7
+[2023-12-16 21:17:08] LOG: Key8: Value8
+[2023-12-16 21:17:08] INFO: AnotherKey1: AnotherValue1
+[2023-12-16 21:17:08] WARNING: AnotherKey2: AnotherValue2
+[2023-12-16 21:17:08] ERROR: AnotherKey3: AnotherValue3
+[2023-12-16 21:17:08] INFO: DefaultKey1: DefaultValue1
+[2023-12-16 21:17:08] WARNING: DefaultKey2: DefaultValue2
+[2023-12-16 21:17:08] INFO: Accessing color directly: DirectColorValue
+[2023-12-16 21:17:20] INFO: Key1: Value1
+[2023-12-16 21:17:20] WARNING: Key2: Value2
+[2023-12-16 21:17:20] ERROR: Key3: Value3
+[2023-12-16 21:17:20] DEBUG: Key4: Value4
+[2023-12-16 21:17:20] CRITICAL: Key5: Value5
+[2023-12-16 21:17:20] FATAL: Key6: Value6
+[2023-12-16 21:17:20] TRACE: Key7: Value7
+[2023-12-16 21:17:20] LOG: Key8: Value8
+[2023-12-16 21:17:20] INFO: AnotherKey1: AnotherValue1
+[2023-12-16 21:17:20] WARNING: AnotherKey2: AnotherValue2
+[2023-12-16 21:17:20] ERROR: AnotherKey3: AnotherValue3
+[2023-12-16 21:17:20] INFO: DefaultKey1: DefaultValue1
+[2023-12-16 21:17:20] WARNING: DefaultKey2: DefaultValue2
+[2023-12-16 21:17:20] INFO: Accessing color directly: DirectColorValue
+[2023-12-16 21:17:30] INFO: blackKey1: Value1
+[2023-12-16 21:17:30] WARNING: Key2: Value2
+[2023-12-16 21:17:30] ERROR: Key3: Value3
+[2023-12-16 21:17:30] DEBUG: Key4: Value4
+[2023-12-16 21:17:30] CRITICAL: Key5: Value5
+[2023-12-16 21:17:30] FATAL: Key6: Value6
+[2023-12-16 21:17:30] TRACE: Key7: Value7
+[2023-12-16 21:17:30] LOG: Key8: Value8
+[2023-12-16 21:17:30] INFO: AnotherKey1: AnotherValue1
+[2023-12-16 21:17:30] WARNING: AnotherKey2: AnotherValue2
+[2023-12-16 21:17:30] ERROR: AnotherKey3: AnotherValue3
+[2023-12-16 21:17:30] INFO: DefaultKey1: DefaultValue1
+[2023-12-16 21:17:30] WARNING: DefaultKey2: DefaultValue2
+[2023-12-16 21:17:30] INFO: Accessing color directly: DirectColorValue

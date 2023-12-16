@@ -128,18 +128,16 @@ for message in logly.logged_messages:
 
 You can use any of the following color codes for custom coloring:
 
-| Color Code | Color  |
-| ---------- | ------ |
-| BLACK      | Black  |
-| RED        | Red    |
-| GREEN      | Green  |
-| YELLOW     | Yellow |
-| BLUE       | Blue   |
-| MAGENTA    | Magenta|
-| CYAN       | Cyan   |
-| WHITE      | White  |
+| NAME     | Color Code      |
+|----------| --------------- |
+| CYAN      | CYAN            |
+| YELLOW   | YELLOW          |
+|  RED       | RED             |
+|  BLUE      | BLUE            |
+| BRIGHT RED | CRITICAL     |
+|WHITE   | WHITE           |
 
-For example, you can use `color=logly.COLOR.BLACK` or `color="BLACK"` for the black color.
+For example, you can use `color=logly.COLOR.BLACK` for the black color.
 
 ## Contributing
 Contributions are welcome! Before contributing, please read our [Contributing Guidelines](CONTRIBUTING.md) to ensure a smooth and collaborative development process.
