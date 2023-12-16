@@ -3,6 +3,4 @@ setuptools==69.0.2
 pytest==7.4.3
 packaging~=23.2
 twine >=4.0.2
-
-
-colorama~=0.4.6
+colorama>=0.4.2
