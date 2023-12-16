@@ -1,0 +1,7 @@
+[36mexample_key1: example_value
+[36mexample_key3: example_value
+[36mexample_key1: example_value
+[36mexample_key3: example_value
+[36mexample_key1: example_value
+[36mexample_key2: example_value
+[36mexample_key3: example_value
