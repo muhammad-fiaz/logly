@@ -39,6 +39,7 @@ setup(
         'setuptools==69.0.2',
         'pytest==7.4.3',
         'packaging==23.2',
+      'colorama',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
