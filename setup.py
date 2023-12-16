@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 from logly.version import get_Version
 
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 get_Version(VERSION)
 
@@ -23,7 +23,7 @@ setup(
     url='https://github.com/muhammad-fiaz/logly.git',
     packages=find_packages(),
     keywords=[
-      'log','logging','logly','python'
+        'log', 'logging', 'logly', 'python'
     ],
     classifiers=[
         "Development Status :: 1 - Planning",
@@ -39,7 +39,7 @@ setup(
         'setuptools==69.0.2',
         'pytest==7.4.3',
         'packaging==23.2',
-      'colorama',
+        'colorama>=0.4.4'
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],

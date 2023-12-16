@@ -3,7 +3,6 @@ import os
 import pytest
 
 from logly import Logly
-from logly import exception
 
 @pytest.fixture
 def logly_instance():
