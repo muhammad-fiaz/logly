@@ -23,7 +23,7 @@ setup(
     url='https://github.com/muhammad-fiaz/logly.git',
     packages=find_packages(),
     keywords=[
-      'log'
+      'log','logging','logly','python'
     ],
     classifiers=[
         "Development Status :: 1 - Planning",
@@ -39,7 +39,6 @@ setup(
         'setuptools==69.0.2',
         'pytest==7.4.3',
         'packaging==23.2',
-        'colorama
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
