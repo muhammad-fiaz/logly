@@ -11,6 +11,9 @@
 [![GitHub Issues](https://img.shields.io/github/issues/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/network)
+[![GitHub repo size](https://img.shields.io/github/repo-size/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
+[![GitHub contributors](https://img.shields.io/github/contributors/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/graphs/contributors)
+![Popularity](https://komarev.com/ghpvc/?username=muhammad-fiaz&repo=logly&label=Popularity)
 
 [![Maintainer](https://img.shields.io/badge/Maintainer-muhammad--fiaz-blue)](https://github.com/muhammad-fiaz)
 [![Sponsor on GitHub](https://img.shields.io/badge/Sponsor%20on%20GitHub-Become%20a%20Sponsor-blue)](https://github.com/sponsors/muhammad-fiaz)
