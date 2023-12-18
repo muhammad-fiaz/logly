@@ -54,7 +54,7 @@ def test_logly_integration(logly_instance):
     # Test disabling color
     logly_instance.color_enabled = False
     logly_instance.info("ColorDisabledKey", "ColorDisabledValue", color=logly_instance.COLOR.RED)
-    logly_instance.info("ColorDisabledKey1", "ColorDisabledValue", color=logly_instance.COLOR.RED,color_enabled=True)
+    logly_instance.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly_instance.COLOR.RED,color_enabled=True)
 
     logly_instance.color_enabled = True
 

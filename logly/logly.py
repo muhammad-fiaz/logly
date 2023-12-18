@@ -257,7 +257,7 @@ class Logly:
                 raise FileCreationError(f"Error creating or writing to the log file: {e}")
 
     def log_function(self, level, key_or_value, value=None, color=None, log_to_file=True, file_path=None,
-                     file_name=None, max_file_size=None, auto=True, show_time=None):
+                     file_name=None, max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a message with exception handling.
 
@@ -282,10 +282,10 @@ class Logly:
             # If two parameters are provided, consider the first as the key and the second as the value
             key = key_or_value
 
-        self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto, show_time)
+        self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto, show_time,color_enabled)
 
     def info(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-             max_file_size=None, auto=True, show_time=None):
+             max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a message with the INFO level.
 
@@ -302,10 +302,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("INFO", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def warn(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-             max_file_size=None, auto=True, show_time=None):
+             max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a message with the WARNING level.
 
@@ -322,10 +322,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("WARNING", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def error(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None):
+              max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a message with the ERROR level.
 
@@ -342,10 +342,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("ERROR", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def debug(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None):
+              max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a message with the DEBUG level.
 
@@ -362,10 +362,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("DEBUG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def critical(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-                 max_file_size=None, auto=True, show_time=None):
+                 max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a critical message.
 
@@ -383,10 +383,10 @@ class Logly:
         """
         self.log_function("CRITICAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size,
                           auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def fatal(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None):
+              max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a fatal message.
 
@@ -403,10 +403,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("FATAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def trace(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None):
+              max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log a trace message.
 
@@ -423,10 +423,10 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("TRACE", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)
 
     def log(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-            max_file_size=None, auto=True, show_time=None):
+            max_file_size=None, auto=True, show_time=None,color_enabled=None):
         """
         Log an info message.
 
@@ -443,4 +443,4 @@ class Logly:
         - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
         self.log_function("LOG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                          show_time)
+                          show_time,color_enabled)

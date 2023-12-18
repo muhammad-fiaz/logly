@@ -49,10 +49,13 @@ from logly import Logly
 
 # Create a Logly instance
 logly = Logly()
-# logly = Logly(show_time=False)  # Include timestamps in log messages default is  true and you can set it to false
+# logly = Logly(show_time=False)  # Include timestamps in log messages default is  true, and you can set it to false will not show the time in all log messages
 
 # Start logging
 logly.start_logging()
+
+logly.info("hello this is log")
+logly.info("hello this is log", color=logly.COLOR.RED) # with custom color
 
 # Log messages with different levels and colors
 logly.info("Key1", "Value1", color=logly.COLOR.CYAN)
@@ -71,6 +74,9 @@ logly.stop_logging()
 logly.info("AnotherKey1", "AnotherValue1", color=logly.COLOR.CYAN)
 logly.warn("AnotherKey2", "AnotherValue2", color=logly.COLOR.YELLOW)
 logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
+
+
+logly.info("hello this is log", color=logly.COLOR.RED,show_time=False) # with custom color and without time
 
 # Start logging again
 logly.start_logging()
@@ -95,8 +101,12 @@ logly.info("Accessing color directly", "DirectColorValue", color=logly.COLOR.RED
 # Disable color
 logly.color_enabled = False
 logly.info("ColorDisabledKey", "ColorDisabledValue", color=logly.COLOR.RED)
+logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=True) # this will enable the color for this one log message
 logly.color_enabled = True
 # this will enable the color again
+logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=False) # this will disable the color for this one log message
+
+
 # Display logged messages (this will display all the messages logged so far)
 print("Logged Messages:")
 for message in logly.logged_messages:
