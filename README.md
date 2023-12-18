@@ -125,8 +125,25 @@ for message in logly.logged_messages:
 8. Log messages with default settings and custom file path and max file size.
 9. Access color constants directly.
 10. Display logged messages.
+11. enable/disable timestamp
+12. enable/disable color for log
+
+for more information check the [repository](https://github.com/muhammad-fiaz/logly)
+
+## Set Default Path
+If you encounter an error related to the default file path, you can use the following code snippet to set the default path:
 
 ## Color Options:
+```python3
+logly = Logly()
+logly.start_logging()
+
+# Set default file path and maximum file size
+logly.set_default_max_file_size(50)
+logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
+logly.set_default_file_path(logger)
+```
+This will set the default file path, and you can customize it according to your requirements.
 
 ### Default Color Options:
 
