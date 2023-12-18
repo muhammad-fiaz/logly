@@ -1,3 +1,21 @@
+# logly.py
+# # Path: logly/logly.py
+"""
+Logly: A simple logging utility.
+
+Copyright (c) 2023 Muhammad Fiaz
+
+This file is part of Logly.
+
+Logly is free software: you can redistribute it and/or modify
+it under the terms of the MIT License as published by
+the Open Source Initiative.
+
+You should have received a copy of the MIT License
+along with Logly. If not, see <https://opensource.org/licenses/MIT>.
+"""
+
+
 import os
 from colorama import Fore, Style, init
 from datetime import datetime
@@ -6,6 +24,7 @@ import re
 from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError, LoglyException
 
 init(autoreset=True)
+
 
 class Logly:
     """
@@ -38,6 +57,7 @@ class Logly:
         "WARNING": Fore.YELLOW,
         "ERROR": Fore.RED,
         "CRITICAL": f"{Fore.RED}{Style.BRIGHT}",
+        "LOG": Fore.GREEN  # Added "LOG" level color
     }
 
     # Define color constants
@@ -48,10 +68,12 @@ class Logly:
         RED = Fore.RED
         CRITICAL = f"{Fore.RED}{Style.BRIGHT}"
         WHITE = Fore.WHITE
+        GREEN = Fore.GREEN  # Added "LOG" level color
 
     DEFAULT_MAX_FILE_SIZE_MB = 100  # 100MB
+    DEFAULT_COLOR_ENABLED = True  # Add a class attribute for controlling default Colorama behavior
 
-    def __init__(self):
+    def __init__(self, show_time=True, color_enabled=None):
         """
         Initialize a Logly instance.
 
@@ -61,18 +83,23 @@ class Logly:
         - logged_messages (list): List to store logged messages.
         - default_file_path (str): Default file path for logging.
         - default_max_file_size (int): Default maximum file size for logging.
+        - show_time (bool): Flag indicating whether to include timestamps in log messages.
         """
         self.logging_enabled = False
         self.log_to_file_enabled = True
         self.logged_messages = []
         self.default_file_path = None
         self.default_max_file_size = self.DEFAULT_MAX_FILE_SIZE_MB
+        self.show_time = show_time
+        self.color_enabled = color_enabled if color_enabled is not None else self.DEFAULT_COLOR_ENABLED  # Use the provided value or default
+        self.default_color_enabled = self.color_enabled  # Store the default color state
 
     def start_logging(self):
         """
         Enable logging.
         """
         self.logging_enabled = True
+        self.color_enabled = self.default_color_enabled  # Use the stored default color state
 
     def stop_logging(self):
         """
@@ -131,7 +158,8 @@ class Logly:
         """
         return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
-    def _log(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def _log(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None,
+             auto=True, show_time=None, color_enabled=None):
         """
         Internal method to log a message.
 
@@ -145,9 +173,30 @@ class Logly:
         - file_name (str): File name for logging.
         - max_file_size (int): Maximum file size for logging.
         - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - show_time (bool): Whether to include timestamps in the log message.
+        - color_enabled (bool): Whether to enable color in the log message.
+
         """
-        color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
-        log_message = f"[{self.get_current_datetime()}] {level}: {color}{key}: {value}{Style.RESET_ALL}"
+        color_enabled = color_enabled if color_enabled is not None else self.color_enabled  # Use the provided value or default
+        if show_time is None:
+            show_time = self.show_time
+
+        timestamp = "" if not show_time else self.get_current_datetime()
+
+        if color_enabled and show_time:
+            # Apply color if both color and time are enabled
+            color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
+            log_message = f"[{timestamp}] {level}: {color}{key}: {value}{Style.RESET_ALL}"
+        elif color_enabled and not show_time:
+            # Apply color if only color is enabled
+            color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
+            log_message = f" {level}: {color}{key}: {value}{Style.RESET_ALL}"
+        elif not color_enabled and show_time:
+            # Do not apply color, but include timestamp if only time is enabled
+            log_message = f"[{timestamp}] {level}: {key}: {value}"
+        else:
+            # Do not apply color or timestamp if neither is enabled
+            log_message = f"{level}: {key}: {value}"
 
         # Log to console
         print(log_message)
@@ -159,16 +208,19 @@ class Logly:
 
                 # Determine the file path and name
                 if file_path is None:
-                    file_path = self.default_file_path or os.path.join(os.getcwd(), "log.txt")  # Default file path and name in the project root
+                    file_path = self.default_file_path or os.path.join(os.getcwd(),
+                                                                       "log.txt")  # Default file path and name in the project root
                 elif file_name:
-                    file_path = os.path.join(os.getcwd(), f"{file_name}.txt")  # Use the provided file name in the project root
+                    file_path = os.path.join(os.getcwd(),
+                                             f"{file_name}.txt")  # Use the provided file name in the project root
 
                 # Create the directories if they don't exist
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
                 # Check if the file path exists
                 if not os.path.exists(os.path.dirname(file_path)):
-                    raise FilePathNotFoundException(f"The specified file path does not exist: {os.path.dirname(file_path)}")
+                    raise FilePathNotFoundException(
+                        f"The specified file path does not exist: {os.path.dirname(file_path)}")
 
                 # Set the default max_file_size if not provided
                 max_file_size = max_file_size or self.default_max_file_size
@@ -204,153 +256,191 @@ class Logly:
             except Exception as e:
                 raise FileCreationError(f"Error creating or writing to the log file: {e}")
 
-    def log_function(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def log_function(self, level, key_or_value, value=None, color=None, log_to_file=True, file_path=None,
+                     file_name=None, max_file_size=None, auto=True, show_time=None):
         """
         Log a message with exception handling.
 
         Parameters:
         - level (str): Log level (e.g., "INFO", "ERROR").
-        - key (str): The key associated with the log message.
-        - value (str): The value of the log message.
-        - color (str): ANSI color code for the log message.
-        - log_to_file (bool): Whether to log to a file.
-        - file_path (str): File path for logging.
-        - file_name (str): File name for logging.
-        - max_file_size (int): Maximum file size for logging.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
+        - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        try:
-            self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
-        except LoglyException as e:
-            print(f"LoglyException: {e}")
+        if value is None:
+            # If only one parameter is provided, consider it as the value, and set key to None
+            key = None
+            value = key_or_value
+        else:
+            # If two parameters are provided, consider the first as the key and the second as the value
+            key = key_or_value
 
-    def info(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+        self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto, show_time)
+
+    def info(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+             max_file_size=None, auto=True, show_time=None):
         """
         Log a message with the INFO level.
 
         Parameters:
-        - key (str): The key associated with the log message.
-        - value (str): The value of the log message.
-        - color (str): ANSI color code for the log message.
-        - log_to_file (bool): Whether to log to a file.
-        - file_path (str): File path for logging.
-        - file_name (str): File name for logging.
-        - max_file_size (int): Maximum file size for logging.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
+        - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("INFO", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("INFO", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-    def warn(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def warn(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+             max_file_size=None, auto=True, show_time=None):
         """
         Log a message with the WARNING level.
 
         Parameters:
-        - key (str): The key associated with the log message.
-        - value (str): The value of the log message.
-        - color (str): ANSI color code for the log message.
-        - log_to_file (bool): Whether to log to a file.
-        - file_path (str): File path for logging.
-        - file_name (str): File name for logging.
-        - max_file_size (int): Maximum file size for logging.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
+        - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("WARNING", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("WARNING", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-    def error(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def error(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+              max_file_size=None, auto=True, show_time=None):
         """
         Log a message with the ERROR level.
 
         Parameters:
-        - key (str): The key associated with the log message.
-        - value (str): The value of the log message.
-        - color (str): ANSI color code for the log message.
-        - log_to_file (bool): Whether to log to a file.
-        - file_path (str): File path for logging.
-        - file_name (str): File name for logging.
-        - max_file_size (int): Maximum file size for logging.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
+        - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("ERROR", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("ERROR", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-    def debug(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def debug(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+              max_file_size=None, auto=True, show_time=None):
         """
         Log a message with the DEBUG level.
 
         Parameters:
-        - key (str): The key associated with the log message.
-        - value (str): The value of the log message.
-        - color (str): ANSI color code for the log message.
-        - log_to_file (bool): Whether to log to a file.
-        - file_path (str): File path for logging.
-        - file_name (str): File name for logging.
-        - max_file_size (int): Maximum file size for logging.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
+        - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("DEBUG", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("DEBUG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-    def critical(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def critical(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+                 max_file_size=None, auto=True, show_time=None):
         """
         Log a critical message.
 
         Parameters:
-        - key (str): The key for the log entry.
-        - value (str): The value for the log entry.
-        - color (str, optional): The color of the log entry. Defaults to None.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
         - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
-        - file_path (str, optional): The path to the log file. Defaults to None.
-        - file_name (str, optional): The name of the log file. Defaults to None.
-        - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("CRITICAL", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("CRITICAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size,
+                          auto,
+                          show_time)
 
-    def fatal(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def fatal(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+              max_file_size=None, auto=True, show_time=None):
         """
         Log a fatal message.
 
         Parameters:
-        - key (str): The key for the log entry.
-        - value (str): The value for the log entry.
-        - color (str, optional): The color of the log entry. Defaults to None.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
         - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
-        - file_path (str, optional): The path to the log file. Defaults to None.
-        - file_name (str, optional): The name of the log file. Defaults to None.
-        - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
-        - auto (bool): Whether to auto-delete log file data when the size limit is reached.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("FATAL", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("FATAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-    def trace(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def trace(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+              max_file_size=None, auto=True, show_time=None):
         """
         Log a trace message.
 
         Parameters:
-        - key (str): The key for the log entry.
-        - value (str): The value for the log entry.
-        - color (str, optional): The color of the log entry. Defaults to None.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
         - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
-        - file_path (str, optional): The path to the log file. Defaults to None.
-        - file_name (str, optional): The name of the log file. Defaults to None.
-        - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
-        - auto (bool, optional): Whether to automatically delete log file data if it reaches the file size limit
-          and start storing again from scratch. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("TRACE", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("TRACE", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)
 
-
-    def log(self, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None, auto=True):
+    def log(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
+            max_file_size=None, auto=True, show_time=None):
         """
         Log an info message.
 
         Parameters:
-        - key (str): The key for the log entry.
-        - value (str): The value for the log entry.
-        - color (str, optional): The color of the log entry. Defaults to None.
+        - key_or_value (str): If a second parameter (value) is provided, this is considered as the key.
+                             If no second parameter is provided, this is considered as the value, and the key is set to None.
+        - value (str, optional): The value of the log message. Defaults to None.
+        - color (str, optional): ANSI color code for the log message. Defaults to None.
         - log_to_file (bool, optional): Whether to log to a file. Defaults to True.
-        - file_path (str, optional): The path to the log file. Defaults to None.
-        - file_name (str, optional): The name of the log file. Defaults to None.
-        - max_file_size (int, optional): The maximum size of the log file in megabytes. Defaults to None.
-        - auto (bool, optional): Whether to automatically delete log file data if it reaches the file size limit
-          and start storing again from scratch. Defaults to True.
+        - file_path (str, optional): File path for logging. Defaults to None.
+        - file_name (str, optional): File name for logging. Defaults to None.
+        - max_file_size (int, optional): Maximum file size for logging. Defaults to None.
+        - auto (bool, optional): Whether to auto-delete log file data when the size limit is reached. Defaults to True.
+        - show_time (bool, optional): Whether to include timestamps in the log message. Defaults to None.
         """
-        self.log_function("LOG", key, value, color, log_to_file, file_path, file_name, max_file_size, auto)
+        self.log_function("LOG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
+                          show_time)

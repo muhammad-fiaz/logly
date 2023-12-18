@@ -1,4 +1,19 @@
 # test_logly_integration.py
+"""
+Logly: A simple logging utility.
+
+Copyright (c) 2023 Muhammad Fiaz
+
+This file is part of Logly.
+
+Logly is free software: you can redistribute it and/or modify
+it under the terms of the MIT License as published by
+the Open Source Initiative.
+
+You should have received a copy of the MIT License
+along with Logly. If not, see <https://opensource.org/licenses/MIT>.
+"""
+
 import os
 import pytest
 
@@ -33,6 +48,16 @@ def test_logly_integration(logly_instance):
     logly_instance.trace("Key7", "Value7", color=logly_instance.COLOR.BLUE)
     logly_instance.log("Key8", "Value8", color=logly_instance.COLOR.WHITE)
 
+    # Log messages with value only
+    logly_instance.log("Value9", color=logly_instance.COLOR.WHITE)
+
+    # Test disabling color
+    logly_instance.color_enabled = False
+    logly_instance.info("ColorDisabledKey", "ColorDisabledValue", color=logly_instance.COLOR.RED)
+    logly_instance.info("ColorDisabledKey1", "ColorDisabledValue", color=logly_instance.COLOR.RED,color_enabled=True)
+
+    logly_instance.color_enabled = True
+
     # Stop logging
     logly_instance.stop_logging()
 
@@ -43,6 +68,11 @@ def test_logly_integration(logly_instance):
 
     # Start logging again
     logly_instance.start_logging()
+#    disable timestamp in log file
+    logly_instance.info("DefaultKey1", "DefaultValue1",show_time=False)
+
+    logly_instance.info("DefaultKey1", "DefaultValue1", color=None)
+
 
     # Log messages with default settings (using default file path and max file size)
     logly_instance.info("DefaultKey1", "DefaultValue1")
@@ -59,3 +89,5 @@ def test_logly_integration(logly_instance):
     # Display logged messages
     for message in logly_instance.logged_messages:
         print(message)
+
+

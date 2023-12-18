@@ -49,6 +49,7 @@ from logly import Logly
 
 # Create a Logly instance
 logly = Logly()
+# logly = Logly(show_time=False)  # Include timestamps in log messages default is  true and you can set it to false
 
 # Start logging
 logly.start_logging()
@@ -91,6 +92,11 @@ logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=2
 # Access color constants directly
 logly.info("Accessing color directly", "DirectColorValue", color=logly.COLOR.RED)
 
+# Disable color
+logly.color_enabled = False
+logly.info("ColorDisabledKey", "ColorDisabledValue", color=logly.COLOR.RED)
+logly.color_enabled = True
+# this will enable the color again
 # Display logged messages (this will display all the messages logged so far)
 print("Logged Messages:")
 for message in logly.logged_messages:
