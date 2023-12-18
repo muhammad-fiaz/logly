@@ -51,7 +51,7 @@ from logly import Logly
 logly = Logly()
 # logly = Logly(show_time=False)  # Include timestamps in log messages default is  true, and you can set it to false will not show the time in all log messages
 
-# Start logging
+# Start logging will store the log in text file
 logly.start_logging()
 
 logly.info("hello this is log")
@@ -67,7 +67,7 @@ logly.fatal("Key6", "Value6", color=logly.COLOR.CRITICAL)
 logly.trace("Key7", "Value7", color=logly.COLOR.BLUE)
 logly.log("Key8", "Value8", color=logly.COLOR.WHITE)
 
-# Stop logging (no messages will be displayed or logged after this point)
+# Stop logging ( messages will be displayed or not logged after this point)
 logly.stop_logging()
 
 # Log more messages after stopping logging (these won't be displayed or logged)
