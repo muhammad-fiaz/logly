@@ -52,7 +52,7 @@ logly = Logly()
 # logly = Logly(show_time=False)  # Include timestamps in log messages default is  true, and you can set it to false will not show the time in all log messages
 
 # Start logging will store the log in text file
-logly.start_logging()
+logly.start_logging() #make sure to include this or else the log will only display without storing it
 
 logly.info("hello this is log")
 logly.info("hello this is log", color=logly.COLOR.RED) # with custom color
@@ -79,10 +79,10 @@ logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
 logly.info("hello this is log", color=logly.COLOR.RED,show_time=False) # with custom color and without time
 
 # Start logging again
-logly.start_logging()
+logly.start_logging() 
 
 # Set default file path and max file size
-logly.set_default_file_path("log.txt") # set default file path is "log.txt" if you want to set the file path where you want to save the log file.
+logly.set_default_file_path("log.txt") # Set the default file path is "log.txt" if you want to set the file path where you want to save the log file.
 logly.set_default_max_file_size(50) # set default max file size is 50 MB
 
 # Log messages with default settings (using default file path and max file size)
@@ -90,7 +90,7 @@ logly.info("DefaultKey1", "DefaultValue1")
 logly.warn("DefaultKey2", "DefaultValue2")
 logly.error("DefaultKey3", "DefaultValue3", log_to_file=False)
 
-#DEFAULT FILE SIZE IS 100 MB in txt file
+#DEFAULT FILE SIZE IS 100 MB in the txt file
 # Log messages with custom file path and max file size(optional)
 logly.info("CustomKey1", "CustomValue1", file_path="path/c.txt", max_file_size=25) # max_file_size is in MB and create a new file when the file size reaches max_file_size
 logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=25,auto=True) # auto=True will automatically delete the file data when it reaches max_file_size
@@ -101,7 +101,7 @@ logly.info("Accessing color directly", "DirectColorValue", color=logly.COLOR.RED
 # Disable color
 logly.color_enabled = False
 logly.info("ColorDisabledKey", "ColorDisabledValue", color=logly.COLOR.RED)
-logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=True) # this will enable the color for this one log message
+logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=True) # This will enable the color for this one log message
 logly.color_enabled = True
 # this will enable the color again
 logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=False) # this will disable the color for this one log message
@@ -122,11 +122,11 @@ for message in logly.logged_messages:
 5. Stop logging using the `stop_logging()` method.
 6. Log additional messages after stopping logging.
 7. Start logging again.
-8. Log messages with default settings and custom file path and max file size.
+8. Log messages with default settings, custom file path, and max file size.
 9. Access color constants directly.
 10. Display logged messages.
-11. enable/disable timestamp
-12. enable/disable color for log
+11. enable/disable timestamp support
+12. enable/disable color for log support
 
 for more information check the [repository](https://github.com/muhammad-fiaz/logly)
 
@@ -172,6 +172,39 @@ You can use any of the following color codes for custom coloring:
 |WHITE   | WHITE           |
 
 For example, you can use `color=logly.COLOR.BLACK` for the black color.
+
+## Tips & Tricks
+If you want to use logly in your project files without creating a new object in each Python file or class, you can create a file named logly.py. In this file, initialize logly and configure the defaults. Now, you can easily import and use it throughout your project:
+
+```python3
+# logly.py in your root or custom path
+# Import Logly
+from logly import Logly
+
+logly = Logly()
+logly.start_logging()
+
+# Set default file path and maximum file size
+logly.set_default_max_file_size(50)
+logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt") # This will ensure the path location to create the log.txt 
+logly.set_default_file_path(logger)
+
+# Start logging again
+logly.start_logging()
+```
+you can now use the logly by
+
+```python3
+from logly import logly # make sure to import it some IDE may automatically import it on top
+
+logly.info("msg","hello this is logly", color=logly.COLOR.RED) # with custom color of red
+
+```
+### output 
+```
+[XXXX-XX-XX XX:XX: XX] INFo: msg: hello this is logly
+
+```
 
 ## Contributing
 Contributions are welcome! Before contributing, please read our [Contributing Guidelines](CONTRIBUTING.md) to ensure a smooth and collaborative development process.
