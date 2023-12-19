@@ -133,7 +133,6 @@ for more information check the [repository](https://github.com/muhammad-fiaz/log
 ## Set Default Path
 If you encounter an error related to the default file path, you can use the following code snippet to set the default path:
 
-## Color Options:
 ```python3
 logly = Logly()
 logly.start_logging()
@@ -144,6 +143,8 @@ logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
 logly.set_default_file_path(logger)
 ```
 This will set the default file path, and you can customize it according to your requirements.
+
+## Color Options:
 
 ### Default Color Options:
 
