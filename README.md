@@ -67,10 +67,10 @@ logly.fatal("Key6", "Value6", color=logly.COLOR.CRITICAL)
 logly.trace("Key7", "Value7", color=logly.COLOR.BLUE)
 logly.log("Key8", "Value8", color=logly.COLOR.WHITE)
 
-# Stop logging ( messages will be displayed or not logged after this point)
+# Stop logging ( messages will be displayed but not logged in file after this point)
 logly.stop_logging()
 
-# Log more messages after stopping logging (these won't be displayed or logged)
+# Log more messages after stopping logging ( messages will be displayed but not logged in file after this point)
 logly.info("AnotherKey1", "AnotherValue1", color=logly.COLOR.CYAN)
 logly.warn("AnotherKey2", "AnotherValue2", color=logly.COLOR.YELLOW)
 logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
