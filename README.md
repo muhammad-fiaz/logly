@@ -22,6 +22,8 @@
 
 Logly is a simple logging utility for Python that provides an easy way to log messages with different levels, colors, and options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
 
+if you like this project make sure to star 🌟 it in the [repository](https://github.com/muhammad-fiaz/logly/) and if you want to contribute make sure to fork this repository❤✨.
+
 ## Features
 
 - Easy-to-use logging for Python applications.
