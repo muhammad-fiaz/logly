@@ -178,6 +178,7 @@ For example, you can use `color=logly.COLOR.BLACK` for the black color.
 ## Tips & Tricks
 If you want to use logly in your project files without creating a new object in each Python file or class, you can create a file named logly.py. In this file, initialize logly and configure the defaults. Now, you can easily import and use it throughout your project:
 
+`logly.py`
 ```python3
 # logly.py in your root or custom path
 # Import Logly
@@ -196,6 +197,8 @@ logly.start_logging()
 ```
 you can now use the logly by
 
+
+`main.py`
 ```python3
 from logly import logly # make sure to import it some IDE may automatically import it on top
 
