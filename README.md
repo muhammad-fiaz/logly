@@ -24,6 +24,24 @@ Logly is a simple logging utility for Python that provides an easy way to log me
 
 if you like this project make sure to star 🌟 it in the [repository](https://github.com/muhammad-fiaz/logly/) and if you want to contribute make sure to fork this repository❤✨.
 
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [Installation](#installation)
+3. [Usage](#usage)
+    - [Getting Started](#getting-started)
+    - [Explanation](#explanation)
+4. [Set Default Path](#set-default-path)
+5. [Color Options](#color-options)
+    - [Default Color Options](#default-color-options)
+    - [Custom Color Options](#custom-color-options)
+6. [Tips & Tricks](#tips--tricks)
+7. [Contributing](#contributing)
+8. [Code of Conduct](#code-of-conduct)
+9. [License](#license)
+10. [Support the Project](#support-the-project)
+11. [Happy Coding](#happy-coding)
+
 ## Features
 
 - Easy-to-use logging for Python applications.
