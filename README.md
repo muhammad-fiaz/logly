@@ -26,21 +26,22 @@ if you like this project make sure to star 🌟 it in the [repository](https://g
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
+1. [Introduction](#readme)
 2. [Installation](#installation)
-3. [Usage](#usage)
+3. [Features](#features)
+4. [Usage](#usage)
     - [Getting Started](#getting-started)
     - [Explanation](#explanation)
-4. [Set Default Path](#set-default-path)
-5. [Color Options](#color-options)
+5. [Set Default Path](#set-default-path)
+6. [Color Options](#color-options)
     - [Default Color Options](#default-color-options)
     - [Custom Color Options](#custom-color-options)
-6. [Tips & Tricks](#tips--tricks)
-7. [Contributing](#contributing)
-8. [Code of Conduct](#code-of-conduct)
-9. [License](#license)
-10. [Support the Project](#support-the-project)
-11. [Happy Coding](#happy-coding)
+7. [Tips & Tricks](#tips--tricks)
+8. [Contributing](#contributing)
+9. [Code of Conduct](#code-of-conduct)
+10. [License](#license)
+11. [Support the Project](#support-the-project)
+12. [Happy Coding](#happy-coding)
 
 ## Features
 
