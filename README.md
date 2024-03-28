@@ -19,8 +19,9 @@
 
 </div>
 
+Tired of writing custom logging code for your Python applications? 
 
-Logly is a simple logging utility for Python that provides an easy way to log messages with different levels, colors, and options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
+Logly is a ready to go logging utility that provides an easy way to log messages with different levels, colors, and many custom options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
 
 ## Features
 
@@ -32,6 +33,7 @@ Logly is a simple logging utility for Python that provides an easy way to log me
 - Log to file with automatic file size management.
 - Log to file with automatic file deletion.
 - Log to file with automatic deletion and rewriting of the file when it reaches max_file_size.
+- many more features!
 
 ## Getting Started
 
@@ -153,7 +155,7 @@ You can use any of the following color codes for custom coloring:
 | BRIGHT RED | CRITICAL     |
 |WHITE   | WHITE           |
 
-For example, you can use `color=logly.COLOR.BLACK` for the black color.
+For example, you can use `color=logly.COLOR.RED` for the red color.
 
 ## Contributing
 Contributions are welcome! Before contributing, please read our [Contributing Guidelines](CONTRIBUTING.md) to ensure a smooth and collaborative development process.
@@ -169,11 +171,9 @@ This project is licensed under the [MIT License](). See [LICENSE](LICENSE) for m
 <br>
 <div align="center">
 
-<h5> <strong> 💰 You can help me improve more by offering a little support on any platform❤️</strong></h5>
+_Support the Project by Becoming a Sponsor on GitHub_
 
-[![BuyMeACoffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/muhammadfiaz) [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/muhammadfiaz) [![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/muhammadfiaz)
 [![Sponsor muhammad-fiaz](https://img.shields.io/badge/Sponsor-%231EAEDB.svg?&style=for-the-badge&logo=GitHub-Sponsors&logoColor=white)](https://github.com/sponsors/muhammad-fiaz)
-[![Open Collective Backer](https://img.shields.io/badge/Open%20Collective-Backer-%238CC84B?style=for-the-badge&logo=open-collective&logoColor=white)](https://opencollective.com/muhammadfiaz)
 </div>
 
 

@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.4"
+VERSION = "0.0.5"
 
-DESCRIPTION = 'Logly: Python logging utility with color-coded messages and file support. Easily log and trace messages with customizable colors. Simple integration for effective debugging and monitoring.'
+DESCRIPTION = 'Logly: a Ready to Go Python logging utility with color-coded messages, file-based logging, and many more customizable options. Simplify logging in your Python applications with Logly.'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     LONG_DESCRIPTION = fh.read()
