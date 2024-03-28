@@ -31,8 +31,8 @@ setup(
     ],
     python_requires='>=3.8',
     install_requires=[
-        'pytest==7.4.3',
-        'packaging==23.2',
+        'pytest==8.1.1',
+        'packaging==24.0',
         'colorama>=0.4.4',
     ],
     setup_requires=['pytest-runner'],
