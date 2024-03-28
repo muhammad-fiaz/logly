@@ -1,7 +1,7 @@
 # logly.py
 # # Path: logly/logly.py
 """
-Logly: A simple logging utility.
+Logly: A ready to go logging utility.
 
 Copyright (c) 2023 Muhammad Fiaz
 
