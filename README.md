@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://private-user-images.githubusercontent.com/75434191/307529707-500975cc-b5f4-46df-abe8-2d03c687a1c1.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTA1MTMwMjQsIm5iZiI6MTcxMDUxMjcyNCwicGF0aCI6Ii83NTQzNDE5MS8zMDc1Mjk3MDctNTAwOTc1Y2MtYjVmNC00NmRmLWFiZTgtMmQwM2M2ODdhMWMxLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAzMTUlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMzE1VDE0MjUyNFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTAxMmUzMDRjMmE4OGY1MzQ1M2YwZjNkZTUxZmQ3MTMxNzM0NjE3ODRmNjI3ZTJjNWY4Mjk4Nzk1NGQwN2JmMjMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.H9MOqp4Xg3GJd1B2W4U7FpHz0KTjcJuuePBOUKtuVkQ" alt="Sample Image">
+<img src="assets/logly_logo.png" alt="Sample Image">
 
 
 # Logly
@@ -22,14 +22,15 @@
 
 </div>
 
+Tired of writing custom logging code for your Python applications? 
 
-Logly is a customizable logging utility for Python that provides an easy way to log messages with different levels, colors, and options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
+Logly is a ready to go logging utility that provides an easy way to log messages with different levels, colors, and many custom options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
 
-if you like this project make sure to star 🌟 it in the [repository](https://github.com/muhammad-fiaz/logly/) and if you want to contribute make sure to fork this repository❤✨.
+if you like this project, make sure to star 🌟 it in the [repository](https://github.com/muhammad-fiaz/logly/) and if you want to contribute make sure to fork this repository❤✨.
 
 ## Table of Contents
 
-1. [Introduction](#readme)
+1. [Introduction](#)
 2. [Installation](#installation)
 3. [Features](#features)
 4. [Usage](#usage)
@@ -46,6 +47,7 @@ if you like this project make sure to star 🌟 it in the [repository](https://g
 11. [Support the Project](#support-the-project)
 12. [Happy Coding](#happy-coding)
 
+
 ## Features
 
 - Easy-to-use logging for Python applications.
@@ -55,7 +57,10 @@ if you like this project make sure to star 🌟 it in the [repository](https://g
 - Log to file with automatic file rotation.
 - Log to file with automatic file size management.
 - Log to file with automatic file deletion.
-- Log to file with automatic deletion and rewriting of the file when it reaches max_file_size.
+- Log to file with automatic deletion and rewriting of the file when it reaches max_file_size. 
+- Open Source: Logly is an open-source project, and we welcome contributions from the community.
+- Community Support: Join a community of developers using Logly for their logging needs.
+- many more features!
 
 ## Getting Started
 
@@ -91,10 +96,10 @@ logly.fatal("Key6", "Value6", color=logly.COLOR.CRITICAL)
 logly.trace("Key7", "Value7", color=logly.COLOR.BLUE)
 logly.log("Key8", "Value8", color=logly.COLOR.WHITE)
 
-# Stop logging ( messages will be displayed but not logged in file after this point)
+# Stop logging (messages will be displayed but not logged in file after this point)
 logly.stop_logging()
 
-# Log more messages after stopping logging ( messages will be displayed but not logged in file after this point)
+# Log more messages after stopping logging (messages will be displayed but not logged in file after this point)
 logly.info("AnotherKey1", "AnotherValue1", color=logly.COLOR.CYAN)
 logly.warn("AnotherKey2", "AnotherValue2", color=logly.COLOR.YELLOW)
 logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
@@ -105,7 +110,7 @@ logly.info("hello this is log", color=logly.COLOR.RED,show_time=False) # with cu
 # Start logging again
 logly.start_logging() 
 
-# Set default file path and max file size
+# Set the default file path and max file size
 logly.set_default_file_path("log.txt") # Set the default file path is "log.txt" if you want to set the file path where you want to save the log file.
 logly.set_default_max_file_size(50) # set default max file size is 50 MB
 
@@ -114,7 +119,7 @@ logly.info("DefaultKey1", "DefaultValue1")
 logly.warn("DefaultKey2", "DefaultValue2")
 logly.error("DefaultKey3", "DefaultValue3", log_to_file=False)
 
-#DEFAULT FILE SIZE IS 100 MB in the txt file
+#The DEFAULT FILE SIZE IS 100 MB in the txt file
 # Log messages with custom file path and max file size(optional)
 logly.info("CustomKey1", "CustomValue1", file_path="path/c.txt", max_file_size=25) # max_file_size is in MB and create a new file when the file size reaches max_file_size
 logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=25,auto=True) # auto=True will automatically delete the file data when it reaches max_file_size
@@ -152,21 +157,48 @@ for message in logly.logged_messages:
 11. enable/disable timestamp support
 12. enable/disable color for log support
 
-for more information check the [repository](https://github.com/muhammad-fiaz/logly)
+for more information, check the [repository](https://github.com/muhammad-fiaz/logly)
 
-## Set Default Path
+## Set the Default Path
+
 If you encounter an error related to the default file path, you can use the following code snippet to set the default path:
 
 ```python3
+import os
+from logly import Logly
+
 logly = Logly()
 logly.start_logging()
 
-# Set default file path and maximum file size
+# Set the default file path and maximum file size
 logly.set_default_max_file_size(50)
 logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
 logly.set_default_file_path(logger)
 ```
 This will set the default file path, and you can customize it according to your requirements.
+
+if you want to set the default path for the log file, you can use the following code snippet
+
+```python3
+from logly import Logly
+logly = Logly()
+logly.set_default_file_path("log.txt")
+```
+
+if you faced an error like [`FileNotFoundError: [Errno 2] No such file or directory: 'log.txt'`](https://github.com/muhammad-fiaz/logly/issues/4) you can use the following code snippet to set the default path
+
+```python3
+import os
+from logly import Logly
+
+logly = Logly() # initialize the logly
+logly.start_logging() # make sure to include this or else the log will only display without storing it
+
+logly.set_default_max_file_size(50) # optional
+logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt") # This will ensure the path location to create the log.txt on current directory
+logly.set_default_file_path(logger)
+```
+for more information, check the [repository](https://github.com/muhammad-fiaz/logly).
 
 ## Color Options:
 
@@ -195,7 +227,7 @@ You can use any of the following color codes for custom coloring:
 | BRIGHT RED | CRITICAL     |
 |WHITE   | WHITE           |
 
-For example, you can use `color=logly.COLOR.BLACK` for the black color.
+For example, you can use `color=logly.COLOR.RED` for the red color.
 
 ## Tips & Tricks
 If you want to use logly in your project files without creating a new object in each Python file or class, you can create a file named logly.py. In this file, initialize logly and configure the defaults. Now, you can easily import and use it throughout your project:
@@ -204,12 +236,13 @@ If you want to use logly in your project files without creating a new object in 
 ```python3
 # logly.py in your root or custom path
 # Import Logly
-from logly import Logly
 
+from logly import Logly
+import os
 logly = Logly()
 logly.start_logging()
 
-# Set default file path and maximum file size
+# Set the default file path and maximum file size
 logly.set_default_max_file_size(50)
 logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt") # This will ensure the path location to create the log.txt 
 logly.set_default_file_path(logger)
@@ -247,13 +280,13 @@ This project is licensed under the [MIT License](). See [LICENSE](LICENSE) for m
 <br>
 <div align="center">
 
-<h5> <strong> 💰 You can help me improve more by offering a little support on any platform❤️</strong></h5>
-
+_Support the Project by Becoming a Sponsor on GitHub_
 
 [![Sponsor muhammad-fiaz](https://img.shields.io/badge/Sponsor-%231EAEDB.svg?&style=for-the-badge&logo=GitHub-Sponsors&logoColor=white)](https://github.com/sponsors/muhammad-fiaz)
+
 
 </div>
 
 
 
-## Happy Coding ❤️
+## Happy Coding
