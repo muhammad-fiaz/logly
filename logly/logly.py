@@ -204,6 +204,8 @@ class Logly:
             try:
                 # Remove color codes before storing in the log file
                 log_message_without_color = self.remove_color_codes(log_message)
+                # Encode emojis properly
+                log_message_without_color = log_message_without_color.encode('utf-8', 'replace').decode()
 
                 # Determine the file path and name
                 if file_path is None:
