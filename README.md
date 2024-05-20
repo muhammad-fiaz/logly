@@ -81,7 +81,7 @@ logly = Logly()
 # logly = Logly(show_time=False)  # Include timestamps in log messages default is  true, and you can set it to false will not show the time in all log messages
 
 # Start logging will store the log in text file
-logly.start_logging() #make sure to include this or else the log will only display without storing it
+logly.start_logging() #make sure to include this or else the log will only display without storing it in file
 
 logly.info("hello this is log")
 logly.info("hello this is log", color=logly.COLOR.RED) # with custom color
