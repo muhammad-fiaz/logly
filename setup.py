@@ -32,7 +32,7 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'pytest==8.2.1',
-        'packaging==24.0',
+        'packaging==24.1',
         'colorama>=0.4.4',
     ],
     setup_requires=['pytest-runner'],
