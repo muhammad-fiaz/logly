@@ -31,7 +31,7 @@ setup(
     ],
     python_requires='>=3.8',
     install_requires=[
-        'pytest==8.3.3',
+        'pytest==8.3.4',
         'packaging==24.2',
         'colorama>=0.4.4',
     ],
