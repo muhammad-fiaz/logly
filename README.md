@@ -49,6 +49,8 @@ if you like this project, make sure to star 🌟 it in the [repository](https://
 9. [Code of Conduct](#code-of-conduct)
 10. [License](#license)
 11. [Support the Project](#support-the-project)
+    - [Become a Sponsor on GitHub](#become-a-sponsor-on-github)
+    - [Support via Ko-fi](#support-via-ko-fi)
 12. [Happy Coding](#happy-coding)
 
 
@@ -274,17 +276,24 @@ Please review our [Code of Conduct](CODE_OF_CONDUCT.md) to understand the standa
 ## License
 This project is licensed under the [MIT License](). See [LICENSE](LICENSE) for more details.
 
-## Support the Project
-<br>
-<div align="center">
 
-_Support the Project by Becoming a Sponsor on GitHub_
+## Support the Project
+
+Your support helps improve Logly and enables us to continue adding more features and improvements. If you'd like to contribute and support the development of this project, consider becoming a sponsor on GitHub or Ko-fi.
+
+
+### Become a Sponsor on GitHub
+Support Logly directly on GitHub to help sustain ongoing development.
 
 [![Sponsor muhammad-fiaz](https://img.shields.io/badge/Sponsor-%231EAEDB.svg?&style=for-the-badge&logo=GitHub-Sponsors&logoColor=white)](https://github.com/sponsors/muhammad-fiaz)
 
+### Support via Ko-fi
+If you prefer, you can also support the project via Ko-fi.
 
-</div>
+[![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F6MME1W)
 
+
+Thank you for supporting the project! 🙏
 
 
 ## Happy Coding
