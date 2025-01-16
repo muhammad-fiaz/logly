@@ -71,77 +71,83 @@ if you like this project, make sure to star 🌟 it in the [repository](https://
 
 ## Installation
 
+To install the stable version of `logly`, use:
 ```bash
 pip install logly
 ```
 
-## Usage
+If you want to install the latest development version directly from GitHub, you can run:
+```bash
+pip install git+https://github.com/muhammad-fiaz/logly.git
+```
 
+## Usage
+Once installed, you can use `logly` in your Python project for logging. Here is a basic example of how to set it up and use it:
 ```python
 # Import Logly
 from logly import Logly
 
 # Create a Logly instance
 logly = Logly()
-# logly = Logly(show_time=False)  # Include timestamps in log messages default is  true, and you can set it to false will not show the time in all log messages
 
-# Start logging will store the log in text file
-logly.start_logging() #make sure to include this or else the log will only display without storing it in file
+# Start logging to store the logs in a text file
+logly.start_logging()  # Make sure to include this or else the logs will only display without being saved to a file
 
-logly.info("hello this is log")
-logly.info("hello this is log", color=logly.COLOR.RED) # with custom color
+logly.info("Application started successfully.")
+logly.info("User logged in", color=logly.COLOR.GREEN)  # with custom color
 
 # Log messages with different levels and colors
-logly.info("Key1", "Value1", color=logly.COLOR.CYAN)
-logly.warn("Key2", "Value2", color=logly.COLOR.YELLOW)
-logly.error("Key3", "Value3", color=logly.COLOR.RED)
-logly.debug("Key4", "Value4", color=logly.COLOR.BLUE)
-logly.critical("Key5", "Value5", color=logly.COLOR.CRITICAL)
-logly.fatal("Key6", "Value6", color=logly.COLOR.CRITICAL)
-logly.trace("Key7", "Value7", color=logly.COLOR.BLUE)
-logly.log("Key8", "Value8", color=logly.COLOR.WHITE)
+logly.info("Database connection established", "Connection details: host=db.local, port=5432", color=logly.COLOR.CYAN)
+logly.warn("API rate limit exceeded", "API request count exceeded 1000", color=logly.COLOR.YELLOW)
+logly.error("Database connection failed", "Unable to reach database at db.local", color=logly.COLOR.RED)
+logly.debug("User request details", "User requested resource /api/data", color=logly.COLOR.BLUE)
+logly.critical("Critical system failure", "Disk space usage exceeded 95%", color=logly.COLOR.CRITICAL)
+logly.fatal("Application crashed", "Unhandled exception in user module", color=logly.COLOR.CRITICAL)
+logly.trace("Debug trace", "Trace info: function call stack", color=logly.COLOR.BLUE)
+logly.log("System status", "All systems operational", color=logly.COLOR.WHITE)
 
-# Stop logging (messages will be displayed but not logged in file after this point)
+# Stop logging (messages will be displayed but not logged to file after this point)
 logly.stop_logging()
 
-# Log more messages after stopping logging (messages will be displayed but not logged in file after this point)
-logly.info("AnotherKey1", "AnotherValue1", color=logly.COLOR.CYAN)
-logly.warn("AnotherKey2", "AnotherValue2", color=logly.COLOR.YELLOW)
-logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
+# Log more messages after stopping logging (messages will be displayed but not logged in file)
+logly.info("User session ended", "User logged out", color=logly.COLOR.CYAN)
+logly.warn("Low disk space", "Disk space is below 10%", color=logly.COLOR.YELLOW)
+logly.error("File not found", "Unable to find /config/settings.json", color=logly.COLOR.RED)
 
-get_message = logly.info("hello this is log", color=logly.COLOR.RED) # this will print the log and return the log message
-print(get_message) # you can use the returned message in your application it's optional
+# Example of retrieving and printing a logged message
+get_message = logly.info("New feature deployed", "Version 2.0 live now", color=logly.COLOR.RED)
+print(get_message)  # You can use the returned message in your application (optional)
 
-logly.info("hello this is log", color=logly.COLOR.RED,show_time=False) # with custom color and without time
+# Log message with custom color and no timestamp
+logly.info("Custom log without time", "This log message does not include a timestamp", color=logly.COLOR.RED, show_time=False)
 
 # Start logging again
-logly.start_logging() 
+logly.start_logging()
 
 # Set the default file path and max file size
-logly.set_default_file_path("log.txt") # Set the default file path is "log.txt" if you want to set the file path where you want to save the log file.
-logly.set_default_max_file_size(50) # set default max file size is 50 MB
+logly.set_default_file_path("application_logs.txt")  # Set the default file path
+logly.set_default_max_file_size(50)  # Set default max file size to 50 MB
 
 # Log messages with default settings (using default file path and max file size)
-logly.info("DefaultKey1", "DefaultValue1")
-logly.warn("DefaultKey2", "DefaultValue2")
-logly.error("DefaultKey3", "DefaultValue3", log_to_file=False)
+logly.info("Default logging example", "Logging to default file path and size")
+logly.warn("File logging size test", "Max file size set to 50 MB", log_to_file=False)
 
-#The DEFAULT FILE SIZE IS 100 MB in the txt file
-# Log messages with custom file path and max file size(optional)
-logly.info("CustomKey1", "CustomValue1", file_path="path/c.txt", max_file_size=25) # max_file_size is in MB and create a new file when the file size reaches max_file_size
-logly.warn("CustomKey2", "CustomValue2", file_path="path/c.txt", max_file_size=25,auto=True) # auto=True will automatically delete the file data when it reaches max_file_size
+# Log messages with custom file path and max file size (optional)
+logly.info("Logging with custom file path", "This will create a new log file", file_path="logs/custom_log.txt", max_file_size=25)
+logly.warn("Auto file size management", "Log file will be auto-deleted when size exceeds limit", file_path="logs/auto_delete_log.txt", max_file_size=25, auto=True)
 
-# Access color constants directly
-logly.info("Accessing color directly", "DirectColorValue", color=logly.COLOR.RED)
+# Access color constants directly for logging
+logly.info("Using color constants directly", "This message is in red", color=logly.COLOR.RED)
 
-# Disable color
+# Disable color for logging
 logly.color_enabled = False
-logly.info("ColorDisabledKey", "ColorDisabledValue", color=logly.COLOR.RED)
-logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=True) # This will enable the color for this one log message
-logly.color_enabled = True
-# this will enable the color again
-logly.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly.COLOR.RED,color_enabled=False) # this will disable the color for this one log message
+logly.info("Logging without color", "This log message is displayed without color", color=logly.COLOR.RED)
 
+# Enable color for specific log message
+logly.info("Enable color for this message", "This message will have color", color=logly.COLOR.RED, color_enabled=True)
+
+# Disable color for specific log message
+logly.info("Disable color for this message", "This message will be displayed without color", color=logly.COLOR.RED, color_enabled=False)
 
 # Display logged messages (this will display all the messages logged so far)
 print("Logged Messages:")
@@ -149,20 +155,6 @@ for message in logly.logged_messages:
     print(message)
 
 ```
-## Explanation:
-
-1. Import the `Logly` class from the `logly` module.
-2. Create an instance of `Logly`.
-3. Start logging using the `start_logging()` method.
-4. Log messages with various levels (info, warn, error, debug, critical, fatal, trace) and colors.
-5. Stop logging using the `stop_logging()` method.
-6. Log additional messages after stopping logging.
-7. Start logging again.
-8. Log messages with default settings, custom file path, and max file size.
-9. Access color constants directly.
-10. Display logged messages.
-11. enable/disable timestamp support
-12. enable/disable color for log support
 
 for more information, check the [repository](https://github.com/muhammad-fiaz/logly)
 
@@ -269,7 +261,7 @@ logly.info("msg","hello this is logly", color=logly.COLOR.RED) # with custom col
 ```
 ### output 
 ```
-[XXXX-XX-XX XX:XX: XX] INFo: msg: hello this is logly
+[XXXX-XX-XX XX:XX: XX] INFO: msg: hello this is logly
 
 ```
 
