@@ -279,7 +279,11 @@ This project is licensed under the [MIT License](). See [LICENSE](LICENSE) for m
 
 ## Support the Project
 
+<div align="center">
+
 Your support helps improve Logly and enables us to continue adding more features and improvements. If you'd like to contribute and support the development of this project, consider becoming a sponsor on GitHub or Ko-fi.
+
+
 
 
 ### Become a Sponsor on GitHub
@@ -295,5 +299,6 @@ If you prefer, you can also support the project via Ko-fi.
 
 Thank you for supporting the project! 🙏
 
+</div>
 
 ## Happy Coding
