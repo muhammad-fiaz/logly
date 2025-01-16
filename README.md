@@ -40,7 +40,6 @@ if you like this project, make sure to star 🌟 it in the [repository](https://
 3. [Features](#features)
 4. [Usage](#usage)
     - [Getting Started](#getting-started)
-    - [Explanation](#explanation)
 5. [Set Default Path](#set-default-path)
 6. [Color Options](#color-options)
     - [Default Color Options](#default-color-options)
