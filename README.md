@@ -109,6 +109,8 @@ logly.info("AnotherKey1", "AnotherValue1", color=logly.COLOR.CYAN)
 logly.warn("AnotherKey2", "AnotherValue2", color=logly.COLOR.YELLOW)
 logly.error("AnotherKey3", "AnotherValue3", color=logly.COLOR.RED)
 
+get_message = logly.info("hello this is log", color=logly.COLOR.RED) # this will print the log and return the log message
+print(get_message) # you can use the returned message in your application it's optional
 
 logly.info("hello this is log", color=logly.COLOR.RED,show_time=False) # with custom color and without time
 
