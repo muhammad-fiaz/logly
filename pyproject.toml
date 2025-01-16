@@ -1,0 +1,47 @@
+[project]
+name = "logly"
+version = "0.0.8"
+description = "Logly: Ready to Go Python logging utility with color-coded messages, file-based logging, and many more customizable options. Simplify logging in your Python applications with Logly."
+authors = [{name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com"}]
+maintainers = [{name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com"}]
+keywords = ["logging", "custom-log", "logly", "logging-utility", "python","logs"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Logging",
+]
+
+license = { file = "LICENSE" }
+readme = "README.md"
+homepage = "https://github.com/muhammad-fiaz/logly.git"
+repository = "https://github.com/muhammad-fiaz/logly.git"
+documentation = "https://github.com/muhammad-fiaz/logly#readme"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+pytest = "8.3.4"
+packaging = "24.2"
+colorama = ">=0.4.4"
+
+[poetry.group.dev.dependencies]
+pytest-runner = "*"
+poetry-plugin-export = "^1.9.0"
+
+[tool.poetry.scripts]
+logly = "logly:Logly"
+
+[tool.poetry.urls]
+bug-tracker = "https://github.com/muhammad-fiaz/logly/issues"
+source-code = "https://github.com/muhammad-fiaz/logly.git"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
