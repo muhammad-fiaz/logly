@@ -19,12 +19,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Stability](https://img.shields.io/badge/Stability-Stable-green)](https://github.com/muhammad-fiaz/logly)
 [![Follow me on GitHub](https://img.shields.io/github/followers/muhammad-fiaz?label=Follow&style=social)](https://github.com/muhammad-fiaz)
-<a href="https://discord.gg/uRkZ5cHf" target="_blank">
-  <img
-    src="https://dcbadge.limes.pink/api/server/https://discord.gg/uRkZ5cHf?style=shield"
-    alt="discord invite"
-  />
-</a>
+
+[![Join My Discord](https://img.shields.io/badge/Join%20My%20Discord-7289DA?style=for-the-badge&logo=discord)](https://discord.gg/cFnFdeFw)
+[![Sponsor muhammad-fiaz](https://img.shields.io/badge/Sponsor-muhammad_fiaz-ff69b4?style=for-the-badge&logo=github)](https://github.com/sponsors/muhammad-fiaz)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F6MME1W)
+
 </div>
 
 Tired of writing custom logging code for your Python applications? 
