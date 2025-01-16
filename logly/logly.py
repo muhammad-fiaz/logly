@@ -254,6 +254,8 @@ class Logly:
         if self.log_to_file_enabled and log_to_file:
             try:
                 log_message_without_color = self.remove_color_codes(log_message)
+                # Encode emojis properly
+                log_message_without_color = log_message_without_color.encode('utf-8', 'replace').decode()
 
                 if file_path is None:
                     file_path = self.default_file_path or os.path.join(os.getcwd(), "log.txt")
