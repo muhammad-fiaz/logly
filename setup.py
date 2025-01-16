@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.6"
+VERSION = "0.0.7"
 
 DESCRIPTION = 'Logly: Ready to Go Python logging utility with color-coded messages, file-based logging, and many more customizable options. Simplify logging in your Python applications with Logly.'
 
@@ -18,16 +18,19 @@ setup(
     url='https://github.com/muhammad-fiaz/logly.git',
     packages=find_packages(),
     keywords=[
-        'log', 'logging', 'logly', 'python'
+        "logging", "custom-logging", "logly", "logging-utility", "python", "logs"
     ],
     classifiers=[
-        "Development Status :: 1 - Planning",
-        "Intended Audience :: Developers",
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: Unix",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Logging",
     ],
     python_requires='>=3.8',
     install_requires=[
