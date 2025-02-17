@@ -1,9 +1,7 @@
-# logly.py
-# Path: logly/logly.py
 """
-Logly: A ready to go logging utility.
+Logly: A ready-to-go logging utility.
 
-Copyright (c) 2023 Muhammad Fiaz
+Copyright (c) 2025 Muhammad Fiaz
 
 This file is part of Logly.
 
@@ -20,18 +18,46 @@ import logging
 from colorama import Fore, Style, init
 from datetime import datetime
 import re
+from typing import Optional
+from pydantic import BaseModel, Field
+from rich.console import Console
 
 from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError
 
 init(autoreset=True)
+console = Console()
+
+class LoglyConfig(BaseModel):
+    show_time: bool = Field(default=True, description="Whether to include timestamps in log messages")
+    color_enabled: bool = Field(default=True, description="Whether to enable colored output")
+    logging_enabled: bool = Field(default=True, description="Whether logging is enabled")
+    log_to_file_enabled: bool = Field(default=True, description="Whether to enable logging to a file")
+    default_file_path: Optional[str] = Field(default=None, description="Default path for log files")
+    default_max_file_size: int = Field(default=100, description="Default maximum file size for log files (in MB)")
+    custom_format: str = Field(default="{timestamp} - {level}: {message}", description="Custom format for log messages")
+    display: bool = Field(default=True, description="Whether to display logs in the console")
+
+class LogMessageConfig(BaseModel):
+    level: str = Field(description="The log level (e.g., 'INFO', 'WARNING', 'ERROR', etc.)")
+    key_or_value: str = Field(description="The key or message to log")
+    value: Optional[str] = Field(default=None, description="Additional message value for the log")
+    color: Optional[str] = Field(default=None, description="Color to use for the log message")
+    log_to_file: bool = Field(default=True, description="Whether to log to a file")
+    file_path: Optional[str] = Field(default=None, description="Path where the log file will be stored")
+    file_name: Optional[str] = Field(default=None, description="Custom log file name")
+    max_file_size: Optional[int] = Field(default=None, description="Maximum file size before rolling over (in MB)")
+    auto: bool = Field(default=True, description="Automatically handle file rollover")
+    show_time: Optional[bool] = Field(default=None, description="Whether to include timestamp in the log message")
+    color_enabled: Optional[bool] = Field(default=None, description="Whether to enable colored output")
+    custom_format: Optional[str] = Field(default=None, description="Custom format for the log message")
 
 class Logly:
     """
     Logly: A ready-to-go logging utility.
 
     This class provides methods to log messages with different levels of severity,
-    including INFO, WARNING, ERROR, DEBUG, CRITICAL, and custom LOG levels. It supports
-    colored output and logging to files with automatic file rollover.
+    including INFO, WARNING, ERROR, DEBUG, CRITICAL, FATAL, TRACE, and custom LOG levels.
+    It supports colored output and logging to files with automatic file rollover.
 
     Attributes:
     -----------
@@ -48,14 +74,16 @@ class Logly:
         "WARNING": Fore.YELLOW,
         "ERROR": Fore.RED,
         "CRITICAL": f"{Fore.RED}{Style.BRIGHT}",
+        "FATAL": f"{Fore.RED}{Style.BRIGHT}",
+        "TRACE": Fore.BLUE,
         "LOG": Fore.GREEN  # Added "LOG" level color
     }
 
     # Define color constants
     class COLOR:
         """
-               A class to define color constants for log messages.
-               """
+        A class to define color constants for log messages.
+        """
         BLUE = Fore.BLUE
         CYAN = Fore.CYAN
         YELLOW = Fore.YELLOW
@@ -67,53 +95,60 @@ class Logly:
     DEFAULT_MAX_FILE_SIZE_MB = 100  # 100MB
     DEFAULT_COLOR_ENABLED = True  # Add a class attribute for controlling default Colorama behavior
 
-    def __init__(self, show_time=True, color_enabled=None):
+    def __init__(self, config: LoglyConfig = None):
         """
-          Initialize the Logly instance.
+        Initialize the Logly instance.
 
-          This constructor sets up the initial state of the Logly logger, including
-          logging preferences, file paths, and color settings.
+        This constructor sets up the initial state of the Logly logger, including
+        logging preferences, file paths, and color settings.
 
-          Parameters:
-          -----------
-          show_time : bool, optional
-              Whether to include timestamps in log messages (default is True).
-          color_enabled : bool, optional
-              Whether to enable colored output. If None, uses the default color setting.
+        Parameters:
+        -----------
+        config : LoglyConfig
+            Configuration parameters for Logly.
 
-          Attributes:
-          -----------
-          logging_enabled : bool
-              Flag to enable/disable logging.
-          log_to_file_enabled : bool
-              Flag to enable/disable logging to a file.
-          logged_messages : list
-              List to store logged messages.
-          default_file_path : str or None
-              Default path for log files.
-          default_max_file_size : int
-              Default maximum file size for log files.
-          show_time : bool
-              Whether to show timestamps in log messages.
-          color_enabled : bool
-              Whether color output is enabled.
-          default_color_enabled : bool
-              Default setting for color output.
-          logger : logging.Logger
-              Python's built-in logger instance.
+        Attributes:
+        -----------
+        logging_enabled : bool
+            Flag to enable/disable logging.
+        log_to_file_enabled : bool
+            Flag to enable/disable logging to a file.
+        display_logs : bool
+            Flag to enable/disable displaying logs in the console.
+        logged_messages : list
+            List to store logged messages.
+        default_file_path : str or None
+            Default path for log files.
+        default_max_file_size : int
+            Default maximum file size for log files.
+        show_time : bool
+            Whether to show timestamps in log messages.
+        color_enabled : bool
+            Whether color output is enabled.
+        default_color_enabled : bool
+            Default setting for color output.
+        custom_format : str
+            Default custom format for log messages.
+        logger : logging.Logger
+            Python's built-in logger instance.
 
-          Returns:
-          --------
-          None
-          """
-        self.logging_enabled = False
-        self.log_to_file_enabled = True
+        Returns:
+        --------
+        None
+        """
+        if config is None:
+            config = LoglyConfig()
+
+        self.logging_enabled = config.logging_enabled
+        self.log_to_file_enabled = config.log_to_file_enabled
+        self.display_logs = config.display
         self.logged_messages = []
-        self.default_file_path = None
-        self.default_max_file_size = self.DEFAULT_MAX_FILE_SIZE_MB
-        self.show_time = show_time
-        self.color_enabled = color_enabled if color_enabled is not None else self.DEFAULT_COLOR_ENABLED  # Use the provided value or default
+        self.default_file_path = config.default_file_path
+        self.default_max_file_size = config.default_max_file_size
+        self.show_time = config.show_time
+        self.color_enabled = config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED  # Use the provided value or default
         self.default_color_enabled = self.color_enabled  # Store the default color state
+        self.custom_format = config.custom_format
 
         # Disable default logging setup for this logger
         self.logger = logging.getLogger(__name__)
@@ -125,18 +160,28 @@ class Logly:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-    def start_logging(self):
+    def start_logging(self, display=True):
         """
         Enable logging.
+
+        Parameters:
+        - display (bool): Whether to display logs in the console. Default is True.
         """
         self.logging_enabled = True
+        self.display_logs = display
         self.color_enabled = self.default_color_enabled  # Use the stored default color state
+        self.logger.disabled = not display
 
-    def stop_logging(self):
+    def stop_logging(self, display=True):
         """
-        Disable logging.
+        Disable logging to a file.
+
+        Parameters:
+        - display (bool): Whether to display logs in the console. Default is True.
         """
-        self.logging_enabled = False
+        self.log_to_file_enabled = False
+        self.display_logs = display
+        self.logger.disabled = not display
 
     def disable_file_logging(self):
         """
@@ -168,6 +213,23 @@ class Logly:
         """
         self.default_max_file_size = max_file_size
 
+    def update_settings(self, config: LoglyConfig):
+        """
+        Update the logger settings.
+
+        Parameters:
+        - config (LoglyConfig): New configuration parameters for Logly.
+        """
+        self.logging_enabled = config.logging_enabled
+        self.log_to_file_enabled = config.log_to_file_enabled
+        self.default_file_path = config.default_file_path
+        self.default_max_file_size = config.default_max_file_size
+        self.show_time = config.show_time
+        self.color_enabled = config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED
+        self.default_color_enabled = self.color_enabled
+        self.custom_format = config.custom_format
+        self.display_logs = config.display
+
     def get_current_datetime(self):
         """
         Get the current date and time as a formatted string.
@@ -189,25 +251,14 @@ class Logly:
         """
         return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
-    def _log(self, level, key, value, color=None, log_to_file=True, file_path=None, file_name=None, max_file_size=None,
-             auto=True, show_time=None, color_enabled=None):
+    def _log(self, config: LogMessageConfig):
         """
         Internal method to handle logging operations.
 
         This method processes the log message, applies formatting, and handles both console and file logging.
 
         Args:
-            level (str): The log level (e.g., "INFO", "WARNING", "ERROR", etc.).
-            key (str): The key for the log message. If None, it's treated as an empty string.
-            value (str): The main content of the log message.
-            color (str, optional): The color to use for the log message. If None, a default color is used based on the log level.
-            log_to_file (bool, optional): Whether to log the message to a file. Defaults to True.
-            file_path (str, optional): The path where the log file will be stored. If None, uses the default path.
-            file_name (str, optional): The name of the log file. If provided, it overrides the file_path.
-            max_file_size (int, optional): The maximum size of the log file in MB before rolling over.
-            auto (bool, optional): If True, automatically handles file rollover when max_file_size is reached. Defaults to True.
-            show_time (bool, optional): Whether to include a timestamp in the log message. If None, uses the instance's default.
-            color_enabled (bool, optional): Whether to enable colored output. If None, uses the instance's default.
+            config (LogMessageConfig): Configuration parameters for the log message.
 
         Returns:
             str: The formatted log message with color codes removed.
@@ -217,63 +268,67 @@ class Logly:
             FileAccessError: If there's an error accessing the log file.
             FileCreationError: If there's an error creating or writing to the log file.
         """
-        color_enabled = color_enabled if color_enabled is not None else self.color_enabled
-        if show_time is None:
-            show_time = self.show_time
+        color_enabled = config.color_enabled if config.color_enabled is not None else self.color_enabled
+        show_time = config.show_time if config.show_time is not None else self.show_time
 
         timestamp = "" if not show_time else self.get_current_datetime()
-        if key is None:
-            key = "" # Set key to empty string if it is None
-        else:
-            key = f"{key}:"
-        if color_enabled and show_time:
-            color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
-            log_message = f"{color}[{timestamp}] - {level}: {key} {value}{Style.RESET_ALL}"
-        elif color_enabled and not show_time:
-            color = color or self.COLOR_MAP.get(level, self.COLOR.BLUE)
-            log_message = f"{color} {level}: {key} {value}{Style.RESET_ALL}"
-        elif not color_enabled and show_time:
-            log_message = f"[{timestamp}] - {level}: {key} {value}"
-        else:
-            log_message = f"{level}: {key} {value}"
+        key = config.key_or_value if config.key_or_value is not None else ""
+        message = f"{key}" if config.value is None else f"{key}: {config.value}"
+        color = config.color or self.COLOR_MAP.get(config.level, self.COLOR.BLUE)
+
+        # Use custom format if provided, otherwise use default format
+        custom_format = config.custom_format if config.custom_format else self.custom_format
+        log_message = custom_format.format(
+            timestamp=timestamp,
+            level=config.level,
+            message=message
+        )
+
+        if color_enabled:
+            log_message = f"{color}{log_message}{Style.RESET_ALL}"
 
         # Log to console using logging library
-        if level == "INFO":
-            self.logger.info(log_message)
-        elif level == "WARNING":
-            self.logger.warning(log_message)
-        elif level == "ERROR":
-            self.logger.error(log_message)
-        elif level == "DEBUG":
-            self.logger.debug(log_message)
-        elif level == "CRITICAL":
-            self.logger.critical(log_message)
-        else:
-            self.logger.log(logging.NOTSET, log_message)
+        if self.display_logs:
+            if config.level == "INFO":
+                self.logger.info(log_message)
+            elif config.level == "WARNING":
+                self.logger.warning(log_message)
+            elif config.level == "ERROR":
+                self.logger.error(log_message)
+            elif config.level == "DEBUG":
+                self.logger.debug(log_message)
+            elif config.level == "CRITICAL":
+                self.logger.critical(log_message)
+            elif config.level == "FATAL":
+                self.logger.fatal(log_message)
+            elif config.level == "TRACE":
+                self.logger.log(logging.NOTSET, log_message)
+            else:
+                self.logger.log(logging.NOTSET, log_message)
 
-        if self.log_to_file_enabled and log_to_file:
+        if self.log_to_file_enabled and config.log_to_file:
             try:
                 log_message_without_color = self.remove_color_codes(log_message)
                 # Encode emojis properly
                 log_message_without_color = log_message_without_color.encode('utf-8', 'replace').decode()
 
-                if file_path is None:
-                    file_path = self.default_file_path or os.path.join(os.getcwd(), "log.txt")
-                elif file_name:
-                    file_path = os.path.join(os.getcwd(), f"{file_name}.txt")
+                file_path = config.file_path or self.default_file_path or os.path.join(os.getcwd(), "log.txt")
+                if config.file_name:
+                    file_path = os.path.join(os.getcwd(), f"{config.file_name}.txt")
 
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
                 if not os.path.exists(os.path.dirname(file_path)):
-                    raise FilePathNotFoundException(f"The specified file path does not exist: {os.path.dirname(file_path)}")
+                    raise FilePathNotFoundException(
+                        f"The specified file path does not exist: {os.path.dirname(file_path)}")
 
-                max_file_size = max_file_size or self.default_max_file_size
+                max_file_size = config.max_file_size or self.default_max_file_size
                 max_file_size_bytes = max_file_size * 1024 * 1024
 
                 file_exists = os.path.exists(file_path)
 
                 if max_file_size and file_exists and os.path.getsize(file_path) >= max_file_size_bytes:
-                    if auto:
+                    if config.auto:
                         with open(file_path, 'w'):
                             pass
                     else:
@@ -295,216 +350,126 @@ class Logly:
 
         return self.remove_color_codes(log_message)  # Return log message without color formatting
 
-    def log_function(self, level, key_or_value, value=None, color=None, log_to_file=True, file_path=None,
-                     file_name=None, max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def log_function(self, config: LogMessageConfig):
         """
-            General logging function that handles different log levels (INFO, WARNING, ERROR, etc.).
+        General logging function that handles different log levels (INFO, WARNING, ERROR, etc.).
 
-            Args:
-                level (str): The log level (e.g., "INFO", "WARNING", "ERROR", etc.).
-                key_or_value (str): The key or message to log.
-                value (str, optional): Additional message value for the log.
-                color (str, optional): Color to use for the log message.
-                log_to_file (bool, optional): Whether to log to a file (default is True).
-                file_path (str, optional): Path where the log file will be stored (default is None).
-                file_name (str, optional): Custom log file name (default is None).
-                max_file_size (int, optional): Maximum file size before rolling over (in MB).
-                auto (bool, optional): Automatically handle file rollover (default is True).
-                show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-                color_enabled (bool, optional): Whether to enable colored output (default is None).
+        Args:
+            config (LogMessageConfig): Configuration parameters for the log message.
 
-            Returns:
-                str: The log message with or without color, depending on the configuration.
-            """
-        if value is None:
-            key = None
-            value = key_or_value
-        else:
-            key = key_or_value
-
-        return self._log(level, key, value, color, log_to_file, file_path, file_name, max_file_size, auto, show_time,
-                         color_enabled)
-
-    def info(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-             max_file_size=None, auto=True, show_time=None, color_enabled=None):
+        Returns:
+            str: The log message with or without color, depending on the configuration.
         """
-           Logs an informational message.
+        return self._log(config)
 
-           Args:
-               key_or_value (str): The key or message to log.
-               value (str, optional): Additional message value for the log.
-               color (str, optional): Color to use for the log message.
-               log_to_file (bool, optional): Whether to log to a file (default is True).
-               file_path (str, optional): Path where the log file will be stored (default is None).
-               file_name (str, optional): Custom log file name (default is None).
-               max_file_size (int, optional): Maximum file size before rolling over (in MB).
-               auto (bool, optional): Automatically handle file rollover (default is True).
-               show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-               color_enabled (bool, optional): Whether to enable colored output (default is None).
+    def info(self, key_or_value, value=None, **kwargs):
+        """
+        Logs an informational message.
 
-           Returns:
-               str: The log message with or without color, depending on the configuration.
-           """
-        return self.log_function("INFO", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        Args:
+            key_or_value (str): The key or message to log.
+            value (str, optional): Additional message value for the log.
 
-    def warn(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-             max_file_size=None, auto=True, show_time=None, color_enabled=None):
+        Returns:
+            str: The log message with or without color, depending on the configuration.
+        """
+        config = LogMessageConfig(level="INFO", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
+
+    def warn(self, key_or_value, value=None, **kwargs):
         """
         Logs a warning message.
 
         Args:
             key_or_value (str): The key or message to log.
             value (str, optional): Additional message value for the log.
-            color (str, optional): Color to use for the log message.
-            log_to_file (bool, optional): Whether to log to a file (default is True).
-            file_path (str, optional): Path where the log file will be stored (default is None).
-            file_name (str, optional): Custom log file name (default is None).
-            max_file_size (int, optional): Maximum file size before rolling over (in MB).
-            auto (bool, optional): Automatically handle file rollover (default is True).
-            show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-            color_enabled (bool, optional): Whether to enable colored output (default is None).
 
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        return self.log_function("WARNING", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        config = LogMessageConfig(level="WARNING", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def error(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def error(self, key_or_value, value=None, **kwargs):
         """
         Logs an error message.
 
         Args:
             key_or_value (str): The key or message to log.
             value (str, optional): Additional message value for the log.
-            color (str, optional): Color to use for the log message.
-            log_to_file (bool, optional): Whether to log to a file (default is True).
-            file_path (str, optional): Path where the log file will be stored (default is None).
-            file_name (str, optional): Custom log file name (default is None).
-            max_file_size (int, optional): Maximum file size before rolling over (in MB).
-            auto (bool, optional): Automatically handle file rollover (default is True).
-            show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-            color_enabled (bool, optional): Whether to enable colored output (default is None).
 
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        return self.log_function("ERROR", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        config = LogMessageConfig(level="ERROR", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def debug(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def debug(self, key_or_value, value=None, **kwargs):
         """
         Logs a debug message.
 
         Args:
             key_or_value (str): The key or message to log.
             value (str, optional): Additional message value for the log.
-            color (str, optional): Color to use for the log message.
-            log_to_file (bool, optional): Whether to log to a file (default is True).
-            file_path (str, optional): Path where the log file will be stored (default is None).
-            file_name (str, optional): Custom log file name (default is None).
-            max_file_size (int, optional): Maximum file size before rolling over (in MB).
-            auto (bool, optional): Automatically handle file rollover (default is True).
-            show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-            color_enabled (bool, optional): Whether to enable colored output (default is None).
 
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        return self.log_function("DEBUG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        config = LogMessageConfig(level="DEBUG", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def critical(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-                 max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def critical(self, key_or_value, value=None, **kwargs):
         """
-             Logs a critical message.
+        Logs a critical message.
 
-             Args:
-                 key_or_value (str): The key or message to log.
-                 value (str, optional): Additional message value for the log.
-                 color (str, optional): Color to use for the log message.
-                 log_to_file (bool, optional): Whether to log to a file (default is True).
-                 file_path (str, optional): Path where the log file will be stored (default is None).
-                 file_name (str, optional): Custom log file name (default is None).
-                 max_file_size (int, optional): Maximum file size before rolling over (in MB).
-                 auto (bool, optional): Automatically handle file rollover (default is True).
-                 show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-                 color_enabled (bool, optional): Whether to enable colored output (default is None).
+        Args:
+            key_or_value (str): The key or message to log.
+            value (str, optional): Additional message value for the log.
 
-             Returns:
-                 str: The log message with or without color, depending on the configuration.
-             """
-        return self.log_function("CRITICAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size,
-                                 auto, show_time, color_enabled)
+        Returns:
+            str: The log message with or without color, depending on the configuration.
+        """
+        config = LogMessageConfig(level="CRITICAL", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def fatal(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def fatal(self, key_or_value, value=None, **kwargs):
         """
         Logs a fatal error message.
 
         Args:
             key_or_value (str): The key or message to log.
             value (str, optional): Additional message value for the log.
-            color (str, optional): Color to use for the log message.
-            log_to_file (bool, optional): Whether to log to a file (default is True).
-            file_path (str, optional): Path where the log file will be stored (default is None).
-            file_name (str, optional): Custom log file name (default is None).
-            max_file_size (int, optional): Maximum file size before rolling over (in MB).
-            auto (bool, optional): Automatically handle file rollover (default is True).
-            show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-            color_enabled (bool, optional): Whether to enable colored output (default is None).
 
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        return self.log_function("FATAL", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        config = LogMessageConfig(level="FATAL", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def trace(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-              max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def trace(self, key_or_value, value=None, **kwargs):
         """
         Logs a trace message.
 
         Args:
             key_or_value (str): The key or message to log.
             value (str, optional): Additional message value for the log.
-            color (str, optional): Color to use for the log message.
-            log_to_file (bool, optional): Whether to log to a file (default is True).
-            file_path (str, optional): Path where the log file will be stored (default is None).
-            file_name (str, optional): Custom log file name (default is None).
-            max_file_size (int, optional): Maximum file size before rolling over (in MB).
-            auto (bool, optional): Automatically handle file rollover (default is True).
-            show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-            color_enabled (bool, optional): Whether to enable colored output (default is None).
 
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        return self.log_function("TRACE", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        config = LogMessageConfig(level="TRACE", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)
 
-    def log(self, key_or_value, value=None, color=None, log_to_file=True, file_path=None, file_name=None,
-            max_file_size=None, auto=True, show_time=None, color_enabled=None):
+    def log(self, key_or_value, value=None, **kwargs):
         """
-               Logs a general message.
+        Logs a general message.
 
-               Args:
-                   key_or_value (str): The key or message to log.
-                   value (str, optional): Additional message value for the log.
-                   color (str, optional): Color to use for the log message.
-                   log_to_file (bool, optional): Whether to log to a file (default is True).
-                   file_path (str, optional): Path where the log file will be stored (default is None).
-                   file_name (str, optional): Custom log file name (default is None).
-                   max_file_size (int, optional): Maximum file size before rolling over (in MB).
-                   auto (bool, optional): Automatically handle file rollover (default is True).
-                   show_time (bool, optional): Whether to include timestamp in the log message (default is None).
-                   color_enabled (bool, optional): Whether to enable colored output (default is None).
+        Args:
+            key_or_value (str): The key or message to log.
+            value (str, optional): Additional message value for the log.
 
-               Returns:
-                   str: The log message with or without color, depending on the configuration.
-               """
-        return self.log_function("LOG", key_or_value, value, color, log_to_file, file_path, file_name, max_file_size, auto,
-                                 show_time, color_enabled)
+        Returns:
+            str: The log message with or without color, depending on the configuration.
+        """
+        config = LogMessageConfig(level="LOG", key_or_value=key_or_value, value=value, **kwargs)
+        return self.log_function(config)

@@ -86,8 +86,5 @@ def test_logly_integration(logly_instance):
     # Access color constants directly
     logly_instance.info("Accessing color directly", "DirectColorValue", color=logly_instance.COLOR.RED)
 
-    # Display logged messages
-    for message in logly_instance.logged_messages:
-        print(message)
 
 

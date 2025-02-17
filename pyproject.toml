@@ -1,47 +1,101 @@
 [project]
 name = "logly"
-version = "0.0.7"
-description = "Logly: Ready to Go Python logging utility with color-coded messages, file-based logging, and many more customizable options. Simplify logging in your Python applications with Logly."
-authors = [{name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com"}]
+description = "Logly: A Fastest and Customizable Logging Utility for Python"
+authors = [
+  { name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com" },
+]
+dynamic = ["version"]
+requires-python = ">=3.9"
+dependencies = ["colorama>=0.4.4", "pydantic>=1.8.2", "rich>=10.12.0"]
+
 maintainers = [{name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com"}]
-keywords = ["logging", "custom-log", "logly", "logging-utility", "python","logs"]
+keywords = ["logging", "logger", "logly", "logging-utility", "python", "logs"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Logging",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3:: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Logging",
+]
+license = { file = "LICENSE" }
+readme = { file = "README.md", content-type = "text/markdown" }
+
+[project.urls]
+Changelog = "https://github.com/muhammad-fiaz/logly/releases"
+Documentation = "https://github.com/muhammad-fiaz/logly#readme"
+Homepage = "https://github.com/muhammad-fiaz/logly.git"
+IssueTracker = "https://github.com/muhammad-fiaz/logly/issues"
+Repository = "https://github.com/muhammad-fiaz/logly.git"
+PullRequests = "https://github.com/muhammad-fiaz/logly/pulls"
+
+[project.optional-dependencies]
+dev = [
+  "mypy==0.910",
+  "pre-commit==4.0.0",
+  "pytest==8.3.4",
+  "pytest-cov==6.0.0",
+  "ruff==0.9.6",
 ]
 
-license = { file = "LICENSE" }
-readme = "README.md"
-homepage = "https://github.com/muhammad-fiaz/logly.git"
-repository = "https://github.com/muhammad-fiaz/logly.git"
-documentation = "https://github.com/muhammad-fiaz/logly#readme"
+[tool.mypy]
+check_untyped_defs = true
+disallow_untyped_defs = true
 
-[tool.poetry.dependencies]
-python = ">=3.8"
-pytest = "8.3.4"
-packaging = "24.2"
-colorama = ">=0.4.4"
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
 
-[poetry.group.dev.dependencies]
-pytest-runner = "*"
-poetry-plugin-export = "^1.9.0"
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
 
-[tool.poetry.scripts]
-logly = "logly:Logly"
+[tool.coverage.report]
+exclude_lines = [
+  "if __name__ == \"__main__\":",
+  "pragma: no cover",
+]
 
-[tool.poetry.urls]
-bug-tracker = "https://github.com/muhammad-fiaz/logly/issues"
-source-code = "https://github.com/muhammad-fiaz/logly.git"
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+fix = true
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle
+  "B",  # flake8-bugbear
+  "W",  # Warning
+  "F",  # pyflakes
+  "UP",  # pyupgrade
+  "I001",  # unsorted-imports
+  "T201",  # print found
+  "T203",  # pprint found
+  "RUF022",  # Unsorted __all__
+  "RUF023",  # Unsorted __slots__
+]
+ignore = [
+  "E501",   # Line too long
+  "W191",   # Indentation contains tabs
+  "E111",   # Indentation is not a multiple of four
+  "E114",   # Indentation is not a multiple of four (comment)
+  "E117",   # Over-indented
+  "D206",   # Docstring indentation error
+  "D300",   # Triple double quotes required
+  "Q000",   # Bad quotes
+  "Q001",   # Bad quotes
+  "Q002",   # Bad quotes
+  "Q003",   # Bad quotes
+  "COM812", # Trailing comma missing
+  "COM819", # Trailing comma unexpected
+  "ISC001", # String concatenation error
+  "ISC002", # String formatting issue
+]
