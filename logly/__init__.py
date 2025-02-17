@@ -1,8 +1,7 @@
-# Example usage:
 """
-Logly: A ready to go logging utility.
+Logly: A ready-to-go logging utility.
 
-Copyright (c) 2023 Muhammad Fiaz
+Copyright (c) 2025 Muhammad Fiaz
 
 This file is part of Logly.
 
@@ -14,6 +13,18 @@ You should have received a copy of the MIT License
 along with Logly. If not, see <https://opensource.org/licenses/MIT>.
 """
 
-from logly.logly import *
+from .logly import Logly, LogMessageConfig, LoglyConfig
+from .exception import FilePathNotFoundException, FileAccessError, FileCreationError
+from .version import get_version
+from .__version__ import __version__
 
-logly = Logly()
+__all__ = [
+    "Logly",
+    "LogMessageConfig",
+    "LoglyConfig",
+    "FilePathNotFoundException",
+    "FileAccessError",
+    "FileCreationError",
+    "get_version",
+    "__version__"
+]
