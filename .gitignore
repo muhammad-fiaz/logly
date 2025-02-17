@@ -7,3 +7,4 @@ bin
 
 log.txt
 .log
+*.egg-info

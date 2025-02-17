@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "logly"
 description = "Logly: A Fastest and Customizable Logging Utility for Python"
@@ -37,14 +41,32 @@ IssueTracker = "https://github.com/muhammad-fiaz/logly/issues"
 Repository = "https://github.com/muhammad-fiaz/logly.git"
 PullRequests = "https://github.com/muhammad-fiaz/logly/pulls"
 
+[tool.setuptools.packages.find]
+include = ["logly*"]
+
+[tool.setuptools_scm]
+write_to = "logly/__version__.py"
+
 [project.optional-dependencies]
 dev = [
-  "mypy==0.910",
+  "mypy==1.8.0",
   "pre-commit==4.0.0",
-  "pytest==8.3.4",
+  "pytest==8.0.0",
   "pytest-cov==6.0.0",
-  "ruff==0.9.6",
+  "ruff==0.3.4",
+  "black==24.2.0",
+  "isort==5.13.2",
+  "tox==4.12.0",
+  "coverage>=7.5.0",
+  "hypothesis==6.99.0",
+  "pytest-mock==3.12.0",
+  "pytest-asyncio==0.23.5",
+  "types-colorama",
+  "types-pyyaml",
+  "types-setuptools",
 ]
+
+
 
 [tool.mypy]
 check_untyped_defs = true
