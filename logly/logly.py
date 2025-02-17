@@ -22,13 +22,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from rich.console import Console
 
-from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError
-from logly.version import get_version
-from logly.__version__ import __version__
+from logly import get_version, __version__, FilePathNotFoundException, FileAccessError, FileCreationError
 
 init(autoreset=True)
 console = Console()
-
 
 class LoglyConfig(BaseModel):
     show_time: bool = Field(
@@ -37,7 +34,7 @@ class LoglyConfig(BaseModel):
     color_enabled: bool = Field(default=True, description="Whether to enable colored output")
     logging_enabled: bool = Field(default=True, description="Whether logging is enabled")
     log_to_file_enabled: bool = Field(
-        default=True, description="Whether to enable logging to a file"
+        default=False, description="Whether to enable logging to a file"
     )
     default_file_path: Optional[str] = Field(default=None, description="Default path for log files")
     default_max_file_size: int = Field(
@@ -47,7 +44,6 @@ class LoglyConfig(BaseModel):
         default="{timestamp} - {level}: {message}", description="Custom format for log messages"
     )
     display: bool = Field(default=True, description="Whether to display logs in the console")
-
 
 class LogMessageConfig(BaseModel):
     level: str = Field(description="The log level (e.g., 'INFO', 'WARNING', 'ERROR', etc.)")
@@ -72,7 +68,6 @@ class LogMessageConfig(BaseModel):
     custom_format: Optional[str] = Field(
         default=None, description="Custom format for the log message"
     )
-
 
 class Logly:
     """
