@@ -177,7 +177,6 @@ class Logly:
         # Disable default logging setup for this logger
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
-        # Ensure there are no default handlers that duplicate the log messages
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
@@ -185,6 +184,29 @@ class Logly:
             )  # Format only the message, no additional time or level
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
+
+    def Config(self, **kwargs):
+        """
+        Set or update the configuration for Logly.
+
+        Parameters:
+        - **kwargs: Arbitrary keyword arguments for configuration parameters.
+
+        Returns:
+        - None
+        """
+        config = LoglyConfig(**kwargs)
+        self.logging_enabled = config.logging_enabled
+        self.log_to_file_enabled = config.log_to_file_enabled
+        self.display_logs = config.display
+        self.default_file_path = config.default_file_path
+        self.default_max_file_size = config.default_max_file_size
+        self.show_time = config.show_time
+        self.color_enabled = (
+            config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED
+        )
+        self.default_color_enabled = self.color_enabled
+        self.custom_format = config.custom_format
 
     def start_logging(self, display=True):
         """
