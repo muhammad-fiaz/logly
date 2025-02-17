@@ -8,3 +8,4 @@ bin
 log.txt
 .log
 *.egg-info
+logly/__version__.py

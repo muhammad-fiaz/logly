@@ -266,6 +266,8 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
+    { name = "setuptools" },
+    { name = "setuptools-scm" },
     { name = "tox" },
     { name = "types-colorama" },
     { name = "types-pyyaml" },
@@ -288,6 +290,8 @@ requires-dist = [
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = "==3.12.0" },
     { name = "rich", specifier = ">=10.12.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.3.4" },
+    { name = "setuptools", marker = "extra == 'dev'", specifier = ">=58.0.0" },
+    { name = "setuptools-scm", marker = "extra == 'dev'", specifier = ">=6.3.2" },
     { name = "tox", marker = "extra == 'dev'", specifier = "==4.12.0" },
     { name = "types-colorama", marker = "extra == 'dev'" },
     { name = "types-pyyaml", marker = "extra == 'dev'" },
@@ -695,6 +699,30 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b9/4b/290e829a7c33fa996f0a598f2cdc954b4820262bb027e0a2edd888c3600d/ruff-0.3.4-py3-none-win32.whl", hash = "sha256:af27ac187c0a331e8ef91d84bf1c3c6a5dea97e912a7560ac0cef25c526a4102", size = 7645340 },
     { url = "https://files.pythonhosted.org/packages/09/a1/ecbd844e714a4bed4b9072f5a73bbdc2a3a6e6ee9d9c5b3962be83d5bac8/ruff-0.3.4-py3-none-win_amd64.whl", hash = "sha256:de0d5069b165e5a32b3c6ffbb81c350b1e3d3483347196ffdf86dc0ef9e37dd6", size = 8436394 },
     { url = "https://files.pythonhosted.org/packages/f3/c4/afb3bb366074fa98faeb6389618bf10b3eb00bd1eb48d980c205da9b2022/ruff-0.3.4-py3-none-win_arm64.whl", hash = "sha256:6810563cc08ad0096b57c717bd78aeac888a1bfd38654d9113cb3dc4d3f74232", size = 7991316 },
+]
+
+[[package]]
+name = "setuptools"
+version = "75.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/ec/089608b791d210aec4e7f97488e67ab0d33add3efccb83a056cbafe3a2a6/setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6", size = 1343222 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/8a/b9dc7678803429e4a3bc9ba462fa3dd9066824d3c607490235c6a796be5a/setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3", size = 1228782 },
+]
+
+[[package]]
+name = "setuptools-scm"
+version = "8.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "setuptools" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.10'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4f/a4/00a9ac1b555294710d4a68d2ce8dfdf39d72aa4d769a7395d05218d88a42/setuptools_scm-8.1.0.tar.gz", hash = "sha256:42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7", size = 76465 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/b9/1906bfeb30f2fc13bb39bf7ddb8749784c05faadbd18a21cf141ba37bff2/setuptools_scm-8.1.0-py3-none-any.whl", hash = "sha256:897a3226a6fd4a6eb2f068745e49733261a21f70b1bb28fce0339feb978d9af3", size = 43666 },
 ]
 
 [[package]]

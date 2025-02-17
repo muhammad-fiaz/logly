@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from rich.console import Console
 
 from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError
+from logly.version import get_version
 
 init(autoreset=True)
 console = Console()
@@ -149,6 +150,8 @@ class Logly:
         self.color_enabled = config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED  # Use the provided value or default
         self.default_color_enabled = self.color_enabled  # Store the default color state
         self.custom_format = config.custom_format
+
+        get_version()
 
         # Disable default logging setup for this logger
         self.logger = logging.getLogger(__name__)

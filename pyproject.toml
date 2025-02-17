@@ -64,9 +64,9 @@ dev = [
   "types-colorama",
   "types-pyyaml",
   "types-setuptools",
+  "setuptools>=58.0.0",
+  "setuptools-scm>=6.3.2",
 ]
-
-
 
 [tool.mypy]
 check_untyped_defs = true
