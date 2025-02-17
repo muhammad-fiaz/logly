@@ -19,10 +19,11 @@ from colorama import Fore, Style, init
 from datetime import datetime
 import re
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, __version__
 from rich.console import Console
 
-from logly import get_version, __version__, FilePathNotFoundException, FileAccessError, FileCreationError
+from logly.exception import FileAccessError, FilePathNotFoundException, FileCreationError
+from logly.version import get_version
 
 init(autoreset=True)
 console = Console()
