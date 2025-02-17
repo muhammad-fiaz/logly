@@ -24,19 +24,30 @@ from rich.console import Console
 
 from logly.exception import FilePathNotFoundException, FileAccessError, FileCreationError
 from logly.version import get_version
+from logly.__version__ import __version__
 
 init(autoreset=True)
 console = Console()
 
+
 class LoglyConfig(BaseModel):
-    show_time: bool = Field(default=True, description="Whether to include timestamps in log messages")
+    show_time: bool = Field(
+        default=True, description="Whether to include timestamps in log messages"
+    )
     color_enabled: bool = Field(default=True, description="Whether to enable colored output")
     logging_enabled: bool = Field(default=True, description="Whether logging is enabled")
-    log_to_file_enabled: bool = Field(default=True, description="Whether to enable logging to a file")
+    log_to_file_enabled: bool = Field(
+        default=True, description="Whether to enable logging to a file"
+    )
     default_file_path: Optional[str] = Field(default=None, description="Default path for log files")
-    default_max_file_size: int = Field(default=100, description="Default maximum file size for log files (in MB)")
-    custom_format: str = Field(default="{timestamp} - {level}: {message}", description="Custom format for log messages")
+    default_max_file_size: int = Field(
+        default=100, description="Default maximum file size for log files (in MB)"
+    )
+    custom_format: str = Field(
+        default="{timestamp} - {level}: {message}", description="Custom format for log messages"
+    )
     display: bool = Field(default=True, description="Whether to display logs in the console")
+
 
 class LogMessageConfig(BaseModel):
     level: str = Field(description="The log level (e.g., 'INFO', 'WARNING', 'ERROR', etc.)")
@@ -44,13 +55,24 @@ class LogMessageConfig(BaseModel):
     value: Optional[str] = Field(default=None, description="Additional message value for the log")
     color: Optional[str] = Field(default=None, description="Color to use for the log message")
     log_to_file: bool = Field(default=True, description="Whether to log to a file")
-    file_path: Optional[str] = Field(default=None, description="Path where the log file will be stored")
+    file_path: Optional[str] = Field(
+        default=None, description="Path where the log file will be stored"
+    )
     file_name: Optional[str] = Field(default=None, description="Custom log file name")
-    max_file_size: Optional[int] = Field(default=None, description="Maximum file size before rolling over (in MB)")
+    max_file_size: Optional[int] = Field(
+        default=None, description="Maximum file size before rolling over (in MB)"
+    )
     auto: bool = Field(default=True, description="Automatically handle file rollover")
-    show_time: Optional[bool] = Field(default=None, description="Whether to include timestamp in the log message")
-    color_enabled: Optional[bool] = Field(default=None, description="Whether to enable colored output")
-    custom_format: Optional[str] = Field(default=None, description="Custom format for the log message")
+    show_time: Optional[bool] = Field(
+        default=None, description="Whether to include timestamp in the log message"
+    )
+    color_enabled: Optional[bool] = Field(
+        default=None, description="Whether to enable colored output"
+    )
+    custom_format: Optional[str] = Field(
+        default=None, description="Custom format for the log message"
+    )
+
 
 class Logly:
     """
@@ -69,6 +91,7 @@ class Logly:
     DEFAULT_COLOR_ENABLED : bool
         The default setting for enabling colored output.
     """
+
     COLOR_MAP = {
         "DEBUG": Fore.BLUE,
         "INFO": Fore.CYAN,
@@ -77,7 +100,7 @@ class Logly:
         "CRITICAL": f"{Fore.RED}{Style.BRIGHT}",
         "FATAL": f"{Fore.RED}{Style.BRIGHT}",
         "TRACE": Fore.BLUE,
-        "LOG": Fore.GREEN  # Added "LOG" level color
+        "LOG": Fore.GREEN,  # Added "LOG" level color
     }
 
     # Define color constants
@@ -85,6 +108,7 @@ class Logly:
         """
         A class to define color constants for log messages.
         """
+
         BLUE = Fore.BLUE
         CYAN = Fore.CYAN
         YELLOW = Fore.YELLOW
@@ -147,11 +171,13 @@ class Logly:
         self.default_file_path = config.default_file_path
         self.default_max_file_size = config.default_max_file_size
         self.show_time = config.show_time
-        self.color_enabled = config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED  # Use the provided value or default
+        self.color_enabled = (
+            config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED
+        )  # Use the provided value or default
         self.default_color_enabled = self.color_enabled  # Store the default color state
         self.custom_format = config.custom_format
 
-        get_version()
+        get_version(__version__)
 
         # Disable default logging setup for this logger
         self.logger = logging.getLogger(__name__)
@@ -159,7 +185,9 @@ class Logly:
         # Ensure there are no default handlers that duplicate the log messages
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(message)s')  # Format only the message, no additional time or level
+            formatter = logging.Formatter(
+                "%(message)s"
+            )  # Format only the message, no additional time or level
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
@@ -228,7 +256,9 @@ class Logly:
         self.default_file_path = config.default_file_path
         self.default_max_file_size = config.default_max_file_size
         self.show_time = config.show_time
-        self.color_enabled = config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED
+        self.color_enabled = (
+            config.color_enabled if config.color_enabled is not None else self.DEFAULT_COLOR_ENABLED
+        )
         self.default_color_enabled = self.color_enabled
         self.custom_format = config.custom_format
         self.display_logs = config.display
@@ -252,7 +282,7 @@ class Logly:
         Returns:
         - str: Text with color codes removed.
         """
-        return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+        return re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", text)
 
     def _log(self, config: LogMessageConfig):
         """
@@ -271,7 +301,9 @@ class Logly:
             FileAccessError: If there's an error accessing the log file.
             FileCreationError: If there's an error creating or writing to the log file.
         """
-        color_enabled = config.color_enabled if config.color_enabled is not None else self.color_enabled
+        color_enabled = (
+            config.color_enabled if config.color_enabled is not None else self.color_enabled
+        )
         show_time = config.show_time if config.show_time is not None else self.show_time
 
         timestamp = "" if not show_time else self.get_current_datetime()
@@ -281,11 +313,7 @@ class Logly:
 
         # Use custom format if provided, otherwise use default format
         custom_format = config.custom_format if config.custom_format else self.custom_format
-        log_message = custom_format.format(
-            timestamp=timestamp,
-            level=config.level,
-            message=message
-        )
+        log_message = custom_format.format(timestamp=timestamp, level=config.level, message=message)
 
         if color_enabled:
             log_message = f"{color}{log_message}{Style.RESET_ALL}"
@@ -313,9 +341,15 @@ class Logly:
             try:
                 log_message_without_color = self.remove_color_codes(log_message)
                 # Encode emojis properly
-                log_message_without_color = log_message_without_color.encode('utf-8', 'replace').decode()
+                log_message_without_color = log_message_without_color.encode(
+                    "utf-8", "replace"
+                ).decode()
 
-                file_path = config.file_path or self.default_file_path or os.path.join(os.getcwd(), "log.txt")
+                file_path = (
+                    config.file_path
+                    or self.default_file_path
+                    or os.path.join(os.getcwd(), "log.txt")
+                )
                 if config.file_name:
                     file_path = os.path.join(os.getcwd(), f"{config.file_name}.txt")
 
@@ -323,16 +357,21 @@ class Logly:
 
                 if not os.path.exists(os.path.dirname(file_path)):
                     raise FilePathNotFoundException(
-                        f"The specified file path does not exist: {os.path.dirname(file_path)}")
+                        f"The specified file path does not exist: {os.path.dirname(file_path)}"
+                    )
 
                 max_file_size = config.max_file_size or self.default_max_file_size
                 max_file_size_bytes = max_file_size * 1024 * 1024
 
                 file_exists = os.path.exists(file_path)
 
-                if max_file_size and file_exists and os.path.getsize(file_path) >= max_file_size_bytes:
+                if (
+                    max_file_size
+                    and file_exists
+                    and os.path.getsize(file_path) >= max_file_size_bytes
+                ):
                     if config.auto:
-                        with open(file_path, 'w'):
+                        with open(file_path, "w"):
                             pass
                     else:
                         file_base, file_ext = os.path.splitext(file_path)
@@ -432,7 +471,9 @@ class Logly:
         Returns:
             str: The log message with or without color, depending on the configuration.
         """
-        config = LogMessageConfig(level="CRITICAL", key_or_value=key_or_value, value=value, **kwargs)
+        config = LogMessageConfig(
+            level="CRITICAL", key_or_value=key_or_value, value=value, **kwargs
+        )
         return self.log_function(config)
 
     def fatal(self, key_or_value, value=None, **kwargs):

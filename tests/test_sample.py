@@ -19,6 +19,7 @@ import pytest
 
 from logly import Logly
 
+
 @pytest.fixture
 def logly_instance():
     """
@@ -30,6 +31,7 @@ def logly_instance():
     logly = Logly()
     logly.start_logging()
     return logly
+
 
 def test_logly_integration(logly_instance):
     """
@@ -54,7 +56,12 @@ def test_logly_integration(logly_instance):
     # Test disabling color
     logly_instance.color_enabled = False
     logly_instance.info("ColorDisabledKey", "ColorDisabledValue", color=logly_instance.COLOR.RED)
-    logly_instance.info("ColorDisabledKey1", "ColorDisabledValue1", color=logly_instance.COLOR.RED,color_enabled=True)
+    logly_instance.info(
+        "ColorDisabledKey1",
+        "ColorDisabledValue1",
+        color=logly_instance.COLOR.RED,
+        color_enabled=True,
+    )
 
     logly_instance.color_enabled = True
 
@@ -68,11 +75,10 @@ def test_logly_integration(logly_instance):
 
     # Start logging again
     logly_instance.start_logging()
-#    disable timestamp in log file
-    logly_instance.info("DefaultKey1", "DefaultValue1",show_time=False)
+    #    disable timestamp in log file
+    logly_instance.info("DefaultKey1", "DefaultValue1", show_time=False)
 
     logly_instance.info("DefaultKey1", "DefaultValue1", color=None)
-
 
     # Log messages with default settings (using default file path and max file size)
     logly_instance.info("DefaultKey1", "DefaultValue1")
@@ -81,10 +87,11 @@ def test_logly_integration(logly_instance):
 
     # Log messages with custom file path and max file size
     logly_instance.info("CustomKey1", "CustomValue1", file_path="path/log.txt", max_file_size=25)
-    logly_instance.warn("CustomKey2", "CustomValue2", file_path="path/log.txt",auto=True, max_file_size=25)
+    logly_instance.warn(
+        "CustomKey2", "CustomValue2", file_path="path/log.txt", auto=True, max_file_size=25
+    )
 
     # Access color constants directly
-    logly_instance.info("Accessing color directly", "DirectColorValue", color=logly_instance.COLOR.RED)
-
-
-
+    logly_instance.info(
+        "Accessing color directly", "DirectColorValue", color=logly_instance.COLOR.RED
+    )

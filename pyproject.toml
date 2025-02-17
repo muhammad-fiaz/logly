@@ -78,7 +78,7 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
+addopts = "--no-cov-on-fail"
 
 [tool.coverage.report]
 exclude_lines = [

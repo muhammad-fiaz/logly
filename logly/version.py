@@ -14,7 +14,8 @@ along with Logly. If not, see <https://opensource.org/licenses/MIT>.
 """
 
 import importlib.metadata
-from logly.__version__ import __version__
+
+
 def get_latest_release_version(package_name):
     """
     Get the latest released version of a Python package.
@@ -29,7 +30,8 @@ def get_latest_release_version(package_name):
         distribution = importlib.metadata.distribution(package_name)
         return distribution.version
     except importlib.metadata.PackageNotFoundError:
-        return '0.0.0'
+        return "0.0.0"
+
 
 def get_version(__version__):
     """
@@ -41,7 +43,7 @@ def get_version(__version__):
     Returns:
         None: Prints a message indicating if a newer version is available.
     """
-    package_name = 'logly'
+    package_name = "logly"
     latest_version = get_latest_release_version(package_name)
 
     if latest_version > __version__:

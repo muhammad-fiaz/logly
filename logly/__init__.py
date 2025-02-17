@@ -17,4 +17,3 @@ along with Logly. If not, see <https://opensource.org/licenses/MIT>.
 from logly.logly import *
 
 logly = Logly()
-
