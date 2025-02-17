@@ -100,8 +100,16 @@ logly = Logly()
 #### Custom Configuration
 
 ```python
-config = LoglyConfig(display=True, log_to_file_enabled=True, default_file_path="logs/app.log")
-logly = Logly(config=config)
+    logly.Config(
+        show_time=True,
+        color_enabled=True,
+        logging_enabled=True,
+        log_to_file_enabled=True,
+        default_file_path="logs/app.log",
+        default_max_file_size=100,
+        custom_format="{timestamp} - {level}: {message}",
+        display=True
+    )
 ```
 
 ### Start Logging
