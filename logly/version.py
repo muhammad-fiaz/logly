@@ -1,7 +1,5 @@
-
-# version.py
 """
-Logly: A ready to go logging utility.
+Logly: A ready-to-go logging utility.
 
 Copyright (c) 2023 Muhammad Fiaz
 
@@ -16,7 +14,7 @@ along with Logly. If not, see <https://opensource.org/licenses/MIT>.
 """
 
 import importlib.metadata
-
+from logly.__version__ import __version__
 def get_latest_release_version(package_name):
     """
     Get the latest released version of a Python package.
@@ -26,7 +24,6 @@ def get_latest_release_version(package_name):
 
     Returns:
         str: The latest released version or '0.0.0' if not found.
-
     """
     try:
         distribution = importlib.metadata.distribution(package_name)
@@ -34,7 +31,7 @@ def get_latest_release_version(package_name):
     except importlib.metadata.PackageNotFoundError:
         return '0.0.0'
 
-def get_Version(current_version):
+def get_version(__version__):
     """
     Check if there is a newer version of the package available.
 
@@ -43,13 +40,9 @@ def get_Version(current_version):
 
     Returns:
         None: Prints a message indicating if a newer version is available.
-
     """
     package_name = 'logly'
     latest_version = get_latest_release_version(package_name)
 
-    if latest_version > current_version:
+    if latest_version > __version__:
         print(f"A newer version ({latest_version}) of logly is available.")
-    else:
-        pass
-

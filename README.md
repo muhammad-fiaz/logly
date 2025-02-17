@@ -56,14 +56,12 @@ if you like this project, make sure to star 🌟 it in the [repository](https://
 
 ## Features
 
-- Easy-to-use logging for Python applications.
-- Customizable log levels and formatting.
-- Customizable log colors.
-- Log to file and/or console.
-- Log to file with automatic file rotation.
-- Log to file with automatic file size management.
-- Log to file with automatic file deletion.
-- Log to file with automatic deletion and rewriting of the file when it reaches max_file_size. 
+- Support for multiple log levels: INFO, WARNING, ERROR, DEBUG, CRITICAL, FATAL, TRACE, and custom LOG levels.
+- Colored output for console logs.
+- Customizable log message formats.
+- Logging to files with automatic file rollover.
+- Control over console display and file logging.
+- Easy configuration and usage.
 - Open Source: Logly is an open-source project, and we welcome contributions from the community.
 - Community Support: Join a community of developers using Logly for their logging needs.
 - many more features!
@@ -84,106 +82,148 @@ pip install git+https://github.com/muhammad-fiaz/logly.git
 
 ## Usage
 Once installed, you can use `logly` in your Python project for logging. Here is a basic example of how to set it up and use it:
+
 ```python
-# Import Logly
-from logly import Logly
+from logly import Logly, LoglyConfig
+```
 
-# Create a Logly instance
+### Create a Logly Instance
+
+You can create a Logly instance with default settings or customize the configuration:
+
+#### Default Settings
+
+```python
 logly = Logly()
+```
 
-# Start logging to store the logs in a text file
-logly.start_logging()  # Make sure to include this or else the logs will only display without being saved to a file
+#### Custom Configuration
 
-logly.info("Application started successfully.")
-logly.info("User logged in", color=logly.COLOR.GREEN)  # with custom color
+```python
+config = LoglyConfig(display=True, log_to_file_enabled=True, default_file_path="logs/app.log")
+logly = Logly(config=config)
+```
 
-# Log messages with different levels and colors
-logly.info("Database connection established", "Connection details: host=db.local, port=5432", color=logly.COLOR.CYAN)
-logly.warn("API rate limit exceeded", "API request count exceeded 1000", color=logly.COLOR.YELLOW)
-logly.error("Database connection failed", "Unable to reach database at db.local", color=logly.COLOR.RED)
-logly.debug("User request details", "User requested resource /api/data", color=logly.COLOR.BLUE)
-logly.critical("Critical system failure", "Disk space usage exceeded 95%", color=logly.COLOR.CRITICAL)
-logly.fatal("Application crashed", "Unhandled exception in user module", color=logly.COLOR.CRITICAL)
-logly.trace("Debug trace", "Trace info: function call stack", color=logly.COLOR.BLUE)
-logly.log("System status", "All systems operational", color=logly.COLOR.WHITE)
+### Start Logging
 
-# Stop logging (messages will be displayed but not logged to file after this point)
+Enable logging to store logs in a text file and optionally display them in the console:
+
+```python
+# Start logging and display logs in the console
+logly.start_logging()
+
+# Start logging but do not display logs in the console
+logly.start_logging(display=False)
+```
+
+### Stop Logging
+
+Disable logging to a file and optionally stop displaying logs in the console:
+
+```python
+# Stop logging to file but continue displaying logs in the console
 logly.stop_logging()
 
-# Log more messages after stopping logging (messages will be displayed but not logged in file)
-logly.info("User session ended", "User logged out", color=logly.COLOR.CYAN)
-logly.warn("Low disk space", "Disk space is below 10%", color=logly.COLOR.YELLOW)
-logly.error("File not found", "Unable to find /config/settings.json", color=logly.COLOR.RED)
+# Stop logging to file and stop displaying logs in the console
+logly.stop_logging(display=False)
+```
 
-# Example of retrieving and printing a logged message
-get_message = logly.info("New feature deployed", "Version 2.0 live now", color=logly.COLOR.RED)
-print(get_message)  # You can use the returned message in your application (optional)
+### Log Messages
 
-# Log message with custom color and no timestamp
-logly.info("Custom log without time", "This log message does not include a timestamp", color=logly.COLOR.RED, show_time=False)
+Log messages with different levels and colors:
 
-# Start logging again
+```python
+logly.info("Application started successfully.")
+logly.info("User logged in", color=Logly.COLOR.GREEN)  # with custom color
+
+logly.info("Database connection established", "Connection details: host=db.local, port=5432", color=Logly.COLOR.CYAN)
+logly.warn("API rate limit exceeded", "API request count exceeded 1000", color=Logly.COLOR.YELLOW)
+logly.error("Database connection failed", "Unable to reach database at db.local", color=Logly.COLOR.RED)
+logly.debug("User request details", "User requested resource /api/data", color=Logly.COLOR.BLUE)
+logly.critical("Critical system failure", "Disk space usage exceeded 95%", color=Logly.COLOR.CRITICAL)
+logly.fatal("Application crashed", "Unhandled exception in user module", color=Logly.COLOR.CRITICAL)
+logly.trace("Debug trace", "Trace info: function call stack", color=Logly.COLOR.BLUE)
+logly.log("System status", "All systems operational", color=Logly.COLOR.WHITE)
+```
+
+### Custom Log Format
+
+You can customize the format of the log messages:
+
+```python
+config = LoglyConfig(custom_format="{timestamp} - {level} - {message}")
+logly = Logly(config=config)
 logly.start_logging()
 
-# Set the default file path and max file size
-logly.set_default_file_path("application_logs.txt")  # Set the default file path
-logly.set_default_max_file_size(50)  # Set default max file size to 50 MB
-
-# Log messages with default settings (using default file path and max file size)
-logly.info("Default logging example", "Logging to default file path and size")
-logly.warn("File logging size test", "Max file size set to 50 MB", log_to_file=False)
-
-# Log messages with custom file path and max file size (optional)
-logly.info("Logging with custom file path", "This will create a new log file", file_path="logs/custom_log.txt", max_file_size=25)
-logly.warn("Auto file size management", "Log file will be auto-deleted when size exceeds limit", file_path="logs/auto_delete_log.txt", max_file_size=25, auto=True)
-
-# Access color constants directly for logging
-logly.info("Using color constants directly", "This message is in red", color=logly.COLOR.RED)
-
-# Disable color for logging
-logly.color_enabled = False
-logly.info("Logging without color", "This log message is displayed without color", color=logly.COLOR.RED)
-
-# Enable color for specific log message
-logly.info("Enable color for this message", "This message will have color", color=logly.COLOR.RED, color_enabled=True)
-
-# Disable color for specific log message
-logly.info("Disable color for this message", "This message will be displayed without color", color=logly.COLOR.RED, color_enabled=False)
-
-# Display logged messages (this will display all the messages logged so far)
-print("Logged Messages:")
-for message in logly.logged_messages:
-    print(message)
-
+logly.info("Custom format log message.")
 ```
 
-for more information, check the [repository](https://github.com/muhammad-fiaz/logly)
+### Disable File Logging
 
-## Set the Default Path
+Disable logging to a file:
 
-If you encounter an error related to the default file path, you can use the following code snippet to set the default path:
+```python
+logly.disable_file_logging()
+```
 
-```python3
-import os
-from logly import Logly
+### Enable File Logging
 
-logly = Logly()
+Enable logging to a file:
+
+```python
+logly.enable_file_logging()
+```
+
+### Set Default File Path
+
+Set the default file path for log files:
+
+```python
+logly.set_default_file_path("logs/new_log.txt")
+```
+
+### Set Default Maximum File Size
+
+Set the default maximum file size for log files:
+
+```python
+logly.set_default_max_file_size(50)  # 50 MB
+```
+
+## Example
+
+```python
+from logly import Logly, LoglyConfig
+
+# Create a Logly instance with custom configuration
+config = LoglyConfig(display=True, log_to_file_enabled=True, default_file_path="logs/app.log")
+logly = Logly(config=config)
+
+# Start logging to store the logs in a text file and display in console
 logly.start_logging()
 
-# Set the default file path and maximum file size
-logly.set_default_max_file_size(50)
-logger = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
-logly.set_default_file_path(logger)
-```
-This will set the default file path, and you can customize it according to your requirements.
+logly.info("Application started successfully.")
+logly.info("User logged in", color=Logly.COLOR.GREEN)  # with custom color
 
-if you want to set the default path for the log file, you can use the following code snippet
+# Log messages with different levels and colors
+logly.info("Database connection established", "Connection details: host=db.local, port=5432", color=Logly.COLOR.CYAN)
+logly.warn("API rate limit exceeded", "API request count exceeded 1000", color=Logly.COLOR.YELLOW)
+logly.error("Database connection failed", "Unable to reach database at db.local", color=Logly.COLOR.RED)
+logly.debug("User request details", "User requested resource /api/data", color=Logly.COLOR.BLUE)
+logly.critical("Critical system failure", "Disk space usage exceeded 95%", color=Logly.COLOR.CRITICAL)
+logly.fatal("Application crashed", "Unhandled exception in user module", color=Logly.COLOR.CRITICAL)
+logly.trace("Debug trace", "Trace info: function call stack", color=Logly.COLOR.BLUE)
+logly.log("System status", "All systems operational", color=Logly.COLOR.WHITE)
 
-```python3
-from logly import Logly
-logly = Logly()
-logly.set_default_file_path("log.txt")
+# Stop logging to file (messages will be displayed but not logged to file after this point)
+logly.stop_logging()
+
+# Log more messages after stopping logging to file (messages will be displayed but not logged in file)
+logly.info("User session ended", "User logged out", color=Logly.COLOR.CYAN)
+logly.warn("Low disk space", "Disk space is below 10%", color=Logly.COLOR.YELLOW)
+logly.error("File not found", "Unable to find /config/settings.json", color=Logly.COLOR.RED)
 ```
+
 
 if you faced an error like [`FileNotFoundError: [Errno 2] No such file or directory: 'log.txt'`](https://github.com/muhammad-fiaz/logly/issues/4) you can use the following code snippet to set the default path
 
@@ -226,6 +266,8 @@ You can use any of the following color codes for custom coloring:
 |  BLUE      | BLUE            |
 | BRIGHT RED | CRITICAL     |
 |WHITE   | WHITE           |
+| GREEN       | Fore.GREEN    |
+
 
 For example, you can use `color=logly.COLOR.RED` for the red color.
 
