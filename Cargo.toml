@@ -1,0 +1,14 @@
+[package]
+name = "logly"
+version = "0.1.0"
+description = "Logly is a ready to go logging utility that provides an easy way to log messages with different levels, colors, and many custom options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility."
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+
+[lib]
+name = "_logly"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.24.2", features = ["extension-module"] }

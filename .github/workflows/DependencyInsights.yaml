@@ -1,0 +1,38 @@
+name: Dependency Insights
+
+on:
+  workflow_run:
+    workflows: ["CI for checkversions"]
+    types:
+      - completed
+
+jobs:
+  insights:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        uses: py-actions/py-dependency-install@v4
+        with:
+          path: "requirements.txt"
+          update-pip: "true"
+          update-setuptools: "true"
+          update-wheel: "true"
+
+      - name: Fetch dependents
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          curl -sSL "https://api.github.com/repos/${GITHUB_REPOSITORY}/network/dependents?package_type=python&per_page=1000" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.star+json" \
+            | jq -r '.[] | "\(.starred_at) \(.repository.html_url)"' \
+            | sort -r
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

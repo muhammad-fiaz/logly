@@ -1,0 +1,82 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "logly"
+description = "Logly is a ready to go logging utility that provides an easy way to log messages with different levels, colors, and many custom options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility."
+authors = [
+  { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.9"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "maturin==1.8.6",
+  "mypy[faster-cache]==1.15.0",
+  "pre-commit==4.2.0",
+  "pytest==8.3.5",
+  "pytest-cov==6.1.1",
+  "ruff==0.11.9",
+]
+
+[tool.maturin]
+module-name = "logly._logly"
+binding = "pyo3"
+features = ["pyo3/extension-module"]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == .__main__.:", "pragma: no cover"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+fix = true
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle
+  "B",  # flake8-bugbear
+  "W",  # Warning
+  "F",  # pyflakes
+  "UP",  # pyupgrade
+  "I001",  # unsorted-imports
+  "T201",  # print found
+  "T203",  # pprint found
+  "RUF022",  # Unsorted __all__
+  "RUF023",  # Unforted __slots__
+]
+ignore=[
+  # Recommended ignores by ruff when using formatter
+  "E501",
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
+]
