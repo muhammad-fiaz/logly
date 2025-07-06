@@ -27,6 +27,8 @@
 
 </div>
 
+Note: [Logly Powered by Rust is in Active Development](https://github.com/muhammad-fiaz/logly/tree/dev)
+
 Tired of writing custom logging code for your Python applications? 
 
 Logly is a ready to go logging utility that provides an easy way to log messages with different levels, colors, and many custom options. It is designed to be flexible, allowing you to customize the log messages based on your application's needs. Logly supports logging to both the console and a file, and it comes with built-in color-coded log levels for better visibility.
