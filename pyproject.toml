@@ -44,7 +44,7 @@ Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 dev = [
   "maturin==1.9.1",
   "mypy[faster-cache]==1.16.1",
-  "pre-commit==4.2.0",
+  "pre-commit==4.3.0",
   "pytest==8.4.1",
   "pytest-cov==6.2.1",
   "ruff==0.12.3",
