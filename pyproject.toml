@@ -1,72 +1,59 @@
 [build-system]
-requires = ["setuptools", "setuptools_scm"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "logly"
-description = "Logly: A Fastest and Customizable Logging Utility for Python"
+version = "0.1.0"
+description = "A stupidly simple, yet blazingly fast and powerful logging utility for Python — powered by Rust."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9, <3.15"
+license = { file = "LICENSE" }
 authors = [
-  { name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com" },
+  { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
 ]
-dynamic = ["version"]
-requires-python = ">=3.9"
-dependencies = ["colorama>=0.4.4", "pydantic>=1.8.2", "rich>=10.12.0"]
-
-maintainers = [{name = "Muhammad Fiaz", email = "contact@muhammadfiaz.com"}]
-keywords = ["logging", "logger", "logly", "logging-utility", "python", "logs"]
+maintainers = [
+  { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
+]
+keywords = ["logging", "rust", "pyo3", "tracing", "structured-logging", "logly", "performance"]
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3:: Only",
-  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: System :: Logging",
 ]
-license = { file = "LICENSE" }
-readme = { file = "README.md", content-type = "text/markdown" }
+dependencies = []
 
 [project.urls]
-Changelog = "https://github.com/muhammad-fiaz/logly/releases"
+Homepage = "https://github.com/muhammad-fiaz/logly"
+Source = "https://github.com/muhammad-fiaz/logly"
+"Bug Tracker" = "https://github.com/muhammad-fiaz/logly/issues"
 Documentation = "https://github.com/muhammad-fiaz/logly#readme"
-Homepage = "https://github.com/muhammad-fiaz/logly.git"
-IssueTracker = "https://github.com/muhammad-fiaz/logly/issues"
-Repository = "https://github.com/muhammad-fiaz/logly.git"
-PullRequests = "https://github.com/muhammad-fiaz/logly/pulls"
+Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 
-[tool.setuptools.packages.find]
-include = ["logly*"]
-
-[tool.setuptools_scm]
-write_to = "logly/__version__.py"
-
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "mypy==1.8.0",
-  "pre-commit==4.0.0",
-  "pytest==8.0.0",
-  "pytest-cov==6.0.0",
-  "ruff==0.3.4",
-  "black==24.2.0",
-  "isort==5.13.2",
-  "tox==4.12.0",
-  "coverage>=7.5.0",
-  "hypothesis==6.99.0",
-  "pytest-mock==3.12.0",
-  "pytest-asyncio==0.23.5",
-  "types-colorama",
-  "types-pyyaml",
-  "types-setuptools",
-  "setuptools>=58.0.0",
-  "setuptools-scm>=6.3.2",
+  "maturin==1.9.1",
+  "mypy[faster-cache]==1.16.1",
+  "pre-commit==4.2.0",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "ruff==0.12.3",
 ]
+
+[tool.maturin]
+module-name = "logly._logly"
+binding = "pyo3"
+features = ["pyo3/extension-module"]
 
 [tool.mypy]
 check_untyped_defs = true
@@ -78,13 +65,10 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--no-cov-on-fail"
+addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
 
 [tool.coverage.report]
-exclude_lines = [
-  "if __name__ == \"__main__\":",
-  "pragma: no cover",
-]
+exclude_lines = ["if __name__ == .__main__.:", "pragma: no cover"]
 
 [tool.ruff]
 line-length = 100
@@ -102,22 +86,23 @@ select = [
   "T201",  # print found
   "T203",  # pprint found
   "RUF022",  # Unsorted __all__
-  "RUF023",  # Unsorted __slots__
+  "RUF023",  # Unforted __slots__
 ]
-ignore = [
-  "E501",   # Line too long
-  "W191",   # Indentation contains tabs
-  "E111",   # Indentation is not a multiple of four
-  "E114",   # Indentation is not a multiple of four (comment)
-  "E117",   # Over-indented
-  "D206",   # Docstring indentation error
-  "D300",   # Triple double quotes required
-  "Q000",   # Bad quotes
-  "Q001",   # Bad quotes
-  "Q002",   # Bad quotes
-  "Q003",   # Bad quotes
-  "COM812", # Trailing comma missing
-  "COM819", # Trailing comma unexpected
-  "ISC001", # String concatenation error
-  "ISC002", # String formatting issue
+ignore=[
+  # Recommended ignores by ruff when using formatter
+  "E501",
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
 ]
