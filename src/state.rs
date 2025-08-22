@@ -20,6 +20,8 @@ pub struct LoggerState {
     pub file_date_style: Option<String>,
     // whether to include date in rotated filenames (true by default). If false, rotation is effectively disabled.
     pub file_date_enabled: bool,
+    // retain at most this many rotated files (count-based retention)
+    pub retention_count: Option<usize>,
     // optional async channel for non-blocking file writes
     pub async_sender: Option<Sender<String>>,
     pub async_write: bool,
@@ -44,6 +46,7 @@ impl Default for LoggerState {
             file_writer: None,
             file_date_style: None,
             file_date_enabled: false,
+            retention_count: None,
             async_sender: None,
             async_write: true,
             async_handle: None,

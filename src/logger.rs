@@ -22,15 +22,16 @@ impl PyLogger {
 
     /// Add a sink. "console" or a file path. Rotation supports daily/hourly/minutely/never.
     /// Optional filters: filter_min_level, filter_module, filter_function. async_write enables background file writes.
-    #[pyo3(signature = (sink, *, rotation=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=true))]
-    pub fn add(&self, sink: &str, rotation: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool, date_style: Option<&str>, date_enabled: bool) -> PyResult<usize> {
+    #[pyo3(signature = (sink, *, rotation=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=false, retention=None))]
+    pub fn add(&self, sink: &str, rotation: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> PyResult<usize> {
         if sink == "console" { return Ok(0); }
         with_state(|s| {
             s.file_path = Some(sink.to_string());
             s.file_rotation = rotation.map(|r| r.to_string());
             s.file_date_style = date_style.map(|d| d.to_string());
             s.file_date_enabled = date_enabled;
-            s.file_writer = Some(backend::make_file_appender(sink, rotation, date_style, date_enabled));
+            s.retention_count = retention;
+            s.file_writer = Some(backend::make_file_appender(sink, rotation, date_style, date_enabled, retention));
             // filters
             if let Some(min) = filter_min_level {
                 if let Some(level) = crate::levels::to_level(min) {
