@@ -620,12 +620,6 @@ This project is licensed under the MIT License. See the `LICENSE` file in the re
 
 ---
 
-If you'd like, I can now:
-- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
-- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
-
-Pick which to do next.
-
 ## Development (build from source)
 
 If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
@@ -652,33 +646,3 @@ uv run maturin build --release
 # packages will be placed in target/wheels
 ```
 
-
- logs rather than `key=value` suffixes.
-
-Pick which to do next.
-
-## Development (build from source)
-
-If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
-
-From this repo (recommended, uses `uv` helper if present):
-
-```powershell
-# sync virtualenv and build in editable mode
-uv sync
-uv run maturin develop
-```
-
-Alternatively, run directly with:
-
-```powershell
-python -m pip install --upgrade maturin
-maturin develop
-```
-
-To build distributable wheels for publishing:
-
-```powershell
-uv run maturin build --release
-# packages will be placed in target/wheels
-```
