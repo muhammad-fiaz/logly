@@ -1,12 +1,26 @@
 <div align="center">
-
-<img src="assets/logly_logo.png" alt="logly" width="96" />
-
 <h1>logly</h1>
+
+[![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
+[![Donate](https://img.shields.io/badge/Donate-%20-orange)](https://pay.muhammadfiaz.com)
+[![Supported Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
+[![GitHub stars](https://img.shields.io/github/stars/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
+[![GitHub forks](https://img.shields.io/github/forks/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/network)
+[![GitHub release](https://img.shields.io/github/v/release/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/releases)
+[![GitHub issues](https://img.shields.io/github/issues/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/pulls)
+[![GitHub last commit](https://img.shields.io/github/last-commit/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/commits)
+[![GitHub contributors](https://img.shields.io/github/contributors/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly/graphs/contributors)
+[![Codecov](https://img.shields.io/codecov/c/gh/muhammad-fiaz/logly.svg)](https://codecov.io/gh/muhammad-fiaz/logly)
+[![Pytest](https://img.shields.io/badge/pytest-%3E%3D7.0-blue.svg)](https://docs.pytest.org/)
+[![License](https://img.shields.io/github/license/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
+
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
 
 </div>
+
 
 
 Logly is a Rust-powered, Loguru-like logging library for Python that combines the familiarity of Python’s standard logging API with high-performance logging capabilities. It is designed for developers who need efficient, reliable logging in applications that generate large volumes of log messages.

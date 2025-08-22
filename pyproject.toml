@@ -4,15 +4,41 @@ build-backend = "maturin"
 
 [project]
 name = "logly"
+version = "0.1.0"
 description = "Rust Powered Python Logging Utility"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9, <3.15"
+license = { file = "LICENSE" }
 authors = [
   { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
 ]
-license = { file = "LICENSE" }
-readme = "README.md"
-dynamic = ["version"]
-requires-python = ">=3.9"
+maintainers = [
+  { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
+]
+keywords = ["logging", "rust", "pyo3", "tracing", "structured-logging", "logly", "performance"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Logging",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/muhammad-fiaz/logly"
+Source = "https://github.com/muhammad-fiaz/logly"
+"Bug Tracker" = "https://github.com/muhammad-fiaz/logly/issues"
+Documentation = "https://github.com/muhammad-fiaz/logly#readme"
+Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 
 [dependency-groups]
 dev = [
