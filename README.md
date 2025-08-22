@@ -13,8 +13,6 @@ Logly is a Rust-powered, Loguru-like logging library for Python that combines th
 
 Logly's core is implemented in Rust using tracing and exposed to Python via PyO3/Maturin for safety and performance.
 
-This README documents how to build, use, and extend the current MVP and which features are planned.
-
 <details>
 <summary><strong>Table of contents</strong></summary>
 
@@ -65,19 +63,110 @@ pip install git+https://github.com/muhammad-fiaz/logly.git
 ```python
 from logly import logger
 
-# Add sinks (console and file). For the current MVP: call file adds before configure().
-logger.add("console")
-logger.add("logs/app.log", rotation="daily")
+# -----------------------------
+# Add sinks (logger.add)
+# -----------------------------
+# sink: "console" or a file path. Returns a handler id (int).
+# rotation: "daily" | "hourly" | "minutely" | "never" (MVP supports simple rolling behavior).
+console_hid = logger.add("console")                  # writes human-readable text to stderr
+daily_file_hid = logger.add("logs/app.log", rotation="daily")
 
-# Configure console level and color, and optionally emit JSON instead of text
-logger.configure(level="INFO", color=True, json=False)
+# Examples of other rotation values:
+logger.add("logs/hourly.log", rotation="hourly")
+logger.add("logs/never.log", rotation="never")    # no rotation
 
+# -----------------------------
+# Configure behavior (logger.configure)
+# -----------------------------
+# level: string name (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL)
+# color: enable or disable ANSI colors for console output (True/False)
+# json: when True, emit newline-delimited JSON records with `fields` (structured logging)
+
+# Text mode, colored console output, DEBUG level
+logger.configure(level="DEBUG", color=True, json=False)
+
+# Switch to JSON structured mode (useful for ingestion into log pipelines)
+logger.configure(level="INFO", color=False, json=True)
+
+# Example explanation:
+# - json=False => human-friendly text; kwargs appended as key=value suffix
+# - json=True  => each line is a JSON object: {timestamp, level, message, fields: {...}}
+
+# -----------------------------
+# Basic logging calls
+# -----------------------------
+# All log functions accept a message and optional kwargs that become structured fields
+logger.trace("trace message", trace_id=1)
+logger.debug("debug message", step=1)
 logger.info("Hello from Rust")
-logger.error("Something failed", user="fiaz")
-logger.success("Deployed successfully 🚀")
+logger.success("Deployed successfully 🚀", region="us-west")   # success maps to INFO
+logger.warning("This might be slow", attempt=2)
+logger.error("Something failed", user="fiaz", retry=False)
+logger.critical("Out of memory")
 
-# Generic level and flush
-logger.log("debug", "Debugging details", step=3)
+# logger.log allows runtime level name (string)
+logger.log("debug", "debugging details", step=3)
+
+# -----------------------------
+# Context helpers
+# -----------------------------
+# bind: returns a proxy pre-attached with context
+req_logger = logger.bind(request_id="r-123", user="alice")
+req_logger.info("request start")  # request_id & user included automatically
+
+# contextualize: temporarily adds context for the with-block only
+with logger.contextualize(step=1):
+	logger.debug("processing step")
+
+# -----------------------------
+# Exception helpers
+# -----------------------------
+# catch: decorator/context manager that logs exceptions automatically
+# reraise=False swallows after logging; reraise=True re-raises after logging
+@logger.catch(reraise=False)
+def may_fail(x):
+	return 1 / x
+
+may_fail(0)  # logged and swallowed
+
+try:
+	1 / 0
+except Exception:
+	# logger.exception logs the current exception with traceback at ERROR level
+	logger.exception("unexpected error")
+
+# -----------------------------
+# Per-call options and aliases
+# -----------------------------
+# opt: returns a proxy with call-time options (reserved for per-call formatting/options)
+logger.opt(colors=False).info("no colors for this call")
+
+# level(name, mapped_to): register a proxy-side alias mapping
+logger.level("notice", "INFO")
+logger.log("notice", "This is a notice")
+
+# -----------------------------
+# Enable / disable and sink management
+# -----------------------------
+logger.disable()                       # proxy will ignore logging calls
+logger.info("this will be ignored")  # no-op while disabled
+logger.enable()
+
+# Remove a sink by handler id. Returns True in MVP (removal semantics limited)
+hid = logger.add("logs/temp.log")
+removed = logger.remove(hid)           # should return True
+
+# -----------------------------
+# JSON / structured use notes
+# -----------------------------
+# In JSON mode each record has a `fields` dict containing kwargs + bound/context values.
+logger.configure(json=True)            # switch to structured output
+logger.info("json message", item=42)
+
+# -----------------------------
+# Flush / Complete
+# -----------------------------
+# complete() flushes any buffered output; useful in short-lived scripts/tests.
 logger.complete()
 ```
 
