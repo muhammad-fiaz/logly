@@ -42,7 +42,7 @@ Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 
 [dependency-groups]
 dev = [
-  "maturin==1.9.1",
+  "maturin==1.9.3",
   "mypy[faster-cache]==1.16.1",
   "pre-commit==4.2.0",
   "pytest==8.4.1",
