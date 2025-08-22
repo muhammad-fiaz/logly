@@ -1,6 +1,5 @@
 <div align="center">
-<img src="assets/logly_logo.png" alt="logly logo" width="160" />
-<h1>logly</h1>
+<img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="logly logo"  />
 
 [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
