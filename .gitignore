@@ -289,3 +289,5 @@ dmypy.json
 
 # Rust
 /target
+
+.pypirc

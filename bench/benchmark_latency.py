@@ -6,6 +6,7 @@ Usage (PowerShell):
   python .\bench\benchmark_latency.py --mode console --count 20000
   python .\bench\benchmark_latency.py --mode file --json --count 30000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,7 +68,9 @@ def bench_std_latency(count: int, to_file: bool) -> list[float]:
 essential_import_done = False
 
 
-def bench_logly_latency(count: int, to_file: bool, *, json: bool, pretty_json: bool, async_write: bool) -> list[float]:
+def bench_logly_latency(
+    count: int, to_file: bool, *, json: bool, pretty_json: bool, async_write: bool
+) -> list[float]:
     import importlib
     import sys
 
@@ -78,6 +81,7 @@ def bench_logly_latency(count: int, to_file: bool, *, json: bool, pretty_json: b
         essential_import_done = True
 
     import logly  # type: ignore
+
     importlib.reload(logly)
 
     if to_file:
@@ -113,14 +117,24 @@ def main() -> None:
     logging.info("Latency benchmark: mode=%s, count=%d", args.mode, args.count)
 
     std_lat = bench_std_latency(args.count, to_file)
-    logly_lat = bench_logly_latency(args.count, to_file, json=args.json, pretty_json=args.pretty_json, async_write=not args.sync)
+    logly_lat = bench_logly_latency(
+        args.count, to_file, json=args.json, pretty_json=args.pretty_json, async_write=not args.sync
+    )
 
     std_p50, std_p95, std_p99 = percentiles(std_lat, [0.5, 0.95, 0.99])
     logly_p50, logly_p95, logly_p99 = percentiles(logly_lat, [0.5, 0.95, 0.99])
 
     logging.info("\nLatency (ms):")
     logging.info("std   p50=%.3f  p95=%.3f  p99=%.3f", std_p50, std_p95, std_p99)
-    logging.info("logly p50=%.3f  p95=%.3f  p99=%.3f  (json=%s, pretty=%s, async=%s)", logly_p50, logly_p95, logly_p99, args.json, args.pretty_json, not args.sync)
+    logging.info(
+        "logly p50=%.3f  p95=%.3f  p99=%.3f  (json=%s, pretty=%s, async=%s)",
+        logly_p50,
+        logly_p95,
+        logly_p99,
+        args.json,
+        args.pretty_json,
+        not args.sync,
+    )
 
 
 if __name__ == "__main__":
