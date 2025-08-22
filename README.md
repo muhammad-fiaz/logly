@@ -89,6 +89,13 @@ console_hid = logger.add("console")                  # writes human-readable tex
 daily_file_hid = logger.add(
 	"logs/app.log",
 	rotation="daily",
+	# control how rotation incorporates the date into the filename
+	# date_style: "before_ext" (default) will produce files like app.2025-08-22.log
+	#             "prefix" will produce files like 2025-08-22.app.log
+	# date_enabled: when False (default) the date will not be appended to filenames
+	#               even if rotation is set; rotation still controls rollover timing
+	date_style="before_ext",
+	date_enabled=False,  # default: False (no date appended to filename)
 	# optional per-file-sink filters and async write
 	filter_min_level="INFO",           # only write INFO+ to this file
 	filter_module="myapp.handlers",    # only if module matches
@@ -371,8 +378,11 @@ Creation
 Configuration & sinks
 
 - `logger.add(sink: str | None = None, *, rotation: str | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True) -> int`
+-- `logger.add(sink: str | None = None, *, rotation: str | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True, date_style: str | None = None, date_enabled: bool = True) -> int`
 	- Add a sink. Use `"console"` for stdout/stderr or a file path to write logs to disk. Returns a handler id (int).
 	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender).
+	- `date_style`: `"before_ext"` (default) or `"prefix"` — controls where the rotation timestamp is placed in the filename.
+	- `date_enabled`: when False (default) no date is appended to filenames even if rotation is set; set to True to enable dated filenames.
 	- `filter_min_level`: only write to this file if the record level is >= this level (e.g., `"INFO"`).
 	- `filter_module`: only write if the callsite module matches this string.
 	- `filter_function`: only write if the callsite function matches this string.

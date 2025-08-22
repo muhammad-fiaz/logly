@@ -1,8 +1,8 @@
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
-use tracing_appender::rolling::RollingFileAppender;
 use tracing_subscriber::filter::LevelFilter;
+use std::io::Write;
 use std::sync::mpsc::Sender;
 
 pub struct LoggerState {
@@ -14,7 +14,12 @@ pub struct LoggerState {
     pub pretty_json: bool,
     pub file_path: Option<String>,
     pub file_rotation: Option<String>,
-    pub file_writer: Option<RollingFileAppender>,
+    // file_writer is a boxed writer that may implement simple rotation (date inserted before extension)
+    pub file_writer: Option<Box<dyn Write + Send>>,
+    // how to place the date when rotation is enabled: "before_ext" (default) or "prefix"
+    pub file_date_style: Option<String>,
+    // whether to include date in rotated filenames (true by default). If false, rotation is effectively disabled.
+    pub file_date_enabled: bool,
     // optional async channel for non-blocking file writes
     pub async_sender: Option<Sender<String>>,
     pub async_write: bool,
@@ -37,6 +42,8 @@ impl Default for LoggerState {
             file_path: None,
             file_rotation: None,
             file_writer: None,
+            file_date_style: None,
+            file_date_enabled: false,
             async_sender: None,
             async_write: true,
             async_handle: None,

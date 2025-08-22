@@ -7,10 +7,12 @@ use serde::Serialize;
 use serde_json::json;
 use chrono::{Utc, DateTime};
 use std::io;
-use std::io::Write as _;
 use std::thread;
 use tracing::{debug, error, info, trace, warn, Level};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_appender::rolling::Rotation;
+use std::fs::{File, OpenOptions};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
 use std::sync::mpsc::channel;
@@ -55,13 +57,105 @@ pub fn rotation_from_str(rotation: Option<&str>) -> Rotation {
     }
 }
 
-pub fn make_file_appender(path: &str, rotation: Option<&str>) -> RollingFileAppender {
-    let rot = rotation_from_str(rotation);
-    let parent = std::path::Path::new(path)
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let filename = std::path::Path::new(path).file_name().unwrap_or_default();
-    RollingFileAppender::new(rot, parent, filename)
+// A simple rolling writer that places the rotation timestamp before the file extension,
+// e.g. `app.log` -> `app.2025-08-22.log` for daily rotation. This avoids appending
+// the date after the extension which some users find unexpected.
+struct SimpleRollingWriter {
+    base_path: PathBuf,
+    rotation: Rotation,
+    current_period: String,
+    file: File,
+    date_style: String, // "before_ext" or "prefix"
+}
+
+impl SimpleRollingWriter {
+    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>) -> io::Result<Self> {
+        let style = date_style.unwrap_or("before_ext").to_string();
+        let current_period = Self::period_string(&rotation);
+        let file = Self::open_for_period(path, &current_period, &style)?;
+        Ok(SimpleRollingWriter { base_path: path.to_path_buf(), rotation, current_period, file, date_style: style })
+    }
+
+    fn period_string(rotation: &Rotation) -> String {
+        let now = chrono::Utc::now();
+        match *rotation {
+            Rotation::DAILY => now.format("%Y-%m-%d").to_string(),
+            Rotation::HOURLY => now.format("%Y-%m-%d_%H").to_string(),
+            Rotation::MINUTELY => now.format("%Y-%m-%d_%H-%M").to_string(),
+            Rotation::NEVER => String::new(),
+        }
+    }
+
+    fn path_for_period(base: &Path, period: &str, date_style: &str) -> PathBuf {
+        if period.is_empty() { return base.to_path_buf(); }
+        let file_name = base.file_name().and_then(|s| s.to_str()).unwrap_or_default();
+        if date_style == "prefix" {
+            // prefix style: place the date before the filename separated by a dot
+            // e.g. `2025-08-22.app.log` (preferred) and handle dot-leading filenames
+            let new_name = if file_name.starts_with('.') {
+                // file_name like `.hidden` -> `2025-08-22.hidden`
+                format!("{}{}", period, file_name)
+            } else {
+                format!("{}.{}", period, file_name)
+            };
+            base.with_file_name(new_name)
+        } else {
+            // default: insert before extension
+            if let Some(pos) = file_name.rfind('.') {
+                let (stem, ext) = file_name.split_at(pos);
+                let new_name = format!("{}.{}{}", stem, period, ext);
+                base.with_file_name(new_name)
+            } else {
+                // no extension
+                let new_name = format!("{}.{}", file_name, period);
+                base.with_file_name(new_name)
+            }
+        }
+    }
+
+    fn open_for_period(base: &Path, period: &str, date_style: &str) -> io::Result<File> {
+        let p = Self::path_for_period(base, period, date_style);
+        if let Some(parent) = p.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        OpenOptions::new().create(true).append(true).open(p)
+    }
+
+    fn rotate_if_needed(&mut self) -> io::Result<()> {
+        let new_period = Self::period_string(&self.rotation);
+        if new_period != self.current_period {
+            self.current_period = new_period.clone();
+            self.file = Self::open_for_period(&self.base_path, &new_period, &self.date_style)?;
+        }
+        Ok(())
+    }
+}
+
+impl Write for SimpleRollingWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if self.rotation != Rotation::NEVER {
+            let _ = self.rotate_if_needed();
+        }
+        self.file.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> { self.file.flush() }
+}
+
+pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool) -> Box<dyn Write + Send> {
+    let mut rot = rotation_from_str(rotation);
+    if !date_enabled { rot = Rotation::NEVER; }
+    let p = Path::new(path);
+    // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
+    match SimpleRollingWriter::new(p, rot, date_style) {
+        Ok(w) => Box::new(w),
+        Err(_) => {
+            // fallback: open a simple append file
+            let _ = std::fs::create_dir_all(p.parent().unwrap_or_else(|| Path::new(".")));
+            let f = OpenOptions::new().create(true).append(true).open(p).unwrap();
+            Box::new(f)
+        }
+    }
 }
 
 pub fn dict_to_pairs(d: &pyo3::Bound<'_, PyDict>) -> Vec<(String, String)> {
