@@ -608,7 +608,7 @@ uv run pytest -q
 - Rotating policies and compression support for file sinks.
 - Async-safe sinks that don't block Python threads and integrate with async runtimes.
 - Fine-grained runtime configuration via `logger.configure()` accepting a full config dict.
-- Full Loguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+- Full Loguru-like logly API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
 
 ## Contributing
 
