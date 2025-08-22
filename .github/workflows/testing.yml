@@ -1,0 +1,82 @@
+name: Testing
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+  PYTHON_VERSION: "3.9"
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2
+    - name: Run cargo clippy
+      run: cargo clippy --all-targets -- --deny warnings
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2
+    - name: Run cargo fmt
+      run: cargo fmt --all -- --check
+  python-linting:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    - name: Install Dependencies
+      run: |
+        uv sync --frozen
+        uv run maturin build
+    - name: Ruff format check
+      run: uv run ruff format logly tests --check
+    - name: Lint with ruff
+      run: uv run ruff check .
+    - name: mypy check
+      run: uv run mypy logly tests
+  testing:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Dependencies
+      run: |
+        uv sync --frozen
+        uv run maturin build
+    - name: Test with pytest
+      run: uv run pytest
