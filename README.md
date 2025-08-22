@@ -1,9 +1,11 @@
 <div align="center">
-	<img src="assets/logly_logo.png" alt="logly" width="96" />
 
-	<h1>logly</h1>
+<img src="assets/logly_logo.png" alt="logly" width="96" />
 
-	<p><em>Rust-powered, Loguru-like logging for Python.</em></p>
+<h1>logly</h1>
+
+<p><em>Rust-powered, Loguru-like logging for Python.</em></p>
+
 </div>
 
 
