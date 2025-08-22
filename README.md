@@ -49,7 +49,6 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 
 ---
 
-
 ## Install (PyPI)
 
 The recommended installation is from PyPI. Once published, users can install with:
@@ -94,8 +93,10 @@ daily_file_hid = logger.add(
 	#             "prefix" will produce files like 2025-08-22.app.log
 	# date_enabled: when False (default) the date will not be appended to filenames
 	#               even if rotation is set; rotation still controls rollover timing
+	# retention: keep at most N rotated files (count-based). Oldest are pruned on rollover.
 	date_style="before_ext",
 	date_enabled=False,  # default: False (no date appended to filename)
+	retention=7,
 	# optional per-file-sink filters and async write
 	filter_min_level="INFO",           # only write INFO+ to this file
 	filter_module="myapp.handlers",    # only if module matches
@@ -207,6 +208,25 @@ logger.info("json message", item=42)
 logger.complete()
 ```
 
+### Filename rotation and retention
+
+- rotation controls when a new file is started: `"daily" | "hourly" | "minutely" | "never"`.
+- date_style controls where the timestamp appears in the filename when dates are enabled:
+	- `"before_ext"` (default): `app.2025-08-22.log`
+	- `"prefix"`: `2025-08-22.app.log`
+- date_enabled toggles whether the date is incorporated into filenames (default: False). When False, rotation timing still applies but filenames keep the base name.
+- retention sets a maximum count of rotated files to keep. On each rollover, oldest files beyond the limit are deleted.
+
+Examples
+
+```python
+# Prefix the date and keep the last 10 files
+logger.add("logs/app.log", rotation="daily", date_style="prefix", date_enabled=True, retention=10)
+
+# Insert date before extension; disable dates in filenames but still rotate hourly
+logger.add("logs/app.log", rotation="hourly", date_enabled=False)
+```
+
 ## What’s new (features)
 
 The latest iteration adds performance-focused and convenience features, with simple, commented examples:
@@ -247,6 +267,10 @@ The latest iteration adds performance-focused and convenience features, with sim
 
 - Thread-safety and deterministic flush
 	- `logger.complete()` ensures all pending lines are persisted (joins the writer when async).
+
+- Count-based file retention for rotated logs
+	- Set `retention` to keep at most N rotated files; oldest are pruned on rollover.
+
 
 ## Performance & Benchmarks
 
@@ -599,6 +623,2597 @@ This project is licensed under the MIT License. See the `LICENSE` file in the re
 If you'd like, I can now:
 - Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
 - Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ full config dict.
+- Full Loguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+oguru API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+ logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+arity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
+
+## Contributing
+
+Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+
+---
+
+If you'd like, I can now:
+- Add unit tests for `bind()`, `contextualize()`, `catch()`, and `exception()`.
+- Implement JSON structured output in the Rust core so bound context becomes structured logs rather than `key=value` suffixes.
+
+Pick which to do next.
+
+## Development (build from source)
+
+If you plan to develop or build from source you will need the Rust toolchain and `maturin`.
+
+From this repo (recommended, uses `uv` helper if present):
+
+```powershell
+# sync virtualenv and build in editable mode
+uv sync
+uv run maturin develop
+```
+
+Alternatively, run directly with:
+
+```powershell
+python -m pip install --upgrade maturin
+maturin develop
+```
+
+To build distributable wheels for publishing:
+
+```powershell
+uv run maturin build --release
+# packages will be placed in target/wheels
+```
+
+
+>>>>>>> dev
+ logs rather than `key=value` suffixes.
 
 Pick which to do next.
 

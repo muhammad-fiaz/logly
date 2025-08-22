@@ -24,20 +24,26 @@ class _LoggerProxy:
         sink: str | None = None,
         *,
         rotation: str | None = None,
+        retention: int | None = None,
         filter_min_level: str | None = None,
         filter_module: str | None = None,
         filter_function: str | None = None,
         async_write: bool = True,
+        date_style: str | None = None,
+        date_enabled: bool = False,
     ) -> int:
         if not sink or sink == "console":
             return self._inner.add("console")
         return self._inner.add(
             sink,
             rotation=rotation,
+            retention=retention,
             filter_min_level=filter_min_level,
             filter_module=filter_module,
             filter_function=filter_function,
             async_write=async_write,
+            date_style=date_style,
+            date_enabled=date_enabled,
         )
 
     def configure(

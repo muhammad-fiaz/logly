@@ -66,14 +66,15 @@ struct SimpleRollingWriter {
     current_period: String,
     file: File,
     date_style: String, // "before_ext" or "prefix"
+    retention_count: Option<usize>,
 }
 
 impl SimpleRollingWriter {
-    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>) -> io::Result<Self> {
+    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>, retention: Option<usize>) -> io::Result<Self> {
         let style = date_style.unwrap_or("before_ext").to_string();
         let current_period = Self::period_string(&rotation);
         let file = Self::open_for_period(path, &current_period, &style)?;
-        Ok(SimpleRollingWriter { base_path: path.to_path_buf(), rotation, current_period, file, date_style: style })
+        Ok(SimpleRollingWriter { base_path: path.to_path_buf(), rotation, current_period, file, date_style: style, retention_count: retention })
     }
 
     fn period_string(rotation: &Rotation) -> String {
@@ -126,6 +127,13 @@ impl SimpleRollingWriter {
         if new_period != self.current_period {
             self.current_period = new_period.clone();
             self.file = Self::open_for_period(&self.base_path, &new_period, &self.date_style)?;
+            // prune old files if retention is configured
+            if let Some(keep) = self.retention_count {
+                let current_path = Self::path_for_period(&self.base_path, &self.current_period, &self.date_style);
+                if let Some(dir) = current_path.parent() {
+                    let _ = prune_old_files(dir, &self.base_path, &self.date_style, keep, &current_path);
+                }
+            }
         }
         Ok(())
     }
@@ -142,12 +150,50 @@ impl Write for SimpleRollingWriter {
     fn flush(&mut self) -> io::Result<()> { self.file.flush() }
 }
 
-pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool) -> Box<dyn Write + Send> {
+fn prune_old_files(dir: &Path, base: &Path, date_style: &str, keep: usize, current_path: &Path) -> io::Result<()> {
+    use std::fs;
+    let base_name = base.file_name().and_then(|s| s.to_str()).unwrap_or("");
+    let (stem, ext_opt) = match base_name.rfind('.') {
+        Some(pos) => (&base_name[..pos], Some(&base_name[pos+1..])),
+        None => (base_name, None),
+    };
+    let mut candidates: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
+    for entry in fs::read_dir(dir)? {
+        let entry = match entry { Ok(e) => e, Err(_) => continue };
+        let path = entry.path();
+        if path == current_path { continue; }
+        if !path.is_file() { continue; }
+        let name = match path.file_name().and_then(|s| s.to_str()) { Some(n) => n, None => continue };
+        let matches = if date_style == "prefix" {
+            // rotated form ends with ".<base_name>"
+            name.ends_with(&format!(".{}", base_name))
+        } else {
+            // before_ext: stem.period.ext or name starts with "stem." (no ext)
+            match ext_opt {
+                Some(ext) => name.starts_with(&format!("{}.", stem)) && name.ends_with(&format!(".{}", ext)),
+                None => name.starts_with(&format!("{}.", stem)),
+            }
+        };
+        if !matches { continue; }
+        let modified = entry.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+        candidates.push((modified, path));
+    }
+    if candidates.len() > keep {
+        candidates.sort_by_key(|(t, _)| *t);
+        let to_delete = candidates.len().saturating_sub(keep);
+        for (_, p) in candidates.into_iter().take(to_delete) {
+            let _ = fs::remove_file(p);
+        }
+    }
+    Ok(())
+}
+
+pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> Box<dyn Write + Send> {
     let mut rot = rotation_from_str(rotation);
     if !date_enabled { rot = Rotation::NEVER; }
     let p = Path::new(path);
     // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
-    match SimpleRollingWriter::new(p, rot, date_style) {
+    match SimpleRollingWriter::new(p, rot, date_style, retention) {
         Ok(w) => Box::new(w),
         Err(_) => {
             // fallback: open a simple append file
