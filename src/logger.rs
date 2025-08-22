@@ -14,21 +14,34 @@ impl PyLogger {
     #[new]
     pub fn new() -> Self { PyLogger }
 
-    /// Initialize the global console logger and set level/color/json.
-    #[pyo3(signature = (level="INFO", color=true, json=false))]
-    pub fn configure(&self, level: &str, color: bool, json: bool) -> PyResult<()> {
-        backend::configure(level, color, json)
+    /// Initialize the global console logger and set level/color/json/pretty_json.
+    #[pyo3(signature = (level="INFO", color=true, json=false, pretty_json=false))]
+    pub fn configure(&self, level: &str, color: bool, json: bool, pretty_json: bool) -> PyResult<()> {
+        backend::configure(level, color, json, pretty_json)
     }
 
     /// Add a sink. "console" or a file path. Rotation supports daily/hourly/minutely/never.
-    #[pyo3(signature = (sink, *, rotation=None))]
-    pub fn add(&self, sink: &str, rotation: Option<&str>) -> PyResult<usize> {
+    /// Optional filters: filter_min_level, filter_module, filter_function. async_write enables background file writes.
+    #[pyo3(signature = (sink, *, rotation=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true))]
+    pub fn add(&self, sink: &str, rotation: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool) -> PyResult<usize> {
         if sink == "console" { return Ok(0); }
         with_state(|s| {
             s.file_path = Some(sink.to_string());
             s.file_rotation = rotation.map(|r| r.to_string());
             s.file_writer = Some(backend::make_file_appender(sink, rotation));
+            // filters
+            if let Some(min) = filter_min_level {
+                if let Some(level) = crate::levels::to_level(min) {
+                    s.filter_min_level = Some(crate::levels::to_filter(level));
+                }
+            }
+            s.filter_module = filter_module.map(|m| m.to_string());
+            s.filter_function = filter_function.map(|f| f.to_string());
+            // async
+            s.async_write = async_write;
         });
+        // start background writer if requested
+        backend::start_async_writer_if_needed();
         Ok(1)
     }
 
@@ -56,7 +69,7 @@ impl PyLogger {
         Ok(())
     }
 
-    pub fn complete(&self) { tracing::dispatcher::get_default(|_| ()); }
+    pub fn complete(&self) { crate::backend::complete(); }
 
     // Extra conveniences for tests and control
     /// Reset internal state (not global subscriber). Intended for tests only.

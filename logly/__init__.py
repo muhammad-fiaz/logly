@@ -19,13 +19,29 @@ class _LoggerProxy:
         self._levels: dict[str, str] = {}
 
     # configuration and sinks
-    def add(self, sink: str | None = None, *, rotation: str | None = None) -> int:
+    def add(
+        self,
+        sink: str | None = None,
+        *,
+        rotation: str | None = None,
+        filter_min_level: str | None = None,
+        filter_module: str | None = None,
+        filter_function: str | None = None,
+        async_write: bool = True,
+    ) -> int:
         if not sink or sink == "console":
             return self._inner.add("console")
-        return self._inner.add(sink, rotation=rotation)
+        return self._inner.add(
+            sink,
+            rotation=rotation,
+            filter_min_level=filter_min_level,
+            filter_module=filter_module,
+            filter_function=filter_function,
+            async_write=async_write,
+        )
 
-    def configure(self, level: str = "INFO", color: bool = True, json: bool = False) -> None:
-        self._inner.configure(level=level, color=color, json=json)
+    def configure(self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None:
+        self._inner.configure(level=level, color=color, json=json, pretty_json=pretty_json)
 
     def remove(self, handler_id: int) -> bool:
         return self._inner.remove(handler_id)
@@ -38,10 +54,27 @@ class _LoggerProxy:
         self._enabled = False
 
     # logging methods with kwargs as context key-values
+    def _augment_with_callsite(self, kwargs: dict) -> dict:
+        try:
+            import inspect
+            frame = inspect.currentframe()
+            # go back two frames: current -> _augment -> caller method wrapper
+            if frame and frame.f_back and frame.f_back.f_back:
+                caller = frame.f_back.f_back
+                module = caller.f_globals.get("__name__", "?")
+                function = caller.f_code.co_name
+                if "module" not in kwargs:
+                    kwargs["module"] = module
+                if "function" not in kwargs:
+                    kwargs["function"] = function
+        except Exception:
+            pass
+        return kwargs
     def trace(self, message: str, /, *args, **kwargs):
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.trace(msg, **merged)
 
@@ -49,6 +82,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.debug(msg, **merged)
 
@@ -56,6 +90,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.info(msg, **merged)
 
@@ -63,6 +98,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.success(msg, **merged)
 
@@ -70,6 +106,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.warning(msg, **merged)
 
@@ -77,6 +114,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.error(msg, **merged)
 
@@ -84,6 +122,7 @@ class _LoggerProxy:
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.critical(msg, **merged)
 
@@ -93,6 +132,7 @@ class _LoggerProxy:
         # allow aliasing custom levels
         lvl = self._levels.get(level, level)
         merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
         self._inner.log(lvl, msg, **merged)
 

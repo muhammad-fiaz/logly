@@ -8,10 +8,12 @@ use serde_json::json;
 use chrono::{Utc, DateTime};
 use std::io;
 use std::io::Write as _;
+use std::thread;
 use tracing::{debug, error, info, trace, warn, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
+use std::sync::mpsc::channel;
 
 pub fn init_global_if_needed() -> PyResult<()> {
     // Check and set state without returning PyResult from the locked closure to avoid
@@ -99,6 +101,22 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
     let pairs = extra.map(|d| dict_to_pairs(d)).unwrap_or_default();
     // Emit structured JSON when requested, otherwise keep legacy formatted suffix.
     crate::state::with_state(|s| {
+        // filter checks (file sink filters only apply to file writes; console honored by global level)
+        let mut allow_file = true;
+        if let Some(min) = s.filter_min_level {
+            let current: tracing_subscriber::filter::LevelFilter = to_filter(level);
+            if current < min { allow_file = false; }
+        }
+        if let Some(ref want_mod) = s.filter_module {
+            let mut found = false;
+            for (k, v) in &pairs { if k == "module" && v == want_mod { found = true; break; } }
+            if !found { allow_file = false; }
+        }
+        if let Some(ref want_fn) = s.filter_function {
+            let mut found = false;
+            for (k, v) in &pairs { if k == "function" && v == want_fn { found = true; break; } }
+            if !found { allow_file = false; }
+        }
         let lvl_str = level_to_str(level);
         if s.format_json {
             // Build a JSON record
@@ -114,10 +132,21 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
             let rec = JsonRecord { timestamp: Utc::now(), level: lvl_str, message: msg, fields };
             if s.console_enabled {
                 // print JSON to stderr for console layer compatibility
-                eprintln!("{}", serde_json::to_string(&rec).unwrap_or_default());
+                if s.pretty_json {
+                    eprintln!("{}", serde_json::to_string_pretty(&rec).unwrap_or_default());
+                } else {
+                    eprintln!("{}", serde_json::to_string(&rec).unwrap_or_default());
+                }
             }
-            if let Some(writer) = s.file_writer.as_mut() {
-                let _ = writeln!(writer, "{}", serde_json::to_string(&rec).unwrap_or_default());
+            if allow_file {
+                if s.async_write {
+                    if let Some(tx) = s.async_sender.as_ref() {
+                        let line = if s.pretty_json { serde_json::to_string_pretty(&rec).unwrap_or_default() } else { serde_json::to_string(&rec).unwrap_or_default() };
+                        let _ = tx.send(line);
+                    }
+                } else if let Some(writer) = s.file_writer.as_mut() {
+                    let _ = writeln!(writer, "{}", serde_json::to_string(&rec).unwrap_or_default());
+                }
             }
         } else {
             let suffix = if pairs.is_empty() { String::new() } else { fast_format_suffix(&pairs) };
@@ -128,19 +157,61 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
                 Level::WARN => warn!(target: "logly", "{}{}", msg, suffix),
                 Level::ERROR => error!(target: "logly", "{}{}", msg, suffix),
             }
-            if let Some(writer) = s.file_writer.as_mut() {
-                let _ = writeln!(writer, "[{}] {}{}", level_to_str(level), msg, suffix);
+            if allow_file {
+                if s.async_write {
+                    if let Some(tx) = s.async_sender.as_ref() {
+                        let line = format!("[{}] {}{}", level_to_str(level), msg, suffix);
+                        let _ = tx.send(line);
+                    }
+                } else if let Some(writer) = s.file_writer.as_mut() {
+                    let _ = writeln!(writer, "[{}] {}{}", level_to_str(level), msg, suffix);
+                }
             }
         }
     });
 }
 
-pub fn configure(level: &str, color: bool, json: bool) -> PyResult<()> {
+pub fn configure(level: &str, color: bool, json: bool, pretty_json: bool) -> PyResult<()> {
     let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
     crate::state::with_state(|s| {
         s.level_filter = to_filter(lvl);
         s.color = color;
         s.format_json = json;
+        s.pretty_json = pretty_json;
     });
     init_global_if_needed()
+}
+
+pub fn start_async_writer_if_needed() {
+    // spawn background thread to drain channel and write to file
+    crate::state::with_state(|s| {
+        if s.async_write && s.async_sender.is_none() {
+            if s.file_writer.is_some() {
+                let (tx, rx) = channel::<String>();
+                // SAFETY: clone a handle to the underlying writer path by creating a new appender per write is expensive;
+                // we use the existing writer via a mutable borrow in thread. For simplicity, we move the writer into the thread.
+                // To keep state consistent, we reconstruct a new appender for future rotations when add() is called again.
+                let mut file_writer = std::mem::replace(&mut s.file_writer, None).unwrap();
+                let handle = thread::spawn(move || {
+                    while let Ok(line) = rx.recv() {
+                        let _ = writeln!(file_writer, "{}", line);
+                    }
+                });
+                s.async_sender = Some(tx);
+                s.async_handle = Some(handle);
+            }
+        }
+    });
+}
+
+pub fn complete() {
+    // drop sender to signal thread to stop, then join
+    let handle_opt = crate::state::with_state(|s| {
+        // take sender and handle out of state
+        let _ = s.async_sender.take();
+        s.async_handle.take()
+    });
+    if let Some(handle) = handle_opt {
+        let _ = handle.join();
+    }
 }

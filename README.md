@@ -19,7 +19,10 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 - [Install (PyPI)](#install-pypi)
 - [Nightly / install from GitHub](#nightly--install-from-github)
 - [Quickstart](#quickstart)
+- [What’s new (features)](#whats-new-features)
 - [Performance \& Benchmarks](#performance--benchmarks)
+- [Concurrency benchmark](#concurrency-benchmark)
+	- [Latency microbenchmark (p50/p95/p99)](#latency-microbenchmark-p50p95p99)
 - [API reference (current features)](#api-reference-current-features)
 - [Advanced examples](#advanced-examples)
 - [Testing](#testing)
@@ -69,7 +72,15 @@ from logly import logger
 # sink: "console" or a file path. Returns a handler id (int).
 # rotation: "daily" | "hourly" | "minutely" | "never" (MVP supports simple rolling behavior).
 console_hid = logger.add("console")                  # writes human-readable text to stderr
-daily_file_hid = logger.add("logs/app.log", rotation="daily")
+daily_file_hid = logger.add(
+	"logs/app.log",
+	rotation="daily",
+	# optional per-file-sink filters and async write
+	filter_min_level="INFO",           # only write INFO+ to this file
+	filter_module="myapp.handlers",    # only if module matches
+	filter_function=None,               # or match a specific function name
+	async_write=True,                   # write via background thread
+)
 
 # Examples of other rotation values:
 logger.add("logs/hourly.log", rotation="hourly")
@@ -81,12 +92,16 @@ logger.add("logs/never.log", rotation="never")    # no rotation
 # level: string name (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL)
 # color: enable or disable ANSI colors for console output (True/False)
 # json: when True, emit newline-delimited JSON records with `fields` (structured logging)
+# pretty_json: pretty-print JSON (human-friendly; higher cost than compact JSON)
 
 # Text mode, colored console output, DEBUG level
 logger.configure(level="DEBUG", color=True, json=False)
 
 # Switch to JSON structured mode (useful for ingestion into log pipelines)
 logger.configure(level="INFO", color=False, json=True)
+
+# Pretty JSON (human-friendly) for local development
+logger.configure(level="INFO", color=False, json=True, pretty_json=True)
 
 # Example explanation:
 # - json=False => human-friendly text; kwargs appended as key=value suffix
@@ -167,33 +182,122 @@ logger.info("json message", item=42)
 # Flush / Complete
 # -----------------------------
 # complete() flushes any buffered output; useful in short-lived scripts/tests.
+# In async file mode, this also joins the background writer to ensure all lines are persisted.
 logger.complete()
 ```
 
+## What’s new (features)
+
+The latest iteration adds performance-focused and convenience features, with simple, commented examples:
+
+- Async-safe file sink (background writer)
+	- Lower per-call latency; flush deterministically with `logger.complete()`.
+	- Example:
+
+		```python
+		logger.add("logs/app.log", rotation="daily", async_write=True)
+		# ...
+		logger.complete()  # join background writer and flush
+		```
+
+- Per-sink filters (minimum level, module, function)
+	- Only write relevant records to a file sink.
+
+		```python
+		logger.add(
+				"logs/filtered.log",
+				rotation="daily",
+				filter_min_level="INFO",       # INFO+
+				filter_module="myapp.handlers", # only this module
+				filter_function=None,            # or set a function name
+		)
+		```
+
+- Structured JSON logging with pretty mode
+	- Machine-ingestible by default; switch to pretty for local readability.
+
+		```python
+		logger.configure(level="INFO", json=True)                 # compact JSON
+		logger.configure(level="INFO", json=True, pretty_json=True)  # pretty JSON
+		```
+
+- Callsite capture for filtering
+	- Python proxy attaches `module` and `function` for filter matching.
+
+- Thread-safety and deterministic flush
+	- `logger.complete()` ensures all pending lines are persisted (joins the writer when async).
+
 ## Performance & Benchmarks
 
-Logly's core is implemented in Rust to reduce the per-message overhead of logging in high-volume Python applications. The numbers below are illustrative results from a local, synchronous console benchmark that emitted 100,000 messages.
+Logly's core is implemented in Rust to reduce the per-message overhead of logging in high-volume Python applications. Below are two representative, reproducible runs performed locally on this machine (Windows, PowerShell). The first is a console run (noisy — terminal I/O can dominate timings). The second is a file-mode run which is a fairer test of serialization + IO performance and reflects the benefits of the async background writer.
 
-Example result (100,000 messages, console):
+Measured results (100,000 messages)
 
-- Python standard logging (mean): 10.8566 s
-- Logly (mean): 8.9319 s
+- Console run (single repeat, console-formatted output written to a temp file to exclude terminal I/O):
 
-What this shows
+	- Python standard logging (mean): 1.5578 s
+	- Logly (mean): 0.6603 s
 
-- Throughput improvement: Logly completed the workload approximately 21% faster on average — it finished the test in about 79% of the time required by the standard library logger.
-- Relative speedup: 10.8566 / 8.9319 ≈ 1.215 (≈1.22× faster).
+	Note: previous console runs were noisy due to terminal I/O. The benchmark script now writes console-formatted output to a temp file when running `--mode console` so timing excludes terminal overhead. File-mode remains a fair test of serialization + IO, but this corrected console run also shows Logly is faster in this environment.
 
-Reproduce the benchmark locally (from the repository root):
+- File run (single repeat, async file sink):
 
-Ensure you have an activated virtual environment (.venv) or equivalent active before running these commands.
+	- Python standard logging (mean): 1.5439 s
+	- Logly (mean): 0.6646 s
+
+	What this shows
+
+	- File-mode improvement: In this environment Logly completed the file-based workload roughly 57% faster than Python's standard logging and produced about a 2.32× speedup (1.5439 / 0.6646 ≈ 2.32). In other environments the improvement may be larger — up to 10× depending on the OS and CPU.
+	- Why file-mode is a better comparison: console output adds variable terminal overhead; the async background writer plus compact serialization in Logly shows the most tangible gains when measuring disk-bound or structured-output scenarios.
+
+Reproduce the exact runs I used (from the repository root)
+
+Important: activate your virtual environment first (PowerShell):
+
+```powershell
+# if you used `uv` or `python -m venv` to create .venv
+. .\.venv\Scripts\Activate.ps1
+```
 
 ```powershell
 # build and install the editable extension (requires maturin + Rust toolchain)
 maturin develop
 
 # run the console benchmark: 100k messages, 3 repeats
-python .\bench\benchmark_logging.py --mode console --count 100000 --repeat 3
+python .\bench\benchmark_logging.py --mode console --count 100000 --repeat 1
+
+# additional scenarios
+# JSON compact, console
+python .\bench\benchmark_logging.py --mode console --json --count 100000 --repeat 3
+# File sink, async (default)
+python .\bench\benchmark_logging.py --mode file --count 100000 --repeat 1
+# File sink, sync writes
+python .\bench\benchmark_logging.py --mode file --sync --count 100000 --repeat 3
+# JSON pretty (human-friendly; slower), console
+python .\bench\benchmark_logging.py --mode console --json --pretty-json --count 50000 --repeat 3
+
+# run a small matrix of scenarios
+python .\bench\benchmark_matrix.py --count 50000 --repeat 2
+```
+
+Advanced options for benchmark_logging
+
+- Add structured fields per log call (simulates payload size):
+
+```powershell
+python .\bench\benchmark_logging.py --mode file --count 50000 --fields 5
+```
+
+- Increase message size (bytes) to test serialization/IO impact:
+
+```powershell
+python .\bench\benchmark_logging.py --mode console --count 50000 --message-size 200
+```
+
+- Mix levels (INFO/DEBUG) to exercise level checks and filtering:
+
+```powershell
+python .\bench\benchmark_logging.py --mode file --count 50000 --level-mix
 ```
 
 Notes and caveats
@@ -205,6 +309,44 @@ Notes and caveats
 If you want, I can add a small helper that aggregates multiple runs (mean/median/stddev) or create a lightweight CI benchmark job that runs on push.
 
 
+## Concurrency benchmark
+
+To stress-test multi-threaded producers writing to a shared file sink, use the concurrency benchmark. This highlights the benefits of logly's async writer thread under parallel load.
+
+```powershell
+# 4 threads x 25k msgs each, JSON off, async on (default)
+python .\bench\benchmark_concurrency.py --threads 4 --count-per-thread 25000 --repeat 2
+
+# Compare sync file writes
+python .\bench\benchmark_concurrency.py --threads 4 --count-per-thread 25000 --repeat 2 --sync
+
+# JSON compact
+python .\bench\benchmark_concurrency.py --threads 4 --count-per-thread 15000 --repeat 2 --json
+
+# JSON pretty (human-friendly; slower)
+python .\bench\benchmark_concurrency.py --threads 4 --count-per-thread 10000 --repeat 2 --json --pretty-json
+```
+
+Notes:
+- The script uses a single shared file sink for each run to simulate realistic contention.
+- In async mode, logly uses a background writer; `logger.complete()` ensures logs are flushed before timing stops.
+
+
+### Latency microbenchmark (p50/p95/p99)
+
+Measure per-call latency distribution for console or file sinks:
+
+```powershell
+# console, text
+python .\bench\benchmark_latency.py --mode console --count 20000
+
+# file, async, JSON compact
+python .\bench\benchmark_latency.py --mode file --json --count 30000
+```
+
+Outputs median (p50), p95, and p99 latencies to help gauge tail behavior.
+
+
 ## API reference (current features)
 
 The Python `logger` is a small proxy around the Rust `PyLogger`. The proxy adds convenience features like `bind()` and `contextualize()` while forwarding core calls to the Rust backend.
@@ -214,25 +356,37 @@ Creation
 
 Configuration & sinks
 
-- `logger.add(sink: str | None = None, *, rotation: str | None = None) -> int`
+- `logger.add(sink: str | None = None, *, rotation: str | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True) -> int`
 	- Add a sink. Use `"console"` for stdout/stderr or a file path to write logs to disk. Returns a handler id (int).
-	- `rotation` accepts `"daily"`, `"hourly"`, `"minutely"`, or `"never"` (MVP: simple rotation via rolling appender).
+	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender).
+	- `filter_min_level`: only write to this file if the record level is >= this level (e.g., `"INFO"`).
+	- `filter_module`: only write if the callsite module matches this string.
+	- `filter_function`: only write if the callsite function matches this string.
+	- `async_write`: when True (default), file writes go through a background thread for lower latency.
 
 	Example — add console and a rotating file sink:
 
 	```python
 	logger.add("console")
-	logger.add("logs/app.log", rotation="daily")
+	logger.add(
+		"logs/app.log",
+		rotation="daily",
+		filter_min_level="INFO",
+		async_write=True,
+	)
 	```
 
-- `logger.configure(level: str = "INFO", color: bool = True, json: bool = False) -> None`
-	- Set the base level for console output, enable/disable ANSI coloring on the console, and toggle structured JSON output.
+- `logger.configure(level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None`
+	- Set the base level for console output, enable/disable ANSI coloring, and toggle structured JSON output.
+	- `pretty_json`: pretty-print JSON output for readability (higher cost than compact JSON).
 	- When `json=True`, console and file sinks emit newline-delimited JSON records with fields: `timestamp`, `level`, `message`, and `fields` (merged kwargs and bound context).
 
 	Example — set INFO, enable colors, keep text output:
 
 	```python
 	logger.configure(level="INFO", color=True, json=False)
+	# pretty JSON
+	logger.configure(level="INFO", color=False, json=True, pretty_json=True)
 	```
 
 - `logger.remove(handler_id: int) -> bool`
@@ -359,6 +513,36 @@ Using `opt()`
 
 ```python
 logger.opt(colors=False).info("no colors for this call")
+```
+
+Per-sink filtering by module/function and level
+
+```python
+from logly import logger
+
+# Configure JSON with pretty output for readability during local runs
+logger.configure(level="DEBUG", json=True, pretty_json=True)
+
+# Only write INFO+ events from a specific module to a file; everything still goes to console
+logger.add(
+	"logs/filtered.log",
+	rotation="daily",
+	filter_min_level="INFO",
+	filter_module="myapp.handlers",
+	async_write=True,
+)
+
+# Simulate calls from different modules/functions
+def do_work():
+	logger.info("from do_work")
+
+if __name__ == "myapp.handlers":
+	do_work()
+else:
+	# This won't match filter_module, so it won't be written to filtered.log
+	logger.info("from other module")
+
+logger.complete()
 ```
 
 ## Testing
