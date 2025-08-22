@@ -40,7 +40,9 @@ class _LoggerProxy:
             async_write=async_write,
         )
 
-    def configure(self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None:
+    def configure(
+        self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False
+    ) -> None:
         self._inner.configure(level=level, color=color, json=json, pretty_json=pretty_json)
 
     def remove(self, handler_id: int) -> bool:
@@ -57,6 +59,7 @@ class _LoggerProxy:
     def _augment_with_callsite(self, kwargs: dict) -> dict:
         try:
             import inspect
+
             frame = inspect.currentframe()
             # go back two frames: current -> _augment -> caller method wrapper
             if frame and frame.f_back and frame.f_back.f_back:
@@ -70,6 +73,7 @@ class _LoggerProxy:
         except Exception:
             pass
         return kwargs
+
     def trace(self, message: str, /, *args, **kwargs):
         if not self._enabled:
             return

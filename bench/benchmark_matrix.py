@@ -9,6 +9,7 @@ Runs a small matrix of scenarios:
 Usage (PowerShell):
 python .\bench\benchmark_matrix.py --count 50000 --repeat 2
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,19 +35,103 @@ def main() -> None:
 
     scenarios: list[list[str]] = []
     # console, text
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "console", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "console",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # file, text, async
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "file", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "file",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # file, text, sync
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "file", "--sync", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "file",
+            "--sync",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # console, json compact
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "console", "--json", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "console",
+            "--json",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # file, json compact, async
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "file", "--json", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "file",
+            "--json",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # file, json compact, sync
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "file", "--json", "--sync", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "file",
+            "--json",
+            "--sync",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
     # console, json pretty
-    scenarios.append([py, "bench/benchmark_logging.py", "--mode", "console", "--json", "--pretty-json", "--count", str(args.count), "--repeat", str(args.repeat)])
+    scenarios.append(
+        [
+            py,
+            "bench/benchmark_logging.py",
+            "--mode",
+            "console",
+            "--json",
+            "--pretty-json",
+            "--count",
+            str(args.count),
+            "--repeat",
+            str(args.repeat),
+        ]
+    )
 
     logging.basicConfig(level=logging.INFO)
     for cmd in scenarios:

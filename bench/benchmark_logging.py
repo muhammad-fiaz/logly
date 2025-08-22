@@ -145,9 +145,18 @@ def main():
     p.add_argument("--json", action="store_true", help="enable JSON mode for logly runs")
     p.add_argument("--pretty-json", action="store_true", help="pretty-print JSON (higher cost)")
     p.add_argument("--sync", action="store_true", help="force sync file writes (async by default)")
-    p.add_argument("--message-size", type=int, default=0, help="extra message size in bytes to append to each line")
-    p.add_argument("--fields", type=int, default=0, help="number of synthetic key=value fields per call")
-    p.add_argument("--level-mix", action="store_true", help="mix in DEBUG logs (10%) alongside INFO")
+    p.add_argument(
+        "--message-size",
+        type=int,
+        default=0,
+        help="extra message size in bytes to append to each line",
+    )
+    p.add_argument(
+        "--fields", type=int, default=0, help="number of synthetic key=value fields per call"
+    )
+    p.add_argument(
+        "--level-mix", action="store_true", help="mix in DEBUG logs (10%) alongside INFO"
+    )
     args = p.parse_args()
 
     to_file = args.mode == "file"

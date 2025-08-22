@@ -52,7 +52,9 @@ def bench_std_concurrent(threads: int, count_per_thread: int) -> float:
     return end - start
 
 
-def bench_logly_concurrent(threads: int, count_per_thread: int, *, json: bool, pretty_json: bool, async_write: bool) -> float:
+def bench_logly_concurrent(
+    threads: int, count_per_thread: int, *, json: bool, pretty_json: bool, async_write: bool
+) -> float:
     import importlib
     import os as _os
     import sys as _sys
@@ -60,6 +62,7 @@ def bench_logly_concurrent(threads: int, count_per_thread: int, *, json: bool, p
     if _os.getcwd() not in _sys.path:
         _sys.path.insert(0, _os.getcwd())
     import logly  # type: ignore
+
     importlib.reload(logly)
 
     # Configure one file sink shared by all threads
