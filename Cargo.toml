@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.25.1", features = ["extension-module"] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["fmt", "ansi", "env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["fmt", "ansi", "env-filter"] }
 tracing-appender = "0.2.3"
 once_cell = "1.19.0"
 serde = { version = "1.0.210", features = ["derive"] }
