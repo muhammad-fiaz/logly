@@ -205,16 +205,26 @@ logger.critical("System out of memory")  # Alert sent asynchronously
 
 ### 5. Template Strings
 
-Deferred evaluation for better performance:
+Deferred evaluation for better performance with support for multiple template formats:
 
 ```python
-# Variables only evaluated if log level passes filter
+from string import Template
+
+# Standard {variable} syntax - variables only evaluated if log level passes filter
 logger.debug("Processing {item} with {config}", item=data, config=settings)
 
 # Works with all string formats
 user = "bob"
 logger.info(f"User {user} action", action="login")  # f-string
 logger.info("Item %d of %d", current, total)        # % format
+
+# NEW: string.Template objects for advanced templating
+template = Template("User ${user} performed ${action}")
+logger.info(template, user="alice", action="login")
+
+# NEW: Python 3.14+ t-strings (when available)
+# logger.info(t"User {user} performed {action}", user="alice", action="login")
+# Note: t-strings require Python 3.14+ and create Template objects from string.templatelib
 ```
 
 ---

@@ -445,10 +445,19 @@ The latest iteration adds performance-focused and convenience features, with sim
 	- Use `{variable}` syntax for efficient, deferred string interpolation
 	- Variables are extracted and become structured context fields
 	- Works seamlessly with f-strings, % formatting, `bind()`, and `contextualize()`
+	- **NEW:** Support for `string.Template` objects and Python 3.14+ t-strings
 	- Better performance - variables only evaluated if log passes level filter
 	- Example:
 		```python
-		logger.info("User {user} logged in", user="alice", ip="192.168.1.1")
+		from string import Template
+		
+		# Using string.Template
+		template = Template("User {user} logged in")
+		logger.info(template, user="alice", ip="192.168.1.1")
+		
+		# Using Python 3.14+ t-strings (when available)
+		# logger.info(t"User {user} logged in", user="alice", ip="192.168.1.1")
+		
 		# Output: "User alice logged in" with ip as context field
 		```
 
