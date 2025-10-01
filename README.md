@@ -52,7 +52,6 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 - [API reference (current features)](#api-reference-current-features)
 - [Advanced examples](#advanced-examples)
 - [Testing](#testing)
-- [Roadmap (planned features)](#roadmap-planned-features)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -691,14 +690,6 @@ Run the unit tests with:
 uv run pytest -q
 ```
 
-## Roadmap (planned features)
-
-- Structured/JSON logging improvements (custom schemas, pretty mode, filtering nested types).
-- Colorized console output with format options.
-- Rotating policies and compression support for file sinks.
-- Async-safe sinks that don't block Python threads and integrate with async runtimes.
-- Fine-grained runtime configuration via `logger.configure()` accepting a full config dict.
-- Full Loguru-like logly API parity (including sinks filters, exception formatting, record depth, contextual lazy formatting).
 
 ## Contributing
 
@@ -706,4 +697,4 @@ Problems, PRs and feature requests are welcome. For implementation tasks that to
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file in the repository root for the full license text.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file in the repository root for the full license text.
