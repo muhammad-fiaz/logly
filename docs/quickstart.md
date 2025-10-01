@@ -1,3 +1,9 @@
+---
+title: Quick Start - Logly Python Logging Tutorial
+description: Get started with Logly logging library in 5 minutes. Learn basic setup, configuration, and core features for Python applications.
+keywords: python, logging, tutorial, quickstart, setup, configuration, logly
+---
+
 # Quick Start
 
 Get started with Logly in 5 minutes!

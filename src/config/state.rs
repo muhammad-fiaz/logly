@@ -108,6 +108,12 @@ pub struct SinkConfig {
     pub function_filter: Option<String>,
     /// Enable asynchronous writing for better performance
     pub async_write: bool,
+    /// Buffer size in bytes for async writing (default: 8192)
+    pub buffer_size: usize,
+    /// Flush interval in milliseconds for async writing (default: 1000)
+    pub flush_interval: u64,
+    /// Maximum number of buffered lines before blocking (default: 1000)
+    pub max_buffered_lines: usize,
     /// Date/time format style (e.g., "rfc3339", "local", "utc")
     pub date_style: String,
     /// Enable timestamp in log output
@@ -198,6 +204,9 @@ pub struct LoggerState {
     pub async_sender: Option<Sender<String>>,
     pub async_write: bool,
     pub async_handle: Option<JoinHandle<()>>,
+    pub buffer_size: usize,
+    pub flush_interval: u64,
+    pub max_buffered_lines: usize,
     pub filter_min_level: Option<LevelFilter>,
     pub filter_module: Option<String>,
     pub filter_function: Option<String>,
@@ -235,6 +244,9 @@ impl Default for LoggerState {
             async_sender: None,
             async_write: true,
             async_handle: None,
+            buffer_size: 8192,
+            flush_interval: 1000,
+            max_buffered_lines: 1000,
             filter_min_level: None,
             filter_module: None,
             filter_function: None,

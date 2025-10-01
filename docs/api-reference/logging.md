@@ -1,3 +1,9 @@
+---
+title: Logging Methods API - Logly Python Logging
+description: Logly logging methods API reference. Complete guide to all logging functions, severity levels, and message formatting options.
+keywords: python, logging, methods, api, severity, levels, messages, formatting, logly
+---
+
 # Logging Methods
 
 Methods for emitting log messages at different severity levels.

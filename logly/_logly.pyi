@@ -34,6 +34,9 @@ class PyLogger:
         filter_module: str | None = ...,
         filter_function: str | None = ...,
         async_write: bool = ...,
+        buffer_size: int = ...,
+        flush_interval: int = ...,
+        max_buffered_lines: int = ...,
         date_style: str | None = ...,
         date_enabled: bool = ...,
         retention: int | None = ...,
@@ -48,6 +51,9 @@ class PyLogger:
             filter_module: Only log messages from this module.
             filter_function: Only log messages from this function.
             async_write: Enable background async writing (default: True).
+            buffer_size: Buffer size in bytes for async writing (default: 8192).
+            flush_interval: Flush interval in milliseconds for async writing (default: 1000).
+            max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format ("rfc3339", "local", "utc").
             date_enabled: Include timestamp in log output (default: False).
             retention: Number of rotated files to keep (older files auto-deleted).

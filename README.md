@@ -1,21 +1,21 @@
 ﻿<div align="center">
 <img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="logly logo"  />
 
-[![PyPI](https://img.shields.io/pypi/v/logly)](https://pypi.org/project/logly/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/logly)](https://pypistats.org/packages/logly)
-[![Documentation](https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue)](https://muhammad-fiaz.github.io/logly/)
-[![Donate](https://img.shields.io/badge/Donate-%20-orange)](https://pay.muhammadfiaz.com)
-[![Supported Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
-[![GitHub stars](https://img.shields.io/github/stars/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly)
-[![GitHub forks](https://img.shields.io/github/forks/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/network)
-[![GitHub release](https://img.shields.io/github/v/release/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/releases)
-[![GitHub issues](https://img.shields.io/github/issues/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/pulls)
-[![GitHub last commit](https://img.shields.io/github/last-commit/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/commits)
-[![GitHub contributors](https://img.shields.io/github/contributors/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly/graphs/contributors)
-[![Codecov](https://img.shields.io/codecov/c/gh/muhammad-fiaz/logly)](https://codecov.io/gh/muhammad-fiaz/logly)
-[![Pytest](https://img.shields.io/badge/pytest-%3E%3D7.0-blue.svg)](https://docs.pytest.org/)
-[![License](https://img.shields.io/github/license/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly)
+<a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly" alt="PyPI"></a>
+<a href="https://pypistats.org/packages/logly"><img src="https://img.shields.io/pypi/dm/logly" alt="PyPI - Downloads"></a>
+<a href="https://muhammad-fiaz.github.io/logly/"><img src="https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue" alt="Documentation"></a>
+<a href="https://pay.muhammadfiaz.com"><img src="https://img.shields.io/badge/Donate-%20-orange" alt="Donate"></a>
+<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg" alt="Supported Python"></a>
+<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/stars/muhammad-fiaz/logly" alt="GitHub stars"></a>
+<a href="https://github.com/muhammad-fiaz/logly/network"><img src="https://img.shields.io/github/forks/muhammad-fiaz/logly" alt="GitHub forks"></a>
+<a href="https://github.com/muhammad-fiaz/logly/releases"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly" alt="GitHub release"></a>
+<a href="https://github.com/muhammad-fiaz/logly/issues"><img src="https://img.shields.io/github/issues/muhammad-fiaz/logly" alt="GitHub issues"></a>
+<a href="https://github.com/muhammad-fiaz/logly/pulls"><img src="https://img.shields.io/github/issues-pr/muhammad-fiaz/logly" alt="GitHub pull requests"></a>
+<a href="https://github.com/muhammad-fiaz/logly/commits"><img src="https://img.shields.io/github/last-commit/muhammad-fiaz/logly" alt="GitHub last commit"></a>
+<a href="https://github.com/muhammad-fiaz/logly/graphs/contributors"><img src="https://img.shields.io/github/contributors/muhammad-fiaz/logly" alt="GitHub contributors"></a>
+<a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://img.shields.io/codecov/c/gh/muhammad-fiaz/logly" alt="Codecov"></a>
+<img src="https://img.shields.io/badge/pytest-%3E%3D7.0-blue.svg" alt="Pytest">
+<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
 
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
@@ -41,6 +41,10 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 		- [Prerequisites](#prerequisites)
 		- [Build steps](#build-steps)
 		- [Docker/Container Installation](#dockercontainer-installation)
+- [Architecture Overview](#architecture-overview)
+	- [🏗️ **Modular Rust Backend**](#️-modular-rust-backend)
+	- [🔧 **Key Components**](#-key-components)
+	- [🚀 **Performance Optimizations**](#-performance-optimizations)
 - [Quickstart](#quickstart)
 	- [Filename rotation and retention](#filename-rotation-and-retention)
 - [What’s new (features)](#whats-new-features)
@@ -142,6 +146,40 @@ RUN pip install /tmp/*.whl
 ```
 
 **Note**: Most users should use PyPI releases instead of building from source.
+
+## Architecture Overview
+
+Logly's architecture is designed for high performance, maintainability, and extensibility:
+
+### 🏗️ **Modular Rust Backend**
+```
+src/
+├── backend/          # Core logging functionality
+│   ├── logging.rs    # Main logging logic with JSON/text formatting
+│   ├── async.rs      # Asynchronous buffered writing
+│   └── file.rs       # File appenders with rotation
+├── config/           # Configuration and state management
+│   └── state.rs      # Global state with thread-safe structures
+├── format/           # Output formatting utilities
+│   └── json.rs       # JSON record serialization
+└── utils/            # Shared utilities and types
+    └── levels.rs     # Log levels and rotation policies
+```
+
+### 🔧 **Key Components**
+
+- **Backend Module**: Handles core logging operations, message formatting, and output dispatching
+- **Config Module**: Manages global logger state, sink configurations, and thread-safe data structures
+- **Format Module**: Provides JSON serialization and record formatting utilities
+- **Utils Module**: Contains shared types, log levels, and rotation policies
+
+### 🚀 **Performance Optimizations**
+
+- **Async Buffering**: Background thread writing with configurable flush intervals
+- **Memory Safety**: Zero-cost abstractions with proper error handling
+- **Thread Safety**: Lock-free operations where possible, parking_lot Mutex for performance
+- **Fast Hashing**: ahash for high-performance hash operations
+- **Efficient Data Structures**: Crossbeam channels, Arc pointers, and optimized collections
 
 ## Quickstart
 
@@ -457,11 +495,7 @@ The latest iteration adds performance-focused and convenience features, with sim
 - 🔄 `Arc<Mutex<>>` - Thread-safe file writers
 - ⚡ Lock-free atomic operations with `arc-swap`
 
-**Infrastructure Added:**
-- 🗜️ Compression support (gzip, zstd)
-- 🎲 Log sampling/throttling
-- 📊 Performance metrics
-- 🎯 Caller information capture
+
 
 ### Reproduce These Benchmarks
 
@@ -576,23 +610,48 @@ Configuration & sinks
 	- `date_style`: `"before_ext"` (default) or `"prefix"` — controls where the rotation timestamp is placed in the filename.
 	  - `"before_ext"`: `app.2025-08-22.log` (date before file extension)
 	  - `"prefix"`: `2025-08-22.app.log` (date as prefix)
-	- `date_enabled`: when `False` (default) no date is appended to filenames even if rotation is set; set to `True` to enable dated filenames.
-	- `filter_min_level`: only write to this file if the record level is >= this level (e.g., `"INFO"`, `"WARNING"`, `"ERROR"`).
-	- `filter_module`: only write if the callsite module matches this string (e.g., `"myapp.handlers"`, `"django.db"`).
-	- `filter_function`: only write if the callsite function matches this string (e.g., `"process_data"`, `"handle_request"`).
-	- `async_write`: when `True` (default), file writes go through a background thread for lower latency and better performance. Set to `False` for synchronous writes.
+	- `buffer_size`: Buffer size in bytes for async writing (default: 8192). Larger buffers reduce I/O operations but use more memory.
+	- `flush_interval`: Time in milliseconds between automatic flushes for async writing (default: 100). Lower values reduce latency but increase I/O.
+	- `max_buffered_lines`: Maximum number of lines to buffer before blocking the logging thread (default: 1000). Prevents unbounded memory growth.
+	- `date_style`: Date format style for filenames. Options: "before_ext" (default), "prefix", "rfc3339", "local", "utc".
+	- `date_enabled`: When True, includes date in rotated filenames (default: False).
 
-	Example — add console and a rotating file sink with retention:
+	Example — advanced async configuration for high-throughput logging:
 
 	```python
-	logger.add("console")
+	# High-throughput configuration: larger buffer, less frequent flushing
 	logger.add(
-		"logs/app.log",
-		rotation="daily",
-		retention=7,  # Keep last 7 rotated files
-		filter_min_level="INFO",
+		"logs/high-volume.log",
 		async_write=True,
+		buffer_size=65536,        # 64KB buffer
+		flush_interval=500,       # Flush every 500ms
+		max_buffered_lines=5000,  # Allow up to 5000 buffered lines
 	)
+	
+	# Low-latency configuration: smaller buffer, frequent flushing
+	logger.add(
+		"logs/low-latency.log", 
+		async_write=True,
+		buffer_size=4096,         # 4KB buffer
+		flush_interval=50,        # Flush every 50ms
+		max_buffered_lines=100,   # Limit buffer to 100 lines
+	)
+	```
+
+	Date style examples:
+
+	```python
+	# Date before file extension (default)
+	logger.add("logs/app.log", rotation="daily", date_enabled=True)
+	# Creates: app.2025-01-15.log
+	
+	# Date as prefix
+	logger.add("logs/app.log", rotation="daily", date_enabled=True, date_style="prefix")
+	# Creates: 2025-01-15.app.log
+	
+	# RFC3339 timestamp format
+	logger.add("logs/app.log", rotation="hourly", date_enabled=True, date_style="rfc3339")
+	# Creates: app.2025-01-15T14-30-00Z.log
 	```
 
 	Size-based rotation examples:
@@ -603,6 +662,38 @@ Configuration & sinks
 	
 	# Combined time and size rotation
 	logger.add("logs/combined.log", rotation="daily", size_limit="500KB", retention=10)
+	
+	# Size rotation with different units
+	logger.add("logs/debug.log", size_limit="1GB", retention=5)    # Gigabytes
+	logger.add("logs/trace.log", size_limit="50MB", retention=3)   # Megabytes
+	logger.add("logs/temp.log", size_limit="100KB", retention=2)   # Kilobytes
+	```
+
+	Advanced filtering examples:
+
+	```python
+	# Filter by level only
+	logger.add("logs/errors.log", filter_min_level="ERROR")
+	
+	# Filter by module and level
+	logger.add(
+		"logs/auth.log", 
+		filter_min_level="INFO",
+		filter_module="myapp.auth"
+	)
+	
+	# Filter by function and module
+	logger.add(
+		"logs/handlers.log",
+		filter_min_level="DEBUG", 
+		filter_module="myapp.handlers",
+		filter_function="process_request"
+	)
+	
+	# Multiple filtered sinks for different concerns
+	logger.add("logs/security.log", filter_min_level="WARNING", filter_module="myapp.security")
+	logger.add("logs/database.log", filter_min_level="ERROR", filter_module="myapp.db")
+	logger.add("logs/api.log", filter_min_level="INFO", filter_module="myapp.api")
 	```
 
 - `logger.configure(level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None`
@@ -616,6 +707,22 @@ Configuration & sinks
 	logger.configure(level="INFO", color=True, json=False)
 	# pretty JSON
 	logger.configure(level="INFO", color=False, json=True, pretty_json=True)
+	```
+
+	Advanced configure examples:
+
+	```python
+	# Development configuration: verbose, colored output
+	logger.configure(level="DEBUG", color=True, json=False)
+	
+	# Production configuration: structured JSON logging
+	logger.configure(level="INFO", color=False, json=True, pretty_json=False)
+	
+	# Debugging configuration: pretty JSON for readability
+	logger.configure(level="TRACE", color=False, json=True, pretty_json=True)
+	
+	# Minimal configuration: errors only, no colors
+	logger.configure(level="ERROR", color=False, json=False)
 	```
 
 - `logger.remove(handler_id: int) -> bool`
@@ -642,6 +749,33 @@ logger.error("Payment failed", order_id=1234, retry=False)
 logger.log("debug", "debug details", step=1)
 ```
 
+Advanced logging examples with different string formats:
+
+```python
+# Template strings (recommended for performance)
+logger.info("User {user} logged in from {ip}", user="alice", ip="192.168.1.1")
+
+# F-string formatting (evaluated immediately)
+user = "bob"
+logger.info(f"User {user} logged in", session_id="sess-123")
+
+# % formatting (legacy style)
+logger.info("Processing item %d of %d", 5, 10)
+
+# Structured logging with multiple fields
+logger.error(
+	"Database connection failed", 
+	db_host="localhost", 
+	db_port=5432, 
+	retry_count=3,
+	error_code="ECONNREFUSED"
+)
+
+# Custom level with alias
+logger.level("NOTICE", "INFO")
+logger.log("NOTICE", "System maintenance scheduled", maintenance_window="2h")
+```
+
 Context & convenience
 
 - `logger.bind(**kwargs) -> logger`
@@ -652,12 +786,70 @@ Context & convenience
 	request_logger.info("start")
 	```
 
+	Advanced bind examples:
+
+	```python
+	# Request-scoped logger
+	request_logger = logger.bind(
+		request_id="req-abc123",
+		user_id=42,
+		user_agent="Mozilla/5.0",
+		ip_address="192.168.1.100"
+	)
+	request_logger.info("Processing payment", amount=99.99)
+	request_logger.warning("Payment retry", attempt=2)
+
+	# Component-scoped logger
+	db_logger = logger.bind(component="database", host="db-prod-01")
+	db_logger.info("Connection established", pool_size=10)
+	db_logger.error("Query timeout", query="SELECT * FROM users", duration_ms=5000)
+
+	# Chained binding (inherits parent context)
+	base_logger = logger.bind(app="myapp", version="1.2.3")
+	api_logger = base_logger.bind(module="api", endpoint="/users")
+	api_logger.debug("Processing request", method="GET", user_count=150)
+	```
+
 - `logger.contextualize(**kwargs)`
 	- Context manager that temporarily adds the provided kwargs to the proxy for the duration of the `with` block.
 
 	```python
 	with logger.contextualize(step=1):
 			logger.info("processing")
+	```
+
+	Advanced contextualize examples:
+
+	```python
+	# Temporary context for operation
+	with logger.contextualize(operation="user_registration", step=1):
+		logger.info("Validating user data")
+		# ... validation logic ...
+		
+		with logger.contextualize(step=2, validation_time_ms=150):
+			logger.info("Creating user account")
+			# ... account creation ...
+			
+		with logger.contextualize(step=3, account_id="acc-123"):
+			logger.info("Sending welcome email")
+			# ... email sending ...
+
+	# Nested contexts (inner contexts inherit outer ones)
+	with logger.contextualize(request_id="req-456", user="bob"):
+		logger.info("Request started")
+		
+		with logger.contextualize(operation="data_processing", batch_size=100):
+			logger.debug("Processing batch")
+			
+			with logger.contextualize(item_id="item-789", processing_time_ms=45):
+				logger.info("Item processed successfully")
+
+	# Exception handling with context
+	try:
+		with logger.contextualize(operation="file_upload", filename="data.csv"):
+			process_upload("data.csv")
+	except Exception as e:
+		logger.exception("Upload failed")
 	```
 
 - `logger.catch(reraise=False)`
@@ -669,8 +861,81 @@ Context & convenience
 			1 / 0
 	```
 
+	Advanced catch examples:
+
+	```python
+	# As a decorator - swallow exceptions
+	@logger.catch(reraise=False)
+	def process_payment(amount, card_number):
+		# Risky payment processing logic
+		if amount > 1000:
+			raise ValueError("Amount too high")
+		return f"Processed ${amount}"
+
+	# As a decorator - re-raise exceptions
+	@logger.catch(reraise=True)
+	def validate_user_data(user_data):
+		if not user_data.get("email"):
+			raise ValueError("Email required")
+		return "Valid"
+
+	# As a context manager - temporary error handling
+	def risky_operation():
+		with logger.catch(reraise=False):
+			# Multiple operations that might fail
+			step1_result = do_step1()
+			step2_result = do_step2(step1_result)
+			return step2_result
+
+	# Nested catch blocks with different behaviors
+	try:
+		with logger.catch(reraise=True):  # Re-raise for outer handling
+			@logger.catch(reraise=False)  # Swallow for inner operations
+			def inner_operation():
+				return risky_calculation()
+			result = inner_operation()
+	except Exception:
+		logger.error("Outer operation failed, but inner errors were logged")
+	```
+
 - `logger.exception(msg="")`
 	- Convenience that logs the current exception at error level with traceback details.
+
+	Advanced exception examples:
+
+	```python
+	# Basic exception logging
+	try:
+		result = 1 / 0
+	except ZeroDivisionError:
+		logger.exception("Math error occurred")
+
+	# Exception with additional context
+	try:
+		user_id = get_user_id_from_request(request)
+		process_user_payment(user_id, amount)
+	except Exception:
+		logger.exception("Payment processing failed", user_id=user_id, amount=amount)
+
+	# Exception in different loggers with context
+	request_logger = logger.bind(request_id="req-123", user="alice")
+	try:
+		process_complex_business_logic(request.data)
+	except Exception:
+		request_logger.exception("Business logic error")
+
+	# Custom exception message with full context
+	try:
+		db_connection = connect_to_database()
+		execute_query(db_connection, complex_query)
+	except DatabaseError as e:
+		logger.exception(f"Database operation failed: {e}", 
+						query=complex_query,
+						connection_pool_size=10,
+						timeout_seconds=30)
+	except Exception:
+		logger.exception("Unexpected error during database operation")
+	```
 
 - `logger.opt(**options) -> logger`
 	- Return a proxy with call-time options (kept for future enhancements such as per-call formatting options).
@@ -678,11 +943,143 @@ Context & convenience
 - `logger.enable()` / `logger.disable()`
 	- Toggle logging at the proxy level. When disabled, the proxy's logging methods are no-ops.
 
+	Advanced enable/disable examples:
+
+	```python
+	# Conditional logging based on environment
+	import os
+
+	if os.getenv("LOGGING_ENABLED", "true").lower() == "false":
+		logger.disable()
+	else:
+		logger.enable()
+
+	# Temporary disable for performance-critical sections
+	logger.info("Starting batch processing")
+	logger.disable()  # Disable logging for performance
+	
+	for item in large_dataset:
+		process_item(item)  # No logging overhead
+	
+	logger.enable()   # Re-enable logging
+	logger.info("Batch processing completed")
+
+	# Scoped disable using context manager pattern
+	class LoggingContext:
+		def __init__(self, logger):
+			self.logger = logger
+			self.was_enabled = logger._enabled
+		
+		def __enter__(self):
+			self.logger.disable()
+			return self
+		
+		def __exit__(self, exc_type, exc_val, exc_tb):
+			if self.was_enabled:
+				self.logger.enable()
+
+	with LoggingContext(logger):
+		# Logging disabled in this block
+		perform_noisy_operation()
+	# Logging restored to previous state
+	```
+
 - `logger.level(name, mapped_to)`
 	- Register or alias a custom level name to an existing level recognized by the backend.
 
+	Advanced level examples:
+
+	```python
+	# Create custom level aliases for domain-specific logging
+	logger.level("NOTICE", "INFO")      # Notice messages
+	logger.level("ALERT", "WARNING")    # Alert conditions
+	logger.level("CRIT", "CRITICAL")    # Critical system events
+	logger.level("EMERG", "CRITICAL")   # Emergency situations
+
+	# Use custom levels in logging
+	logger.log("NOTICE", "System maintenance scheduled", window="2h")
+	logger.log("ALERT", "High memory usage detected", usage_percent=85)
+	logger.log("CRIT", "Database connection pool exhausted")
+	logger.log("EMERG", "System shutdown imminent")
+
+	# Business domain levels
+	logger.level("AUDIT", "INFO")       # Security/audit events
+	logger.level("METRIC", "DEBUG")     # Performance metrics
+	logger.level("TRACE", "TRACE")      # Detailed tracing
+
+	# Use in business logic
+	logger.log("AUDIT", "User login", user_id=123, ip="192.168.1.1")
+	logger.log("METRIC", "Request latency", endpoint="/api/users", latency_ms=45)
+	logger.log("TRACE", "Database query executed", query="SELECT * FROM users", rows=150)
+	```
+
 - `logger.complete()`
 	- Flushes or completes any buffered output for the current proxy (useful in short-lived scripts or tests).
+
+	Advanced complete examples:
+
+	```python
+	# Essential for short-lived scripts
+	def main():
+		logger.add("app.log", rotation="daily")
+		logger.info("Script started")
+		
+		try:
+			do_work()
+			logger.success("Work completed successfully")
+		except Exception as e:
+			logger.exception("Work failed")
+		finally:
+			logger.complete()  # Ensure all logs are written before exit
+
+	# With async callbacks
+	def process_with_callbacks():
+		logger.add("processing.log", async_write=True)
+		
+		# Register callback for monitoring
+		def monitor_progress(record):
+			if "completed" in record.get("message", "").lower():
+				send_progress_notification(record)
+		
+		callback_id = logger.add_callback(monitor_progress)
+		
+		try:
+			logger.info("Starting batch processing")
+			process_batch_data()
+			logger.info("Batch processing completed")
+		finally:
+			logger.complete()  # Flush logs AND wait for callbacks to finish
+			logger.remove_callback(callback_id)
+
+	# In testing scenarios
+	def test_logging_behavior():
+		logger.add("test.log", async_write=True)
+		
+		# Test various logging scenarios
+		logger.info("Test message 1")
+		logger.error("Test error")
+		
+		# Force flush to ensure test log files are complete
+		logger.complete()
+		
+		# Now verify log file contents
+		with open("test.log", "r") as f:
+			content = f.read()
+			assert "Test message 1" in content
+			assert "Test error" in content
+
+	# Graceful shutdown in servers
+	import signal
+	import sys
+
+	def signal_handler(signum, frame):
+		logger.warning("Received shutdown signal", signal=signum)
+		logger.complete()  # Ensure all pending logs are written
+		sys.exit(0)
+
+	signal.signal(signal.SIGINT, signal_handler)
+	signal.signal(signal.SIGTERM, signal_handler)
+	```
 
 Callbacks
 
@@ -730,6 +1127,58 @@ Logly supports registering callback functions that are invoked asynchronously wh
 	success = logger.remove_callback(callback_id)
 	```
 
+	Advanced callback examples:
+
+	```python
+	# Multiple callbacks for different purposes
+	def log_to_external_system(record):
+		# Send to external logging service
+		external_logger.log(record["level"], record["message"], **record)
+
+	def metrics_collector(record):
+		# Collect metrics on log levels
+		metrics.increment(f"logs.{record['level'].lower()}")
+
+	def audit_trail(record):
+		# Security audit logging
+		if record.get("level") in ["WARNING", "ERROR", "CRITICAL"]:
+			audit_log.write(json.dumps(record))
+
+	# Register multiple callbacks
+	external_id = logger.add_callback(log_to_external_system)
+	metrics_id = logger.add_callback(metrics_collector)
+	audit_id = logger.add_callback(audit_trail)
+
+	# Callbacks execute for every log message
+	logger.info("User action", user_id=123, action="login")
+	logger.warning("Rate limit exceeded", user_id=456, limit=100)
+
+	# Context-aware callbacks
+	request_logger = logger.bind(request_id="req-789", user="alice")
+
+	def request_monitor(record):
+		# Only process records from this request
+		if record.get("request_id") == "req-789":
+			update_request_metrics(record)
+
+	request_monitor_id = request_logger.add_callback(request_monitor)
+	request_logger.info("Processing payment", amount=50.00)
+	request_logger.complete()  # Ensure callback finishes
+
+	# Error handling in callbacks
+	def robust_callback(record):
+		try:
+			process_log_record(record)
+		except Exception as e:
+			# Log callback errors to stderr to avoid infinite loops
+			print(f"Callback error: {e}", file=sys.stderr)
+
+	# Cleanup callbacks
+	logger.remove_callback(external_id)
+	logger.remove_callback(metrics_id)
+	logger.remove_callback(audit_id)
+	```
+
 **Performance Notes:**
 - Callbacks execute in background threads with no blocking on the main thread
 - Multiple callbacks can be registered and run concurrently
@@ -758,6 +1207,49 @@ logger.info("Processing item %d of %d", 5, 10)
 req_logger = logger.bind(request_id="r-123")
 req_logger.info("User {user} action {action}", user="alice", action="login")
 # All three fields (request_id, user, action) included
+```
+
+Advanced template string examples:
+
+```python
+# Complex template with multiple variables
+logger.info("Request {method} {path} completed in {duration:.2f}ms with status {status}", 
+           method="POST", path="/api/users", duration=45.67, status=201)
+
+# Template with conditional context
+def process_order(order_id, user_id):
+    logger.info("Processing order {order_id} for user {user_id}", 
+               order_id=order_id, user_id=user_id)
+    
+    if validate_order(order_id):
+        logger.info("Order {order_id} validated successfully", order_id=order_id)
+        # Additional processing...
+    else:
+        logger.warning("Order {order_id} validation failed", order_id=order_id)
+
+# Template with nested context
+with logger.contextualize(service="payment", version="v2.1"):
+    logger.info("Payment service started")
+    
+    payment_logger = logger.bind(transaction_id="txn-12345")
+    payment_logger.info("Processing payment of {amount} {currency}", 
+                       amount=99.99, currency="USD")
+    payment_logger.debug("Payment gateway {gateway} responded with {response_code}",
+                        gateway="stripe", response_code=200)
+
+# Template with list/dict serialization
+logger.info("Batch job {job_id} processed {count} items: {items}", 
+           job_id="batch-001", 
+           count=5, 
+           items=["item1", "item2", "item3", "item4", "item5"])
+
+# Template with error context
+try:
+    result = risky_operation(param="value")
+    logger.info("Operation succeeded with result {result}", result=result)
+except Exception as e:
+    logger.error("Operation failed for param {param}: {error}", 
+                param="value", error=str(e))
 ```
 
 **Benefits:**

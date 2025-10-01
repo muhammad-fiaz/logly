@@ -1,3 +1,9 @@
+---
+title: Callbacks API - Logly Python Logging
+description: Logly callbacks API reference. Learn how to register asynchronous callback functions for real-time log processing and monitoring.
+keywords: python, logging, callbacks, api, asynchronous, handlers, real-time, processing, logly
+---
+
 # Callbacks
 
 Methods for managing asynchronous log event handlers.

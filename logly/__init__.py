@@ -48,6 +48,9 @@ class _LoggerProxy:
         filter_module: str | None = None,
         filter_function: str | None = None,
         async_write: bool = True,
+        buffer_size: int = 8192,
+        flush_interval: int = 100,
+        max_buffered_lines: int = 1000,
         date_style: str | None = None,
         date_enabled: bool = False,
     ) -> int:
@@ -63,6 +66,9 @@ class _LoggerProxy:
             filter_module: Only log messages from this module name.
             filter_function: Only log messages from this function name.
             async_write: Enable asynchronous writing for better performance (default: True).
+            buffer_size: Buffer size in bytes for async writing (default: 8192).
+            flush_interval: Flush interval in milliseconds for async writing (default: 1000).
+            max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format style. Options: "rfc3339", "local", "utc".
             date_enabled: Enable timestamp in log output (default: False for console).
 
@@ -91,6 +97,9 @@ class _LoggerProxy:
             filter_module=filter_module,
             filter_function=filter_function,
             async_write=async_write,
+            buffer_size=buffer_size,
+            flush_interval=flush_interval,
+            max_buffered_lines=max_buffered_lines,
             date_style=date_style,
             date_enabled=date_enabled,
         )

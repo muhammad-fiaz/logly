@@ -1,3 +1,9 @@
+---
+title: Configuration API - Logly Python Logging
+description: Logly configuration API reference. Learn how to configure logging levels, output formats, and manage sinks for the Python logging library.
+keywords: python, logging, configuration, api, levels, formats, sinks, logly
+---
+
 # Configuration Methods
 
 Methods for configuring the logger and managing output destinations.

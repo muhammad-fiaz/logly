@@ -207,8 +207,8 @@ class TestAsyncPerformance:
         """Test async writer uses Arc<Mutex<>> for thread safety"""
         log_file = tmp_path / "async_test.log"
 
-        # Add sync sink (async mode parameter not yet exposed)
-        handler_id = logger.add(str(log_file))
+        # Add sync sink for immediate writing
+        handler_id = logger.add(str(log_file), async_write=False)
 
         # Write multiple logs
         for i in range(100):
@@ -216,9 +216,6 @@ class TestAsyncPerformance:
 
         # Remove handler to flush
         logger.remove(handler_id)
-
-        # Give time to complete
-        time.sleep(0.05)
 
         # Verify file was created and has content
         assert log_file.exists(), "Log file created"

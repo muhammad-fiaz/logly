@@ -1,3 +1,9 @@
+---
+title: Installation - Logly Python Logging Library
+description: Install Logly logging library for Python. Learn how to install with pip, uv, poetry, or from source with comprehensive setup instructions.
+keywords: python, logging, installation, pip, uv, poetry, setup, logly
+---
+
 # Installation
 
 ## Prerequisites

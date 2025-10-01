@@ -1,3 +1,9 @@
+---
+title: Exception Handling API - Logly Python Logging
+description: Logly exception handling API reference. Learn how to use catch decorators and exception logging methods for robust error handling.
+keywords: python, logging, exceptions, api, error, handling, decorators, catch, logly
+---
+
 # Exception Handling
 
 Methods for catching and logging exceptions.
