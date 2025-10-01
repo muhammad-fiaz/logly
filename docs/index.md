@@ -24,12 +24,17 @@ keywords: python, logging, rust, async, performance, loguru, pyo3, high-performa
 
 Built with a modular Rust backend using PyO3/Maturin, Logly delivers exceptional performance while maintaining memory safety and thread safety. The codebase is organized into focused modules (backend, config, format, utils) for maintainability and extensibility.
 
+!!! note "Active Development"
+    Logly is actively developed and optimized. Performance continues to improve with each release. For the best experience, use the latest version.
+
 ### Key Features
 
 - 🚀 **High Performance**: Rust-powered backend with async buffering and optimized data structures
 - 📦 **Modular Architecture**: Clean separation of concerns with backend, config, format, and utils modules
 - 🔄 **Async Logging**: Background thread writing with configurable buffers and flush intervals
 - 📋 **Structured JSON**: Full JSON logging support with custom fields and pretty printing
+- 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and file storage per log level
+- 🔧 **Granular Configuration**: Per-level console, time, color, and storage controls for maximum flexibility
 - � **File Rotation**: Time-based and size-based rotation with retention policies
 - �️ **Compression**: Built-in support for gzip and zstd compression
 - 🎯 **Multi-Sink**: Multiple output destinations with per-sink filtering
@@ -92,6 +97,8 @@ Logly:           ~0.8s  (3x faster)
 Standard Logging: ~5.2s
 Logly:           ~1.6s  (3.2x faster)
 ```
+
+> **Note for v0.1.3+:** Logly remains faster than Python's standard logging overall, but benchmarks may show similar performance when using Logly's extensive customization features (async callbacks, template strings, per-sink filtering, JSON formatting, size/time-based rotation, etc.). These features provide powerful functionality but add overhead compared to the minimal stdlib implementation. For maximum performance demonstrating the speed advantage, use simple console-only logging without advanced features.
 
 ### Developer Experience
 
@@ -205,26 +212,16 @@ logger.critical("System out of memory")  # Alert sent asynchronously
 
 ### 5. Template Strings
 
-Deferred evaluation for better performance with support for multiple template formats:
+Deferred evaluation for better performance:
 
 ```python
-from string import Template
-
-# Standard {variable} syntax - variables only evaluated if log level passes filter
+# Variables only evaluated if log level passes filter
 logger.debug("Processing {item} with {config}", item=data, config=settings)
 
 # Works with all string formats
 user = "bob"
 logger.info(f"User {user} action", action="login")  # f-string
 logger.info("Item %d of %d", current, total)        # % format
-
-# NEW: string.Template objects for advanced templating
-template = Template("User ${user} performed ${action}")
-logger.info(template, user="alice", action="login")
-
-# NEW: Python 3.14+ t-strings (when available)
-# logger.info(t"User {user} performed {action}", user="alice", action="login")
-# Note: t-strings require Python 3.14+ and create Template objects from string.templatelib
 ```
 
 ---
@@ -343,25 +340,25 @@ logger.critical("Service unresponsive")
 
 Get up and running in 5 minutes
 
-[:octicons-arrow-right-24: Quick Start Guide](quickstart.md)
+[Quick Start Guide](quickstart.md)
 
 ## 📚 API Reference
 
 Complete documentation of all methods
 
-[:octicons-arrow-right-24: API Reference](api-reference/index.md)
+[API Reference](api-reference/index.md)
 
 ## 📝 Changelog
 
 See what's new in each version
 
-[:octicons-arrow-right-24: View Changelog](changelog.md)
+[View Changelog](changelog.md)
 
 ## ⬇️ Installation
 
 Install Logly with pip, uv, or poetry
 
-[:octicons-arrow-right-24: Installation Guide](installation.md)
+[Installation Guide](installation.md)
 
 ---
 

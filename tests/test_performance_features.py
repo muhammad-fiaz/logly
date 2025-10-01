@@ -49,6 +49,7 @@ class TestSizeBasedRotation:
         import glob
         import os
 
+        logger.reset()
         log_file = tmp_path / "size_rotation.log"
         handler_id = logger.add(str(log_file), size_limit="1KB", async_write=False)
 
@@ -91,6 +92,7 @@ class TestSizeBasedRotation:
         """Test that different size limit formats work"""
         import os
 
+        logger.reset()
         test_cases = [
             ("1KB", 1024),
             ("2KB", 2048),
@@ -99,11 +101,11 @@ class TestSizeBasedRotation:
         ]
 
         for size_str, expected_bytes in test_cases:
-            log_file = (
-                tmp_path
-                / f"size_test_{size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')}.log"
+            filename = size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')
+            log_file = tmp_path / f"size_test_{filename}.log"
+            handler_id = logger.add(
+                str(log_file), size_limit=size_str, async_write=False
             )
-            handler_id = logger.add(str(log_file), size_limit=size_str, async_write=False)
 
             # Write data that should trigger rotation
             msg_size = expected_bytes // 4  # Quarter of limit
@@ -205,6 +207,7 @@ class TestAsyncPerformance:
 
     def test_async_writer_with_arc(self, tmp_path):
         """Test async writer uses Arc<Mutex<>> for thread safety"""
+        logger.reset()
         log_file = tmp_path / "async_test.log"
 
         # Add sync sink for immediate writing

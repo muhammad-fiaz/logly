@@ -10,47 +10,16 @@ Example:
 """
 
 import re
-import sys
 from contextlib import contextmanager
-from typing import Union
 
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
-
-# Check for Python 3.14+ t-string support
-_T_STRING_SUPPORTED = sys.version_info >= (3, 14)
-_Template = None
-_StringTemplate = None
-if _T_STRING_SUPPORTED:
-    try:
-        from string.templatelib import Template as TTemplate
-        _Template = TTemplate
-    except ImportError:
-        _T_STRING_SUPPORTED = False
-
-# Always support string.Template for backward compatibility
-try:
-    from string import Template as StringTemplate
-    _StringTemplate = StringTemplate
-except ImportError:
-    pass
-
-# Define message type that supports strings, t-strings (Python 3.14+), and string.Template
-if _T_STRING_SUPPORTED and _Template is not None:
-    if _StringTemplate is not None:
-        MessageType = Union[str, _Template, _StringTemplate]
-    else:
-        MessageType = Union[str, _Template]
-elif _StringTemplate is not None:
-    MessageType = Union[str, _StringTemplate]
-else:
-    MessageType = str
 
 # Cached regex pattern for template string processing
 _TEMPLATE_PATTERN = re.compile(r"\{(\w+)\}")
 
 
-class _LoggerProxy:
+class _LoggerProxy:  # pylint: disable=too-many-public-methods
     """Thin Python proxy to keep surface close to Loguru while delegating to Rust.
 
     For MVP we forward methods; advanced features will be added incrementally.
@@ -68,7 +37,7 @@ class _LoggerProxy:
         self._levels: dict[str, str] = {}
 
     # configuration and sinks
-    def add(
+    def add(  # pylint: disable=too-many-arguments
         self,
         sink: str | None = None,
         *,
@@ -135,8 +104,21 @@ class _LoggerProxy:
             date_enabled=date_enabled,
         )
 
-    def configure(
-        self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False
+    def configure(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        level: str = "INFO",
+        color: bool = True,
+        level_colors: dict[str, str] | None = None,
+        json: bool = False,
+        pretty_json: bool = False,
+        console: bool = True,
+        show_time: bool = True,
+        show_module: bool = True,
+        show_function: bool = True,
+        console_levels: dict[str, bool] | None = None,
+        time_levels: dict[str, bool] | None = None,
+        color_levels: dict[str, bool] | None = None,
+        storage_levels: dict[str, bool] | None = None
     ) -> None:
         """Configure global logger settings.
 
@@ -144,8 +126,26 @@ class _LoggerProxy:
             level: Default minimum log level. Options: "TRACE", "DEBUG", "INFO",
                   "SUCCESS", "WARNING", "ERROR", "CRITICAL".
             color: Enable colored output for console logs (default: True).
+            level_colors: Dictionary mapping log levels to ANSI color codes or color names.
+                         If None, uses default colors. Supports both ANSI codes and color names:
+                         ANSI codes: "30" (Black), "31" (Red), "32" (Green), "33" (Yellow),
+                                   "34" (Blue), "35" (Magenta), "36" (Cyan), "37" (White)
+                         Color names: "BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA",
+                                    "CYAN", "WHITE", "BRIGHT_BLACK", "BRIGHT_RED", etc.
             json: Output logs in JSON format (default: False).
             pretty_json: Output logs in pretty-printed JSON format (default: False).
+            console: Enable console output (default: True).
+            show_time: Show timestamps in console output (default: True).
+            show_module: Show module information in console output (default: True).
+            show_function: Show function information in console output (default: True).
+            console_levels: Dictionary mapping log levels to console output enable/disable.
+                           If None, uses global console setting.
+            time_levels: Dictionary mapping log levels to time display enable/disable.
+                        If None, uses global show_time setting.
+            color_levels: Dictionary mapping log levels to color enable/disable.
+                         If None, uses global color setting.
+            storage_levels: Dictionary mapping log levels to file storage enable/disable.
+                           If None, uses global setting (always enabled).
 
         Example:
             >>> from logly import logger
@@ -153,8 +153,50 @@ class _LoggerProxy:
             >>> logger.configure(level="INFO", color=True)
             >>> # Configure with JSON output
             >>> logger.configure(level="DEBUG", json=True)
+            >>> # Configure with custom colors using color names
+            >>> colors = {
+            ...     "INFO": "GREEN",
+            ...     "WARNING": "YELLOW",
+            ...     "ERROR": "RED"
+            ... }
+            >>> logger.configure(level="INFO", level_colors=colors)
+            >>> # Configure without timestamps
+            >>> logger.configure(level="INFO", show_time=False)
+            >>> # Configure without module and function info
+            >>> logger.configure(level="INFO", show_module=False, show_function=False)
+            >>> # Configure per-level console output
+            >>> logger.configure(console_levels={"DEBUG": True, "INFO": False, "WARN": True})
+            >>> # Configure per-level time display
+            >>> logger.configure(time_levels={"DEBUG": True, "INFO": False})
         """
-        self._inner.configure(level=level, color=color, json=json, pretty_json=pretty_json)
+        self._inner.configure(
+            level=level,
+            color=color,
+            level_colors=level_colors,
+            json=json,
+            pretty_json=pretty_json,
+            console=console,
+            show_time=show_time,
+            show_module=show_module,
+            show_function=show_function,
+            console_levels=console_levels,
+            time_levels=time_levels,
+            color_levels=color_levels,
+            storage_levels=storage_levels
+        )
+
+    def reset(self) -> None:
+        """Reset logger configuration to default settings.
+
+        Resets all logger settings to their default values, clearing any
+        per-level controls and custom configurations.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.configure(level="DEBUG", console_levels={"INFO": False})
+            >>> logger.reset()  # Back to defaults
+        """
+        self._inner.reset()
 
     def remove(self, handler_id: int) -> bool:
         """Remove a logging sink by its handler ID.
@@ -221,46 +263,19 @@ class _LoggerProxy:
             pass
         return kwargs
 
-    def _process_message(self, message, kwargs: dict) -> tuple[str, dict]:
-        """Process log messages including template strings, t-strings (Python 3.14+), and string.Template objects.
+    def _process_template_string(self, message: str, kwargs: dict) -> tuple[str, dict]:
+        """Process template strings with {variable} syntax for deferred interpolation.
 
-        Handles multiple string formatting approaches:
-        - Regular strings with {variable} placeholders
-        - Python 3.14+ t-strings (Template objects from string.templatelib)
-        - string.Template objects for backward compatibility
-        - % formatting with positional args
+        Enables efficient logging with template strings similar to PEP 750 proposal.
+        Supports all Python string formats: f-strings, % formatting, and template strings.
 
         Args:
-            message: Log message (str, Template, or string.Template object)
-            kwargs: Context fields for template substitution
+            message: Log message that may contain {variable} placeholders
+            kwargs: Context fields, some may match template variables
 
         Returns:
             Tuple of (formatted_message, remaining_kwargs)
         """
-        # Handle t-strings (Template objects from Python 3.14+ string.templatelib)
-        if _T_STRING_SUPPORTED and _Template is not None and isinstance(message, _Template):
-            try:
-                # For t-strings, substitute all available kwargs
-                formatted_message = message.substitute(**kwargs)
-                return formatted_message, kwargs
-            except (KeyError, ValueError):
-                # If substitution fails, return the template as string representation
-                return str(message), kwargs
-
-        # Handle string.Template objects
-        if _StringTemplate is not None and isinstance(message, _StringTemplate):
-            try:
-                # For string.Template, substitute all available kwargs
-                formatted_message = message.substitute(**kwargs)
-                return formatted_message, kwargs
-            except (KeyError, ValueError):
-                # If substitution fails, return the template as string representation
-                return str(message), kwargs
-
-        # Handle regular string template processing
-        if not isinstance(message, str):
-            return str(message), kwargs
-
         # Find all {variable} placeholders using cached pattern
         placeholders = set(_TEMPLATE_PATTERN.findall(message))
 
@@ -285,11 +300,11 @@ class _LoggerProxy:
 
         return formatted_message, remaining_kwargs
 
-    def trace(self, message: MessageType, /, *args, **kwargs):
+    def trace(self, message: str, /, *args, **kwargs):
         """Log a message at TRACE level (most verbose).
 
         Args:
-            message: The log message, optionally with % formatting placeholders, t-string (Python 3.14+), or string.Template object.
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -302,14 +317,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.trace(msg, **merged)
 
-    def debug(self, message: MessageType, /, *args, **kwargs):
+    def debug(self, message: str, /, *args, **kwargs):
         """Log a message at DEBUG level.
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -322,14 +337,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.debug(msg, **merged)
 
-    def info(self, message: MessageType, /, *args, **kwargs):
+    def info(self, message: str, /, *args, **kwargs):
         """Log a message at INFO level (general information).
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -342,14 +357,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.info(msg, **merged)
 
-    def success(self, message: MessageType, /, *args, **kwargs):
+    def success(self, message: str, /, *args, **kwargs):
         """Log a message at SUCCESS level (successful operations).
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -362,14 +377,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.success(msg, **merged)
 
-    def warning(self, message: MessageType, /, *args, **kwargs):
+    def warning(self, message: str, /, *args, **kwargs):
         """Log a message at WARNING level.
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -382,14 +397,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.warning(msg, **merged)
 
-    def error(self, message: MessageType, /, *args, **kwargs):
+    def error(self, message: str, /, *args, **kwargs):
         """Log a message at ERROR level.
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -402,14 +417,14 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.error(msg, **merged)
 
-    def critical(self, message: MessageType, /, *args, **kwargs):
+    def critical(self, message: str, /, *args, **kwargs):
         """Log a message at CRITICAL level (most severe).
 
         Args:
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -422,15 +437,15 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.critical(msg, **merged)
 
-    def log(self, level: str, message: MessageType, /, *args, **kwargs):
+    def log(self, level: str, message: str, /, *args, **kwargs):
         """Log a message at a custom or aliased level.
 
         Args:
             level: Log level name (e.g., "INFO", "ERROR", or a custom alias).
-            message: The log message, optionally with % formatting placeholders or t-string (Python 3.14+).
+            message: The log message, optionally with % formatting placeholders.
             *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
 
@@ -446,7 +461,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_message(msg, merged)
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.log(lvl, msg, **merged)
 
     def complete(self) -> None:

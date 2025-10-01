@@ -20,7 +20,7 @@ Complete reference documentation for all Logly methods and features.
 
     Configure logger settings and add sinks
 
-    [:octicons-arrow-right-24: Configuration Methods](configuration.md)
+    [Configuration Methods](configuration.md)
 
 -   :material-message-text:{ .lg .middle } **Logging**
 
@@ -28,7 +28,7 @@ Complete reference documentation for all Logly methods and features.
 
     Log messages at different levels
 
-    [:octicons-arrow-right-24: Logging Methods](logging.md)
+    [Logging Methods](logging.md)
 
 -   :material-link-variant:{ .lg .middle } **Context**
 
@@ -36,7 +36,7 @@ Complete reference documentation for all Logly methods and features.
 
     Manage logging context with bind and contextualize
 
-    [:octicons-arrow-right-24: Context Management](context.md)
+    [Context Management](context.md)
 
 -   :material-bell:{ .lg .middle } **Callbacks**
 
@@ -44,7 +44,7 @@ Complete reference documentation for all Logly methods and features.
 
     React to log events with async callbacks
 
-    [:octicons-arrow-right-24: Callback Methods](callbacks.md)
+    [Callback Methods](callbacks.md)
 
 -   :material-alert-circle:{ .lg .middle } **Exceptions**
 
@@ -52,7 +52,7 @@ Complete reference documentation for all Logly methods and features.
 
     Handle exceptions with automatic logging
 
-    [:octicons-arrow-right-24: Exception Handling](exceptions.md)
+    [Exception Handling](exceptions.md)
 
 -   :material-wrench:{ .lg .middle } **Utilities**
 
@@ -60,7 +60,7 @@ Complete reference documentation for all Logly methods and features.
 
     Additional utility methods
 
-    [:octicons-arrow-right-24: Utility Methods](utilities.md)
+    [Utility Methods](utilities.md)
 
 </div>
 

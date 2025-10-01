@@ -42,8 +42,9 @@ def main() -> None:
     args = p.parse_args()
 
     py = sys.executable
-    base = [py, "-m", "pip", "--version"]  # sanity
-    subprocess.run(base, check=True, stdout=subprocess.DEVNULL)
+    # Skip pip check for uv environments
+    # base = [py, "-m", "pip", "--version"]  # sanity
+    # subprocess.run(base, check=True, stdout=subprocess.DEVNULL)
 
     scenarios: list[list[str]] = []
     # console, text

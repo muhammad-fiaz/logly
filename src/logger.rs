@@ -9,6 +9,7 @@ use crate::config::state::with_state;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use std::collections::HashMap;
 use tracing::Level;
 
 /// Python logger class (main entry point from Python).
@@ -37,20 +38,64 @@ impl PyLogger {
     /// # Arguments
     /// * `level` - Minimum log level ("TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL")
     /// * `color` - Enable colored console output
+    /// * `level_colors` - Optional dictionary mapping level names to ANSI color codes
     /// * `json` - Format logs as JSON
     /// * `pretty_json` - Format logs as pretty-printed JSON
+    /// * `console` - Enable console output
+    /// * `show_time` - Show timestamps in console output
+    /// * `show_module` - Show module information in console output
+    /// * `show_function` - Show function information in console output
+    /// * `console_levels` - Optional dictionary mapping level names to console output enable/disable
+    /// * `time_levels` - Optional dictionary mapping level names to time display enable/disable
+    /// * `color_levels` - Optional dictionary mapping level names to color enable/disable
+    /// * `storage_levels` - Optional dictionary mapping level names to file storage enable/disable
     ///
     /// # Returns
     /// PyResult indicating success or error
-    #[pyo3(signature = (level="INFO", color=true, json=false, pretty_json=false))]
+    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, console_levels=None, time_levels=None, color_levels=None, storage_levels=None))]
     pub fn configure(
         &self,
         level: &str,
         color: bool,
+        level_colors: Option<HashMap<String, String>>,
         json: bool,
         pretty_json: bool,
+        console: bool,
+        show_time: bool,
+        show_module: bool,
+        show_function: bool,
+        console_levels: Option<HashMap<String, bool>>,
+        time_levels: Option<HashMap<String, bool>>,
+        color_levels: Option<HashMap<String, bool>>,
+        storage_levels: Option<HashMap<String, bool>>,
     ) -> PyResult<()> {
-        backend::configure(level, color, json, pretty_json)
+        let colors = level_colors.map(|hm| {
+            hm.into_iter().collect()
+        });
+        let console_lvls = console_levels.map(|hm| {
+            hm.into_iter().collect()
+        });
+        let time_lvls = time_levels.map(|hm| {
+            hm.into_iter().collect()
+        });
+        let color_lvls = color_levels.map(|hm| {
+            hm.into_iter().collect()
+        });
+        let storage_lvls = storage_levels.map(|hm| {
+            hm.into_iter().collect()
+        });
+        backend::configure_with_colors(level, color, json, pretty_json, console, show_time, show_module, show_function, console_lvls, time_lvls, color_lvls, storage_lvls, colors)
+    }
+
+    /// Reset logger configuration to defaults.
+    ///
+    /// Resets all logger settings to their default values, clearing any per-level
+    /// controls and custom configurations.
+    ///
+    /// # Returns
+    /// PyResult indicating success or error
+    pub fn reset(&self) -> PyResult<()> {
+        self.configure("INFO", true, None, false, false, true, true, true, true, None, None, None, None)
     }
 
     /// Add a logging sink (output destination).

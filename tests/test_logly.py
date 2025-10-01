@@ -1,9 +1,12 @@
+"""Basic logger tests."""
+
 from pathlib import Path
 
 from logly import logger
 
 
 def test_logger_basic(tmp_path: Path):
+    """Test basic logger functionality."""
     # add file sink before configure
     log_file = tmp_path / "test.log"
     logger.add(str(log_file))

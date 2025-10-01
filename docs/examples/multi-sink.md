@@ -6,57 +6,38 @@ keywords: python, logging, example, multi-sink, multiple, destinations, console,
 
 # Multi-Sink Setup
 
-This example demonstrates how to configure Logly to send logs to multiple destinations simultaneously, each with different formats and levels.
+This example demonstrates how to configure Logly to send logs to multiple destinations simultaneously, with console and file logging.
 
 ## Code Example
 
 ```python
 from logly import logger
-import json
 
-# Configure global settings
-logger.configure(level="DEBUG")  # Global minimum level
+# Configure global settings with console enabled
+logger.configure(level="DEBUG", console=True)
 
-# Add console sink - human readable
-logger.add(
-    "console",
-    level="INFO",  # Only INFO and above to console
-    format="{time} | {level:8} | {message}",
-    colorize=True
-)
-
-# Add file sink - detailed logging
+# Add file sink - detailed logging to file
 logger.add(
     "app.log",
-    level="DEBUG",  # All levels to file
-    format="{time} | {level} | {file}:{line} | {message}",
-    rotation="10 MB",
+    filter_min_level="DEBUG",  # All levels to file
+    rotation="daily",
     retention=7
 )
 
-# Add JSON sink - for log aggregation
+# Add JSON file sink - for log aggregation
 logger.add(
     "app.jsonl",
-    level="WARNING",  # Only warnings and errors
-    json=True,
-    rotation="1 day"
-)
-
-# Add error-only sink
-logger.add(
-    "errors.log",
-    level="ERROR",  # Only errors
-    format="{time} [{level}] {message}\n{exception}",
-    rotation="1 week"
+    filter_min_level="WARNING",  # Only warnings and errors
+    date_enabled=True
 )
 
 # Test logging at different levels
-logger.debug("This debug message goes only to file")
+logger.debug("This debug message goes to console and file")
 logger.info("This info message goes to console and file")
-logger.warning("This warning goes to all sinks")
-logger.error("This error goes to all sinks with full traceback")
+logger.warning("This warning goes to console, file, and JSON")
+logger.error("This error goes to console, file, and JSON")
 
-# Add context that will appear in all sinks
+# Add context that will appear in all logs
 logger.bind(user_id=12345, request_id="req-abc")
 
 logger.info("User action performed")
@@ -68,32 +49,33 @@ logger.error("Critical system error", component="database", error_code="CONN_FAI
 
 ### Console Output (Human Readable)
 ```
-2025-01-15 10:30:45 | INFO     | Application started
-2025-01-15 10:30:45 | WARNING  | Suspicious activity detected
-2025-01-15 10:30:45 | ERROR    | Critical system error
+[DEBUG] This debug message goes to console and file | module=__main__ | function=<module>
+[INFO] This info message goes to console and file | module=__main__ | function=<module>
+[WARN] This warning goes to console, file, and JSON | module=__main__ | function=<module>
+[ERROR] This error goes to console, file, and JSON | module=__main__ | function=<module>
+[INFO] User action performed | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+[WARN] Suspicious activity detected | ip=192.168.1.100 | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+[ERROR] Critical system error | component=database | error_code=CONN_FAIL | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
 ```
 
-### File Output (app.log - Detailed)
+### File Output (app.log - Text Format)
 ```
-2025-01-15 10:30:45 | DEBUG | main.py:45 | This debug message goes only to file
-2025-01-15 10:30:45 | INFO | main.py:46 | This info message goes to console and file
-2025-01-15 10:30:45 | WARNING | main.py:47 | This warning goes to all sinks
-2025-01-15 10:30:45 | ERROR | main.py:48 | This error goes to all sinks with full traceback
+[DEBUG] This debug message goes to console and file | module=__main__ | function=<module>
+[INFO] This info message goes to console and file | module=__main__ | function=<module>
+[WARN] This warning goes to console, file, and JSON | module=__main__ | function=<module>
+[ERROR] This error goes to console, file, and JSON | module=__main__ | function=<module>
+[INFO] User action performed | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+[WARN] Suspicious activity detected | ip=192.168.1.100 | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+[ERROR] Critical system error | component=database | error_code=CONN_FAIL | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
 ```
 
 ### JSON Output (app.jsonl - Structured)
 ```json
-{"timestamp": "2025-01-15T10:30:45Z", "level": "WARNING", "message": "Suspicious activity detected", "module": "main", "function": "test_logging", "line": 47, "user_id": 12345, "request_id": "req-abc", "ip": "192.168.1.100"}
-{"timestamp": "2025-01-15T10:30:45Z", "level": "ERROR", "message": "Critical system error", "module": "main", "function": "test_logging", "line": 48, "user_id": 12345, "request_id": "req-abc", "component": "database", "error_code": "CONN_FAIL"}
-```
-
-### Error Output (errors.log - Critical Only)
-```
-2025-01-15 10:30:45 [ERROR] Critical system error
-component=database error_code=CONN_FAIL user_id=12345 request_id=req-abc
-Traceback (most recent call last):
-  File "main.py", line 48, in test_logging
-    CriticalError: System failure
+{"level": "WARNING", "message": "This warning goes to console, file, and JSON", "module": "__main__", "function": "<module>"}
+{"level": "ERROR", "message": "This error goes to console, file, and JSON", "module": "__main__", "function": "<module>"}
+{"level": "INFO", "message": "User action performed", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
+{"level": "WARNING", "message": "Suspicious activity detected", "ip": "192.168.1.100", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
+{"level": "ERROR", "message": "Critical system error", "component": "database", "error_code": "CONN_FAIL", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
 ```
 
 ## Advanced Multi-Sink Patterns

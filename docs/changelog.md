@@ -118,6 +118,33 @@ Found a bug? Have a feature request?
 
 ---
 
+## Changelog
+
+### [0.1.3] - 2024-12-XX
+
+#### ✨ New Features
+
+- **Per-Level Controls**: Added granular control over logging behavior per log level
+  - `console_levels`: Control which levels output to console
+  - `time_levels`: Control which levels include timestamps
+  - `color_levels`: Control which levels use colored output
+  - `storage_levels`: Control which levels write to storage sinks
+- **Configuration Reset**: Added `logger.reset()` method to clear all configurations and return to defaults
+- **Enhanced Configuration API**: Extended `logger.configure()` with per-level mapping parameters
+
+#### 📚 Documentation
+
+- Added comprehensive per-level controls example (`docs/examples/per-level-controls.md`)
+- Updated feature list in main documentation index
+- Enhanced API reference with detailed parameter descriptions
+
+#### 🔧 Improvements
+
+- Better type hints for configuration parameters
+- Improved configuration validation and error messages
+
+---
+
 ## Acknowledgments
 
 ### Inspiration

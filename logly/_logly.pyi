@@ -24,7 +24,7 @@ class PyLogger:
         """
         ...
 
-    def add(
+    def add(  # pylint: disable=too-many-arguments
         self,
         sink: str,
         *,

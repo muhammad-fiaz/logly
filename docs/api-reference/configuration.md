@@ -20,8 +20,17 @@ Set global logger configuration including level, output format, and colors.
 logger.configure(
     level: str = "INFO",
     color: bool = True,
+    level_colors: dict[str, str] | None = None,
     json: bool = False,
-    pretty_json: bool = False
+    pretty_json: bool = False,
+    console: bool = True,
+    show_time: bool = True,
+    show_module: bool = True,
+    show_function: bool = True,
+    console_levels: dict[str, bool] | None = None,
+    time_levels: dict[str, bool] | None = None,
+    color_levels: dict[str, bool] | None = None,
+    storage_levels: dict[str, bool] | None = None
 ) -> None
 ```
 
@@ -31,8 +40,61 @@ logger.configure(
 |-----------|------|---------|-------------|
 | `level` | `str` | `"INFO"` | Minimum log level: `"TRACE"`, `"DEBUG"`, `"INFO"`, `"SUCCESS"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"` |
 | `color` | `bool` | `True` | Enable colored console output (ANSI colors) |
+| `level_colors` | `dict[str, str] \| None` | `None` | Custom colors for each log level. Supports both ANSI color codes and color names. If `None`, uses default colors |
 | `json` | `bool` | `False` | Output logs in JSON format instead of text |
 | `pretty_json` | `bool` | `False` | Pretty-print JSON output (higher cost, more readable) |
+| `console` | `bool` | `True` | Enable console output |
+| `show_time` | `bool` | `True` | Show timestamps in console output |
+| `show_module` | `bool` | `True` | Show module information in console output |
+| `show_function` | `bool` | `True` | Show function information in console output |
+| `console_levels` | `dict[str, bool] \| None` | `None` | Per-level console output control. Maps level names to enable/disable console output |
+| `time_levels` | `dict[str, bool] \| None` | `None` | Per-level time display control. Maps level names to enable/disable timestamps |
+| `color_levels` | `dict[str, bool] \| None` | `None` | Per-level color control. Maps level names to enable/disable colors |
+| `storage_levels` | `dict[str, bool] \| None` | `None` | Per-level storage control. Maps level names to enable/disable file logging |
+
+### Color Configuration
+
+The `level_colors` parameter supports both ANSI color codes and user-friendly color names:
+
+#### ANSI Color Codes
+
+| Color | Code | Bright Color | Code |
+|-------|------|--------------|------|
+| Black | `"30"` | Bright Black | `"90"` |
+| Red | `"31"` | Bright Red | `"91"` |
+| Green | `"32"` | Bright Green | `"92"` |
+| Yellow | `"33"` | Bright Yellow | `"93"` |
+| Blue | `"34"` | Bright Blue | `"94"` |
+| Magenta | `"35"` | Bright Magenta | `"95"` |
+| Cyan | `"36"` | Bright Cyan | `"96"` |
+| White | `"37"` | Bright White | `"97"` |
+
+#### Color Names
+
+You can also use color names directly:
+
+| Color Name | ANSI Equivalent |
+|------------|-----------------|
+| `"BLACK"` | `"30"` |
+| `"RED"` | `"31"` |
+| `"GREEN"` | `"32"` |
+| `"YELLOW"` | `"33"` |
+| `"BLUE"` | `"34"` |
+| `"MAGENTA"` | `"35"` |
+| `"CYAN"` | `"36"` |
+| `"WHITE"` | `"37"` |
+| `"BRIGHT_BLACK"` or `"GRAY"` | `"90"` |
+| `"BRIGHT_RED"` | `"91"` |
+| `"BRIGHT_GREEN"` | `"92"` |
+| `"BRIGHT_YELLOW"` | `"93"` |
+| `"BRIGHT_BLUE"` | `"94"` |
+| `"BRIGHT_MAGENTA"` | `"95"` |
+| `"BRIGHT_CYAN"` | `"96"` |
+| `"BRIGHT_WHITE"` | `"97"` |
+| Blue | `"34"` | Bright Blue | `"94"` |
+| Magenta | `"35"` | Bright Magenta | `"95"` |
+| Cyan | `"36"` | Bright Cyan | `"96"` |
+| White | `"37"` | Bright White | `"97"` |
 
 ### Returns
 
@@ -92,6 +154,95 @@ logger.configure(
     }
     ```
 
+=== "Custom Level Colors with ANSI Codes"
+
+    ```python
+    from logly import logger
+
+    # Custom ANSI colors for each level
+    custom_colors = {
+        "INFO": "32",      # Green
+        "WARNING": "93",   # Bright Yellow
+        "ERROR": "91",     # Bright Red
+        "CRITICAL": "95"   # Bright Magenta
+    }
+
+    logger.configure(
+        level="INFO",
+        color=True,
+        level_colors=custom_colors
+    )
+    logger.add("console")
+
+    logger.info("This is green")
+    logger.warning("This is bright yellow")
+    logger.error("This is bright red")
+    logger.critical("This is bright magenta")
+    ```
+
+=== "Custom Level Colors with Names"
+
+    ```python
+    from logly import logger
+
+    # Custom colors using user-friendly names
+    custom_colors = {
+        "INFO": "GREEN",
+        "WARNING": "YELLOW",
+        "ERROR": "RED",
+        "CRITICAL": "BRIGHT_MAGENTA"
+    }
+
+    logger.configure(
+        level="INFO",
+        color=True,
+        level_colors=custom_colors
+    )
+    logger.add("console")
+
+    logger.info("This is green")
+    logger.warning("This is yellow")
+    logger.error("This is red")
+    logger.critical("This is bright magenta")
+    ```
+
+=== "Console Time Display Control"
+
+    ```python
+    from logly import logger
+
+    # Show timestamps (default)
+    logger.configure(level="INFO", show_time=True)
+    logger.add("console")
+    logger.info("Message with timestamp")
+
+    # Hide timestamps
+    logger.configure(level="INFO", show_time=False)
+    logger.add("console")
+    logger.info("Message without timestamp")
+    ```
+
+=== "Module and Function Display Control"
+
+    ```python
+    from logly import logger
+
+    # Show module and function info (default)
+    logger.configure(level="INFO", show_module=True, show_function=True)
+    logger.add("console")
+    logger.info("Message with module and function")
+
+    # Hide module and function info
+    logger.configure(level="INFO", show_module=False, show_function=False)
+    logger.add("console")
+    logger.info("Message without module and function")
+
+    # Show only module, hide function
+    logger.configure(level="INFO", show_module=True, show_function=False)
+    logger.add("console")
+    logger.info("Message with module only")
+    ```
+
 === "Production Setup"
 
     ```python
@@ -116,6 +267,36 @@ logger.configure(
 
 !!! warning "Pretty JSON Performance"
     `pretty_json=True` adds formatting overhead. Use only in development.
+
+---
+
+## logger.reset()
+
+Reset logger configuration to default settings.
+
+### Signature
+
+```python
+logger.reset() -> None
+```
+
+### Description
+
+Resets all logger settings to their default values, clearing any per-level controls and custom configurations. This is useful for testing or when you need to return to a clean state.
+
+### Returns
+
+`None`
+
+### Examples
+
+```python
+# Configure with custom settings
+logger.configure(level="DEBUG", console_levels={"INFO": False})
+
+# Reset to defaults
+logger.reset()
+```
 
 ---
 

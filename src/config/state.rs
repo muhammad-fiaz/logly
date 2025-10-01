@@ -154,12 +154,28 @@ pub struct LoggerState {
     pub level_filter: LevelFilter,
     /// Enable colored output
     pub color: bool,
+    /// Custom color mapping for log levels (ANSI color codes or color names)
+    pub level_colors: AHashMap<String, String>,
+    /// Show timestamps in console output
+    pub show_time: bool,
+    /// Show module information in console output
+    pub show_module: bool,
+    /// Show function information in console output
+    pub show_function: bool,
+    /// Per-level console output control (None = use global console_enabled)
+    pub console_levels: AHashMap<String, bool>,
+    /// Per-level time display control (None = use global show_time)
+    pub time_levels: AHashMap<String, bool>,
+    /// Per-level color control (None = use global color)
+    pub color_levels: AHashMap<String, bool>,
+    /// Per-level storage control (None = use global level_filter)
+    pub storage_levels: AHashMap<String, bool>,
     /// Format logs as JSON
     pub format_json: bool,
     /// Format logs as pretty-printed JSON
     pub pretty_json: bool,
-
-    // Sink management (support multiple sinks using fast AHashMap)
+    /// Enable fast path optimization for simple console-only logging
+    pub fast_path_enabled: bool,
     /// Map of handler IDs to sink configurations
     pub sinks: AHashMap<HandlerId, SinkConfig>,
     /// Next available handler ID (auto-incremented)
@@ -219,10 +235,27 @@ impl Default for LoggerState {
             console_enabled: true,
             level_filter: LevelFilter::INFO,
             color: true,
+            level_colors: {
+                let mut colors = AHashMap::new();
+                colors.insert("TRACE".to_string(), "36".to_string());    // Cyan
+                colors.insert("DEBUG".to_string(), "35".to_string());    // Magenta
+                colors.insert("INFO".to_string(), "32".to_string());     // Green
+                colors.insert("SUCCESS".to_string(), "92".to_string());  // Bright Green
+                colors.insert("WARNING".to_string(), "33".to_string());  // Yellow
+                colors.insert("ERROR".to_string(), "31".to_string());    // Red
+                colors.insert("CRITICAL".to_string(), "91".to_string()); // Bright Red
+                colors
+            },
+            show_time: true,
+            show_module: true,
+            show_function: true,
+            console_levels: AHashMap::new(),
+            time_levels: AHashMap::new(),
+            color_levels: AHashMap::new(),
+            storage_levels: AHashMap::new(),
             format_json: false,
             pretty_json: false,
-
-            // New fields
+            fast_path_enabled: true,
             sinks: AHashMap::new(),
             next_handler_id: 1,
             file_writers: AHashMap::new(),

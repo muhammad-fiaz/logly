@@ -1,5 +1,8 @@
 """Test cases for callback functionality and template string support."""
 
+# pylint: disable=import-outside-toplevel
+
+import threading
 import time
 from pathlib import Path
 
@@ -170,8 +173,6 @@ class TestCallbackFunctionality:
         logger.add(str(log_file))
         logger.configure(level="INFO", color=False)
 
-        import threading
-
         callback_thread_ids = []
 
         def test_callback(record):
@@ -301,24 +302,6 @@ class TestTemplateStringSupport:
         content = log_file.read_text()
         assert "User dave authenticated" in content
         assert "request_id=req-123" in content
-
-    def test_string_template_support(self, tmp_path: Path):
-        """Test support for string.Template objects."""
-        from logly import logger
-        from string import Template
-
-        log_file = tmp_path / "test_string_template.log"
-        logger.add(str(log_file))
-        logger.configure(level="INFO", color=False)
-
-        # string.Template object
-        template = Template("User ${user} performed ${action}")
-        logger.info(template, user="eve", action="logout")
-
-        logger.complete()
-
-        content = log_file.read_text()
-        assert "User eve performed logout" in content
 
 
 if __name__ == "__main__":

@@ -92,7 +92,7 @@ def bench_logly_latency(
         logly.logger.configure(level="ERROR", color=False, json=json, pretty_json=pretty_json)
     else:
         logly.logger.add("console")
-        logly.logger.configure(level="INFO", color=False, json=json, pretty_json=pretty_json)
+        logly.logger.configure(level="INFO", color=False, json=json, pretty_json=pretty_json, show_time=False, show_module=False, show_function=False)
 
     latencies: list[float] = []
     for i in range(count):

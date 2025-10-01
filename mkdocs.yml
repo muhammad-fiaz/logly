@@ -116,6 +116,7 @@ nav:
   - Examples:
     - Basic Console Logging: examples/basic-console.md
     - Template Strings: examples/template-strings.md
+    - Per-Level Controls: examples/per-level-controls.md
     - File Logging with Rotation: examples/file-rotation.md
     - JSON Logging: examples/json-logging.md
     - Async Logging: examples/async-logging.md
@@ -126,6 +127,7 @@ nav:
     - Getting Started: guides/getting-started.md
     - Configuration: guides/configuration.md
     - Production Deployment: guides/production-deployment.md
+    - Development: guides/development.md
   - API Reference:
     - api-reference/index.md
     - Configuration: api-reference/configuration.md

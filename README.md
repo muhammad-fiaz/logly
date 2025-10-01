@@ -32,6 +32,9 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 
 **⭐ Don't forget to star the repository if you find Logly useful!**
 
+> This Project is still in Active development and Improvements are ongoing based on user feedback and real-world usage. Please report any issues or feature requests on GitHub. Performance may vary as optimizations are continuously implemented. If you still like other logging utility you can use that instead :)
+
+
 <details>
 <summary><strong>Table of contents</strong></summary>
 
@@ -61,6 +64,10 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 - [API reference (current features)](#api-reference-current-features)
 - [Advanced examples](#advanced-examples)
 - [Testing](#testing)
+	- [Running Tests](#running-tests)
+	- [Test Coverage](#test-coverage)
+	- [Code Quality](#code-quality)
+	- [Development Workflow](#development-workflow)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
 	- [Want to contribute?](#want-to-contribute)
@@ -268,11 +275,54 @@ logger.add("logs/sync.log", async_write=False)  # synchronous writes
 # -----------------------------
 # level: string name (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL)
 # color: enable or disable ANSI colors for console output (True/False)
+# level_colors: optional dict mapping level names to ANSI color codes or color names (custom colors per level)
 # json: when True, emit newline-delimited JSON records with `fields` (structured logging)
 # pretty_json: pretty-print JSON (human-friendly; higher cost than compact JSON)
+# console: enable/disable console output (True/False)
+# show_time: show/hide timestamps in console output (True/False)
+# show_module: show/hide module information in console output (True/False)
+# show_function: show/hide function information in console output (True/False)
+# console_levels: optional dict mapping level names to console output enable/disable (per-level control)
+# time_levels: optional dict mapping level names to time display enable/disable (per-level control)
+# color_levels: optional dict mapping level names to color enable/disable (per-level control)
+# storage_levels: optional dict mapping level names to file storage enable/disable (per-level control)
 
 # Text mode, colored console output, DEBUG level
 logger.configure(level="DEBUG", color=True, json=False)
+
+# Custom colors using ANSI codes
+custom_colors = {
+    "INFO": "32",      # Green
+    "WARNING": "93",   # Bright Yellow
+    "ERROR": "91",     # Bright Red
+}
+logger.configure(level="INFO", color=True, level_colors=custom_colors)
+
+# Custom colors using color names (easier to read!)
+custom_colors = {
+    "INFO": "GREEN",
+    "WARNING": "YELLOW",
+    "ERROR": "RED"
+}
+logger.configure(level="INFO", color=True, level_colors=custom_colors)
+
+# Console output without timestamps
+logger.configure(level="INFO", show_time=False)
+
+# Console output without module and function information
+logger.configure(level="INFO", show_module=False, show_function=False)
+
+# Per-level console control - disable INFO console output
+logger.configure(level="DEBUG", console_levels={"INFO": False, "DEBUG": True})
+
+# Per-level time control - show time only for ERROR level
+logger.configure(level="DEBUG", show_time=False, time_levels={"ERROR": True})
+
+# Per-level color control - disable colors for INFO level
+logger.configure(level="DEBUG", color_levels={"INFO": False, "ERROR": True})
+
+# Per-level storage control - disable file logging for DEBUG level
+logger.configure(level="DEBUG", storage_levels={"DEBUG": False})
 
 # Switch to JSON structured mode (useful for ingestion into log pipelines)
 logger.configure(level="INFO", color=False, json=True)
@@ -445,19 +495,10 @@ The latest iteration adds performance-focused and convenience features, with sim
 	- Use `{variable}` syntax for efficient, deferred string interpolation
 	- Variables are extracted and become structured context fields
 	- Works seamlessly with f-strings, % formatting, `bind()`, and `contextualize()`
-	- **NEW:** Support for `string.Template` objects and Python 3.14+ t-strings
 	- Better performance - variables only evaluated if log passes level filter
 	- Example:
 		```python
-		from string import Template
-		
-		# Using string.Template
-		template = Template("User {user} logged in")
-		logger.info(template, user="alice", ip="192.168.1.1")
-		
-		# Using Python 3.14+ t-strings (when available)
-		# logger.info(t"User {user} logged in", user="alice", ip="192.168.1.1")
-		
+		logger.info("User {user} logged in", user="alice", ip="192.168.1.1")
 		# Output: "User alice logged in" with ip as context field
 		```
 
@@ -705,8 +746,17 @@ Configuration & sinks
 	logger.add("logs/api.log", filter_min_level="INFO", filter_module="myapp.api")
 	```
 
-- `logger.configure(level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None`
+- `logger.configure(level: str = "INFO", color: bool = True, level_colors: dict[str, str] | None = None, json: bool = False, pretty_json: bool = False, console: bool = True, show_time: bool = True, show_module: bool = True, show_function: bool = True, console_levels: dict[str, bool] | None = None, time_levels: dict[str, bool] | None = None, color_levels: dict[str, bool] | None = None, storage_levels: dict[str, bool] | None = None) -> None`
 	- Set the base level for console output, enable/disable ANSI coloring, and toggle structured JSON output.
+	- `level_colors`: Optional dict mapping log levels to ANSI color codes or color names for custom coloring.
+	- `console`: Enable/disable console output.
+	- `show_time`: Show/hide timestamps in console output.
+	- `show_module`: Show/hide module information in console output.
+	- `show_function`: Show/hide function information in console output.
+	- `console_levels`: Optional dict mapping log levels to console output enable/disable for per-level control.
+	- `time_levels`: Optional dict mapping log levels to time display enable/disable for per-level control.
+	- `color_levels`: Optional dict mapping log levels to color enable/disable for per-level control.
+	- `storage_levels`: Optional dict mapping log levels to file storage enable/disable for per-level control.
 	- `pretty_json`: pretty-print JSON output for readability (higher cost than compact JSON).
 	- When `json=True`, console and file sinks emit newline-delimited JSON records with fields: `timestamp`, `level`, `message`, and `fields` (merged kwargs and bound context).
 
@@ -733,6 +783,9 @@ Configuration & sinks
 	# Minimal configuration: errors only, no colors
 	logger.configure(level="ERROR", color=False, json=False)
 	```
+
+- `logger.reset() -> None`
+	- Reset logger configuration to default settings, clearing any per-level controls and custom configurations.
 
 - `logger.remove(handler_id: int) -> bool`
 	- Remove a previously added sink by id. In the current MVP this returns True but removal semantics are limited.
@@ -1361,11 +1414,95 @@ logger.complete()
 
 ## Testing
 
-Run the unit tests with:
+Logly maintains high code quality standards with comprehensive testing and code analysis.
+
+### Running Tests
+
+Run the complete test suite with:
+
+```powershell
+uv run pytest
+```
+
+For quiet output (less verbose):
 
 ```powershell
 uv run pytest -q
 ```
+
+### Test Coverage
+
+The project maintains **96%+ code coverage** with comprehensive test cases covering:
+
+- All logging levels (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL, SUCCESS)
+- File rotation and retention
+- Async logging and callbacks
+- Template string processing
+- Context binding and contextualization
+- Exception handling and logging
+- Performance benchmarks
+- Edge cases and error conditions
+
+Generate coverage reports:
+
+```powershell
+# Terminal coverage report
+uv run pytest --cov=logly --cov-report=term-missing
+
+# HTML coverage report (opens in browser)
+uv run pytest --cov=logly --cov-report=html
+open htmlcov/index.html
+```
+
+### Code Quality
+
+Logly uses pylint for static code analysis and maintains a **10.00/10** code quality score:
+
+```powershell
+# Run pylint on source code
+uv run pylint logly/
+
+# Run pylint on tests
+uv run pylint tests/
+
+# Run pylint on entire codebase
+uv run pylint logly/ tests/
+```
+
+### Development Workflow
+
+For contributors and developers:
+
+1. **Setup development environment:**
+   ```powershell
+   # Install dependencies
+   uv sync --dev
+
+   # Install pre-commit hooks (if available)
+   pre-commit install
+   ```
+
+2. **Run full quality checks:**
+   ```powershell
+   # Run all tests with coverage
+   uv run pytest --cov=logly --cov-report=term-missing
+
+   # Run code quality checks
+   uv run pylint logly/ tests/
+
+   # Build documentation
+   uv run mkdocs build
+   ```
+
+3. **Performance testing:**
+   ```powershell
+   # Run performance benchmarks
+   uv run python bench/benchmark_logging.py
+   uv run python bench/benchmark_concurrency.py
+   uv run python bench/benchmark_latency.py
+   ```
+
+For more detailed development information, see the [Development Guide](https://muhammad-fiaz.github.io/logly/guides/development/).
 
 ## Changelog
 
