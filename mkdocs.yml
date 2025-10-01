@@ -1,13 +1,13 @@
 site_name: Logly Documentation
-site_url: https://muhammad-fiaz.github.io/docs/logly
+site_url: https://muhamad-fiaz.github.io/docs/logly
 site_author: Muhammad Fiaz
 site_description: >-
   Rust-powered, Loguru-like logging for Python.
   High-performance async logging with callbacks, template strings, and rotation.
 
 # Repository
-repo_name: muhammad-fiaz/logly
-repo_url: https://github.com/muhammad-fiaz/logly
+repo_name: muhamad-fiaz/logly
+repo_url: https://github.com/muhamad-fiaz/logly
 edit_uri: edit/main/docs/
 
 # Copyright

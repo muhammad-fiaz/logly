@@ -2,7 +2,7 @@
 
 ## Release Notes
 
-For detailed changelogs, release notes, and version history, please refer to the [**GitHub Releases**](https://github.com/muhammad-fiaz/logly/releases) page.
+For detailed changelogs, release notes, and version history, please refer to the [**GitHub Releases**](https://github.com/muhamad-fiaz/logly/releases) page.
 
 Each release includes:
 
@@ -12,7 +12,7 @@ Each release includes:
 - 🔧 Performance improvements
 - 📚 Documentation updates
 
-[**View All Releases →**](https://github.com/muhammad-fiaz/logly/releases)
+[**View All Releases →**](https://github.com/muhamad-fiaz/logly/releases)
 
 ---
 
@@ -136,7 +136,7 @@ Thanks to all contributors, issue reporters, and users!
 
 ## Links
 
-- **Documentation**: [muhammad-fiaz.github.io/docs/logly](https://muhammad-fiaz.github.io/docs/logly)
+- **Documentation**: [muhamad-fiaz.github.io/docs/logly](https://muhamad-fiaz.github.io/docs/logly)
 - **PyPI**: [pypi.org/project/logly](https://pypi.org/project/logly/)
 - **GitHub**: [github.com/muhammad-fiaz/logly](https://github.com/muhammad-fiaz/logly)
 - **Issues**: [github.com/muhammad-fiaz/logly/issues](https://github.com/muhammad-fiaz/logly/issues)
@@ -148,8 +148,8 @@ Thanks to all contributors, issue reporters, and users!
 
 ### Getting Help
 
-- **Documentation**: Check the [docs](https://muhammad-fiaz.github.io/docs/logly)
-- **API Reference**: See [API docs](https://muhammad-fiaz.github.io/docs/logly/api-reference/)
+- **Documentation**: Check the [docs](https://muhamad-fiaz.github.io/docs/logly)
+- **API Reference**: See [API docs](https://muhamad-fiaz.github.io/docs/logly/api-reference/)
 - **Issues**: Open an [issue](https://github.com/muhammad-fiaz/logly/issues)
 - **Discussions**: Ask in [discussions](https://github.com/muhammad-fiaz/logly/discussions)
 

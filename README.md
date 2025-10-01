@@ -3,7 +3,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
-[![Documentation](https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue)](https://muhammad-fiaz.github.io/docs/logly)
+[![Documentation](https://img.shields.io/badge/docs-muhamad--fiaz.github.io-blue)](https://muhamad-fiaz.github.io/docs/logly)
 [![Donate](https://img.shields.io/badge/Donate-%20-orange)](https://pay.muhammadfiaz.com)
 [![Supported Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
 [![GitHub stars](https://img.shields.io/github/stars/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
@@ -20,7 +20,7 @@
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
 
-**📚 [Complete Documentation](https://muhammad-fiaz.github.io/docs/logly) | [API Reference](https://muhammad-fiaz.github.io/docs/logly/api-reference/) | [Quick Start](https://muhammad-fiaz.github.io/docs/logly/quickstart/)**
+**📚 [Complete Documentation](https://muhamad-fiaz.github.io/docs/logly) | [API Reference](https://muhamad-fiaz.github.io/docs/logly/api-reference/) | [Quick Start](https://muhamad-fiaz.github.io/docs/logly/quickstart/)**
 
 </div>
 
@@ -820,7 +820,7 @@ uv run pytest -q
 
 ## Changelog
 
-For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhammad-fiaz/logly/releases) page.
+For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhamad-fiaz/logly/releases) page.
 
 ## Contributing
 
