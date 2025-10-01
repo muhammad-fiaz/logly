@@ -10,33 +10,33 @@
 //! - File and console output with filtering
 //! - Thread-safe state management integration
 
+use ahash::AHashMap;
 use chrono::Utc;
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use pyo3::Bound;
 use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use serde_json::json;
-use tracing::{debug, error, info, trace, warn, Level};
-use ahash::AHashMap;
+use tracing::{Level, debug, error, info, trace, warn};
 
 use crate::config::state;
 use crate::format::dict_to_pairs;
 use crate::utils::levels::{level_to_str, to_filter, to_level};
 
 /// Convert color name to ANSI color code.
-/// 
+///
 /// Supports both color names (e.g., "RED", "CYAN") and direct ANSI codes (e.g., "31", "36").
 /// Case-insensitive color names are supported.
-/// 
+///
 /// # Arguments
 /// * `color` - Color name or ANSI code
-/// 
+///
 /// # Returns
 /// ANSI color code as string, or the original string if it's already an ANSI code
 fn color_name_to_code(color: &str) -> String {
     match color.to_uppercase().as_str() {
         "BLACK" => "30",
-        "RED" => "31", 
+        "RED" => "31",
         "GREEN" => "32",
         "YELLOW" => "33",
         "BLUE" => "34",
@@ -45,7 +45,7 @@ fn color_name_to_code(color: &str) -> String {
         "WHITE" => "37",
         "BRIGHT_BLACK" | "GRAY" => "90",
         "BRIGHT_RED" => "91",
-        "BRIGHT_GREEN" => "92", 
+        "BRIGHT_GREEN" => "92",
         "BRIGHT_YELLOW" => "93",
         "BRIGHT_BLUE" => "94",
         "BRIGHT_MAGENTA" => "95",
@@ -55,28 +55,34 @@ fn color_name_to_code(color: &str) -> String {
         _ if color.chars().all(|c| c.is_ascii_digit()) => color,
         // Unknown color name, return as-is (might be a custom ANSI code)
         _ => color,
-    }.to_string()
+    }
+    .to_string()
 }
 
 /// Apply ANSI color codes to a log message based on the log level.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `message` - The log message to colorize
 /// * `level_str` - The log level as a string
 /// * `level_colors` - Map of level names to color names or ANSI codes
-/// 
+///
 /// # Returns
-/// 
+///
 /// The colorized message with ANSI escape codes
-fn colorize_message(message: &str, level_str: &str, level_colors: &AHashMap<String, String>) -> String {
+fn colorize_message(
+    message: &str,
+    level_str: &str,
+    level_colors: &AHashMap<String, String>,
+) -> String {
     if let Some(color_spec) = level_colors.get(level_str) {
         let color_code = color_name_to_code(color_spec);
         format!("\x1b[{}m{}\x1b[0m", color_code, message)
     } else {
         message.to_string()
     }
-}/// Logs a message with the specified level and optional extra fields.
+}
+/// Logs a message with the specified level and optional extra fields.
 ///
 /// This is the main entry point for logging messages. It handles:
 /// - Message formatting and field extraction
@@ -101,22 +107,22 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
     let should_use_fast_path = state::with_state_read(|s| {
         // Check if fast path can be used: simple console-only logging without complex features
         let has_file_writer = s.file_writer.is_some();
-        
-        s.fast_path_enabled &&
-           !s.format_json &&
-           !s.color &&
-           !s.show_time &&
-           !s.show_module &&
-           !s.show_function &&
-           s.console_levels.is_empty() &&
-           s.time_levels.is_empty() &&
-           s.color_levels.is_empty() &&
-           s.storage_levels.is_empty() &&
-           s.callbacks.is_empty() &&
-           s.console_enabled &&
-           !has_file_writer
+
+        s.fast_path_enabled
+            && !s.format_json
+            && !s.color
+            && !s.show_time
+            && !s.show_module
+            && !s.show_function
+            && s.console_levels.is_empty()
+            && s.time_levels.is_empty()
+            && s.color_levels.is_empty()
+            && s.storage_levels.is_empty()
+            && s.callbacks.is_empty()
+            && s.console_enabled
+            && !has_file_writer
     });
-    
+
     if should_use_fast_path {
         // Fast path: simple level:message format like std logging
         let formatted_msg = format!("{}:{}", level_to_str(level).to_uppercase(), msg);
@@ -217,9 +223,13 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
                 fields,
             };
             let level_key = lvl_str.to_string();
-            let console_per_level = s.console_levels.get(&level_key).copied().unwrap_or(s.console_enabled);
+            let console_per_level = s
+                .console_levels
+                .get(&level_key)
+                .copied()
+                .unwrap_or(s.console_enabled);
             let storage_per_level = s.storage_levels.get(&level_key).copied().unwrap_or(true);
-            
+
             if console_per_level {
                 // print JSON to stderr for console layer compatibility
                 if s.pretty_json {
@@ -250,16 +260,25 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
         } else {
             let lvl_str = level_to_str(level);
             let level_key = lvl_str.to_string();
-            
+
             // Check per-level settings, fallback to global
-            let show_time_per_level = s.time_levels.get(&level_key).copied().unwrap_or(s.show_time);
+            let show_time_per_level = s
+                .time_levels
+                .get(&level_key)
+                .copied()
+                .unwrap_or(s.show_time);
             let show_module_per_level = s.show_module; // module/function are global for now
             let show_function_per_level = s.show_function;
             let color_per_level = s.color_levels.get(&level_key).copied().unwrap_or(s.color);
-            let console_per_level = s.console_levels.get(&level_key).copied().unwrap_or(s.console_enabled);
+            let console_per_level = s
+                .console_levels
+                .get(&level_key)
+                .copied()
+                .unwrap_or(s.console_enabled);
             let storage_per_level = s.storage_levels.get(&level_key).copied().unwrap_or(true); // default to true for storage
-            
-            let filtered_pairs = filter_caller_info(&pairs, show_module_per_level, show_function_per_level);
+
+            let filtered_pairs =
+                filter_caller_info(&pairs, show_module_per_level, show_function_per_level);
             let suffix = if filtered_pairs.is_empty() {
                 String::new()
             } else {
@@ -270,7 +289,14 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
             } else {
                 String::new()
             };
-            let formatted_msg = format!("{}{}[{}] {}{}", timestamp_str, if show_time_per_level { "" } else { "" }, level_to_str(level), msg, suffix);
+            let formatted_msg = format!(
+                "{}{}[{}] {}{}",
+                timestamp_str,
+                if show_time_per_level { "" } else { "" },
+                level_to_str(level),
+                msg,
+                suffix
+            );
             let console_msg = if color_per_level {
                 colorize_message(&formatted_msg, level_to_str(level), &s.level_colors)
             } else {
@@ -300,7 +326,21 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
     });
 }
 
-pub fn configure_with_colors(level: &str, color: bool, json: bool, pretty_json: bool, console: bool, show_time: bool, show_module: bool, show_function: bool, console_levels: Option<AHashMap<String, bool>>, time_levels: Option<AHashMap<String, bool>>, color_levels: Option<AHashMap<String, bool>>, storage_levels: Option<AHashMap<String, bool>>, level_colors: Option<AHashMap<String, String>>) -> PyResult<()> {
+pub fn configure_with_colors(
+    level: &str,
+    color: bool,
+    json: bool,
+    pretty_json: bool,
+    console: bool,
+    show_time: bool,
+    show_module: bool,
+    show_function: bool,
+    console_levels: Option<AHashMap<String, bool>>,
+    time_levels: Option<AHashMap<String, bool>>,
+    color_levels: Option<AHashMap<String, bool>>,
+    storage_levels: Option<AHashMap<String, bool>>,
+    level_colors: Option<AHashMap<String, String>>,
+) -> PyResult<()> {
     let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
     state::with_state(|s| {
         s.level_filter = to_filter(lvl);
@@ -321,30 +361,38 @@ pub fn configure_with_colors(level: &str, color: bool, json: bool, pretty_json: 
 
         // Update fast path enabled flag based on current configuration
         let has_file_writer = s.file_writer.is_some();
-        s.fast_path_enabled = !s.format_json &&
-                              !s.color &&
-                              !s.show_time &&
-                              !s.show_module &&
-                              !s.show_function &&
-                              s.console_levels.is_empty() &&
-                              s.time_levels.is_empty() &&
-                              s.color_levels.is_empty() &&
-                              s.storage_levels.is_empty() &&
-                              s.callbacks.is_empty() &&
-                              s.console_enabled &&
-                              !has_file_writer;
+        s.fast_path_enabled = !s.format_json
+            && !s.color
+            && !s.show_time
+            && !s.show_module
+            && !s.show_function
+            && s.console_levels.is_empty()
+            && s.time_levels.is_empty()
+            && s.color_levels.is_empty()
+            && s.storage_levels.is_empty()
+            && s.callbacks.is_empty()
+            && s.console_enabled
+            && !has_file_writer;
     });
     Ok(())
 }
 
-fn filter_caller_info(pairs: &[(String, String)], show_module: bool, show_function: bool) -> Vec<(String, String)> {
-    pairs.iter().filter(|(key, _)| {
-        match key.as_str() {
-            "module" => show_module,
-            "function" => show_function,
-            _ => true, // Include all other fields
-        }
-    }).cloned().collect()
+fn filter_caller_info(
+    pairs: &[(String, String)],
+    show_module: bool,
+    show_function: bool,
+) -> Vec<(String, String)> {
+    pairs
+        .iter()
+        .filter(|(key, _)| {
+            match key.as_str() {
+                "module" => show_module,
+                "function" => show_function,
+                _ => true, // Include all other fields
+            }
+        })
+        .cloned()
+        .collect()
 }
 
 fn fast_format_suffix(pairs: &[(String, String)]) -> String {

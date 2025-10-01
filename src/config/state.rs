@@ -237,12 +237,12 @@ impl Default for LoggerState {
             color: true,
             level_colors: {
                 let mut colors = AHashMap::new();
-                colors.insert("TRACE".to_string(), "36".to_string());    // Cyan
-                colors.insert("DEBUG".to_string(), "35".to_string());    // Magenta
-                colors.insert("INFO".to_string(), "32".to_string());     // Green
-                colors.insert("SUCCESS".to_string(), "92".to_string());  // Bright Green
-                colors.insert("WARNING".to_string(), "33".to_string());  // Yellow
-                colors.insert("ERROR".to_string(), "31".to_string());    // Red
+                colors.insert("TRACE".to_string(), "36".to_string()); // Cyan
+                colors.insert("DEBUG".to_string(), "35".to_string()); // Magenta
+                colors.insert("INFO".to_string(), "32".to_string()); // Green
+                colors.insert("SUCCESS".to_string(), "92".to_string()); // Bright Green
+                colors.insert("WARNING".to_string(), "33".to_string()); // Yellow
+                colors.insert("ERROR".to_string(), "31".to_string()); // Red
                 colors.insert("CRITICAL".to_string(), "91".to_string()); // Bright Red
                 colors
             },

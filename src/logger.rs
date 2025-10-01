@@ -4,8 +4,8 @@
 //! configuration, sink management, and logging at various levels.
 
 use crate::backend;
-use crate::utils::levels::to_level;
 use crate::config::state::with_state;
+use crate::utils::levels::to_level;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -69,22 +69,26 @@ impl PyLogger {
         color_levels: Option<HashMap<String, bool>>,
         storage_levels: Option<HashMap<String, bool>>,
     ) -> PyResult<()> {
-        let colors = level_colors.map(|hm| {
-            hm.into_iter().collect()
-        });
-        let console_lvls = console_levels.map(|hm| {
-            hm.into_iter().collect()
-        });
-        let time_lvls = time_levels.map(|hm| {
-            hm.into_iter().collect()
-        });
-        let color_lvls = color_levels.map(|hm| {
-            hm.into_iter().collect()
-        });
-        let storage_lvls = storage_levels.map(|hm| {
-            hm.into_iter().collect()
-        });
-        backend::configure_with_colors(level, color, json, pretty_json, console, show_time, show_module, show_function, console_lvls, time_lvls, color_lvls, storage_lvls, colors)
+        let colors = level_colors.map(|hm| hm.into_iter().collect());
+        let console_lvls = console_levels.map(|hm| hm.into_iter().collect());
+        let time_lvls = time_levels.map(|hm| hm.into_iter().collect());
+        let color_lvls = color_levels.map(|hm| hm.into_iter().collect());
+        let storage_lvls = storage_levels.map(|hm| hm.into_iter().collect());
+        backend::configure_with_colors(
+            level,
+            color,
+            json,
+            pretty_json,
+            console,
+            show_time,
+            show_module,
+            show_function,
+            console_lvls,
+            time_lvls,
+            color_lvls,
+            storage_lvls,
+            colors,
+        )
     }
 
     /// Reset logger configuration to defaults.
@@ -95,7 +99,9 @@ impl PyLogger {
     /// # Returns
     /// PyResult indicating success or error
     pub fn reset(&self) -> PyResult<()> {
-        self.configure("INFO", true, None, false, false, true, true, true, true, None, None, None, None)
+        self.configure(
+            "INFO", true, None, false, false, true, true, true, true, None, None, None, None,
+        )
     }
 
     /// Add a logging sink (output destination).
@@ -160,10 +166,16 @@ impl PyLogger {
 
             let sink_config = SinkConfig {
                 id,
-                path: if sink == "console" { None } else { Some(sink.to_string()) },
+                path: if sink == "console" {
+                    None
+                } else {
+                    Some(sink.to_string())
+                },
                 rotation: rotation_policy,
                 compression: crate::config::state::Compression::None, // Default for now
-                min_level: filter_min_level.and_then(|l| crate::utils::levels::to_level(l)).map(crate::utils::levels::to_filter),
+                min_level: filter_min_level
+                    .and_then(|l| crate::utils::levels::to_level(l))
+                    .map(crate::utils::levels::to_filter),
                 module_filter: filter_module.map(|s| s.to_string()),
                 function_filter: filter_function.map(|s| s.to_string()),
                 async_write,

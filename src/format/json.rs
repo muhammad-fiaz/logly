@@ -10,8 +10,8 @@
 //! - Structured logging with timestamp, level, and custom fields
 
 use chrono::{DateTime, Utc};
-use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
 use pyo3::Bound;
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
 use serde::Serialize;
 use serde_json;
 
@@ -61,4 +61,3 @@ pub fn dict_to_pairs(dict: &Bound<'_, PyDict>) -> Vec<(String, String)> {
     }
     out
 }
-

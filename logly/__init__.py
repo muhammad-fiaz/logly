@@ -118,7 +118,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         console_levels: dict[str, bool] | None = None,
         time_levels: dict[str, bool] | None = None,
         color_levels: dict[str, bool] | None = None,
-        storage_levels: dict[str, bool] | None = None
+        storage_levels: dict[str, bool] | None = None,
     ) -> None:
         """Configure global logger settings.
 
@@ -182,7 +182,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             console_levels=console_levels,
             time_levels=time_levels,
             color_levels=color_levels,
-            storage_levels=storage_levels
+            storage_levels=storage_levels,
         )
 
     def reset(self) -> None:

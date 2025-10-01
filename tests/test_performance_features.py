@@ -101,11 +101,9 @@ class TestSizeBasedRotation:
         ]
 
         for size_str, expected_bytes in test_cases:
-            filename = size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')
+            filename = size_str.replace("B", "").replace("KB", "kb").replace("MB", "mb")
             log_file = tmp_path / f"size_test_{filename}.log"
-            handler_id = logger.add(
-                str(log_file), size_limit=size_str, async_write=False
-            )
+            handler_id = logger.add(str(log_file), size_limit=size_str, async_write=False)
 
             # Write data that should trigger rotation
             msg_size = expected_bytes // 4  # Quarter of limit

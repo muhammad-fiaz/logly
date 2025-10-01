@@ -71,7 +71,11 @@ pub fn start_async_writer_if_needed() {
                         }
                         Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
                             // Timeout reached, flush if we have content or if flush_interval has passed
-                            if !line_queue.is_empty() || (!buffer.is_empty() && last_flush.elapsed() >= Duration::from_millis(flush_interval)) {
+                            if !line_queue.is_empty()
+                                || (!buffer.is_empty()
+                                    && last_flush.elapsed()
+                                        >= Duration::from_millis(flush_interval))
+                            {
                                 flush_buffer(&mut buffer, &mut line_queue, &file_writer);
                                 last_flush = Instant::now();
                             }
@@ -86,7 +90,11 @@ pub fn start_async_writer_if_needed() {
                     }
                 }
 
-                fn flush_buffer(buffer: &mut String, line_queue: &mut VecDeque<String>, file_writer: &Arc<Mutex<Box<dyn Write + Send>>>) {
+                fn flush_buffer(
+                    buffer: &mut String,
+                    line_queue: &mut VecDeque<String>,
+                    file_writer: &Arc<Mutex<Box<dyn Write + Send>>>,
+                ) {
                     // Build buffer from queued lines
                     while let Some(line) = line_queue.pop_front() {
                         if !buffer.is_empty() {

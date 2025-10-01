@@ -288,9 +288,9 @@ def test_custom_level_colors(tmp_path: Path):
 
     # Configure with custom colors
     custom_colors = {
-        "INFO": "34",      # Blue
-        "WARNING": "35",   # Magenta
-        "ERROR": "36"      # Cyan
+        "INFO": "34",  # Blue
+        "WARNING": "35",  # Magenta
+        "ERROR": "36",  # Cyan
     }
     logger.configure(level="INFO", level_colors=custom_colors)
 
@@ -332,11 +332,7 @@ def test_color_names(tmp_path: Path):
     logger.add(str(p))
 
     # Configure with custom colors using color names
-    custom_colors = {
-        "INFO": "GREEN",
-        "WARNING": "YELLOW",
-        "ERROR": "RED"
-    }
+    custom_colors = {"INFO": "GREEN", "WARNING": "YELLOW", "ERROR": "RED"}
     logger.configure(level="INFO", level_colors=custom_colors)
 
     logger.info("info message with green")
@@ -405,11 +401,10 @@ def test_per_level_console_controls(tmp_path: Path):
     """Test per-level console output controls."""
     p = tmp_path / "console.log"
     logger.add(str(p))
-    
+
     # Configure with per-level console settings
     logger.configure(
-        level="DEBUG",
-        console_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
+        level="DEBUG", console_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
     )
 
     logger.debug("debug message")
@@ -430,12 +425,12 @@ def test_per_level_time_controls(tmp_path: Path):
     """Test per-level time display controls."""
     p = tmp_path / "time.log"
     logger.add(str(p))
-    
+
     # Configure with per-level time settings
     logger.configure(
         level="DEBUG",
         show_time=False,  # Global default off
-        time_levels={"DEBUG": True, "INFO": False, "WARN": True}
+        time_levels={"DEBUG": True, "INFO": False, "WARN": True},
     )
 
     logger.debug("debug with time")
@@ -446,24 +441,31 @@ def test_per_level_time_controls(tmp_path: Path):
     # Check file output for timestamps
     content = read_log(p)
     import re
-    timestamp_pattern = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
-    
+
+    timestamp_pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+
     # DEBUG and WARN should have timestamps in file, INFO should not
-    assert re.search(timestamp_pattern + r'.*debug with time', content), "DEBUG should have timestamp in file"
-    assert re.search(r'\[INFO\] info without time', content) and not re.search(timestamp_pattern + r'.*info without time', content), "INFO should not have timestamp in file"
-    assert re.search(timestamp_pattern + r'.*warn with time', content), "WARN should have timestamp in file"
+    assert re.search(timestamp_pattern + r".*debug with time", content), (
+        "DEBUG should have timestamp in file"
+    )
+    assert re.search(r"\[INFO\] info without time", content) and not re.search(
+        timestamp_pattern + r".*info without time", content
+    ), "INFO should not have timestamp in file"
+    assert re.search(timestamp_pattern + r".*warn with time", content), (
+        "WARN should have timestamp in file"
+    )
 
 
 def test_per_level_color_controls(tmp_path: Path):
     """Test per-level color controls."""
     p = tmp_path / "color.log"
     logger.add(str(p))
-    
+
     # Configure with per-level color settings
     logger.configure(
         level="DEBUG",
         color=True,  # Global default on
-        color_levels={"DEBUG": False, "INFO": True, "WARN": False}
+        color_levels={"DEBUG": False, "INFO": True, "WARN": False},
     )
 
     logger.debug("debug uncolored")
@@ -482,11 +484,10 @@ def test_per_level_storage_controls(tmp_path: Path):
     """Test per-level storage (file logging) controls."""
     p = tmp_path / "storage.log"
     logger.add(str(p))
-    
+
     # Configure with per-level storage settings
     logger.configure(
-        level="DEBUG",
-        storage_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
+        level="DEBUG", storage_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
     )
 
     logger.debug("debug stored")

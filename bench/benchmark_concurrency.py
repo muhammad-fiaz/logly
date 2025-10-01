@@ -74,7 +74,15 @@ def bench_logly_concurrent(
     tmp = os.path.join(tempfile.gettempdir(), "bench_logly_concurrent.log")
     # route INFO to file while muting console overhead during the benchmark
     logly.logger.add(tmp, async_write=async_write, filter_min_level="INFO")
-    logly.logger.configure(level="ERROR", color=False, json=json, pretty_json=pretty_json, show_time=False, show_module=False, show_function=False)
+    logly.logger.configure(
+        level="ERROR",
+        color=False,
+        json=json,
+        pretty_json=pretty_json,
+        show_time=False,
+        show_module=False,
+        show_function=False,
+    )
 
     def worker():  # type: ignore[no-untyped-def]
         for i in range(count_per_thread):
