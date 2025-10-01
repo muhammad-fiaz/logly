@@ -98,8 +98,6 @@ Standard Logging: ~5.2s
 Logly:           ~1.6s  (3.2x faster)
 ```
 
-> **Note for v0.1.3+:** Logly remains faster than Python's standard logging overall, but benchmarks may show similar performance when using Logly's extensive customization features (async callbacks, template strings, per-sink filtering, JSON formatting, size/time-based rotation, etc.). These features provide powerful functionality but add overhead compared to the minimal stdlib implementation. For maximum performance demonstrating the speed advantage, use simple console-only logging without advanced features.
-
 ### Developer Experience
 
 ```python
