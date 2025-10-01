@@ -95,7 +95,7 @@ For developers who want to build logly from source code.
 
 #### Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - Rust 1.70+
 - maturin (Python package for building Rust extensions)
 
@@ -179,9 +179,51 @@ logger.add("logs/app.log", size_limit="10MB")        # rotate when file reaches 
 logger.add("logs/debug.log", size_limit="1GB", retention=5)  # rotate at 1GB, keep 5 files
 logger.add("logs/small.log", size_limit="500KB", rotation="daily")  # combine time and size
 
-# Examples of other rotation values:
-logger.add("logs/hourly.log", rotation="hourly")
-logger.add("logs/never.log", rotation="never")    # no rotation
+# Advanced filtering examples:
+logger.add("logs/errors.log", filter_min_level="ERROR")  # only ERROR and above
+logger.add("logs/django.log", filter_module="django.db")  # only Django DB logs
+logger.add("logs/auth.log", filter_function="authenticate")  # only auth function logs
+
+# Date and naming examples:
+logger.add("logs/app.log", rotation="daily", date_style="prefix", date_enabled=True)
+# Creates: 2025-08-22.app.log, 2025-08-23.app.log, etc.
+
+logger.add("logs/app.log", rotation="hourly", date_enabled=False)
+# Creates: app.log (no date, but rotates hourly based on time)
+
+# -----------------------------
+# Advanced sink configuration examples
+# -----------------------------
+
+# File size limits with retention:
+logger.add("logs/large.log", size_limit="500MB", retention=3)  # Keep last 3 files
+
+# Combined time and size rotation:
+logger.add("logs/complex.log", rotation="daily", size_limit="50MB", retention=10)
+
+# Filtered sinks for different log levels:
+error_sink = logger.add("logs/errors.log", filter_min_level="ERROR")
+debug_sink = logger.add("logs/debug.log", filter_min_level="DEBUG", filter_max_level="INFO")
+
+# Module-specific logging:
+logger.add("logs/database.log", filter_module="myapp.database")
+logger.add("logs/api.log", filter_module="myapp.api", filter_function="handle_request")
+
+# Custom date formatting:
+logger.add("logs/dated.log", rotation="daily", date_style="prefix", date_enabled=True)
+# Result: 2025-08-22.dated.log, 2025-08-23.dated.log, etc.
+
+# Performance optimization with async writing:
+logger.add("logs/performance.log", async_write=True)   # Default: background thread
+logger.add("logs/precise.log", async_write=False)      # Synchronous for exact timing
+
+# Remove sinks when no longer needed:
+logger.remove(error_sink)
+logger.remove(debug_sink)
+
+# Async writing (default for performance):
+logger.add("logs/fast.log", async_write=True)   # background thread, lower latency
+logger.add("logs/sync.log", async_write=False)  # synchronous writes
 
 # -----------------------------
 # Configure behavior (logger.configure)
@@ -528,15 +570,17 @@ Configuration & sinks
 
 - `logger.add(sink: str | None = None, *, rotation: str | None = None, size_limit: str | None = None, retention: int | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True, date_style: str | None = None, date_enabled: bool = False) -> int`
 	- Add a sink. Use `"console"` for stdout/stderr or a file path to write logs to disk. Returns a handler id (int).
-	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender).
-	- `size_limit`: `"500B" | "5KB" | "10MB" | "1GB"` (size-based rotation). Can be combined with time-based rotation.
-	- `retention`: Maximum number of rotated files to keep. Older files are automatically deleted on rollover.
+	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender). Can be combined with size-based rotation.
+	- `size_limit`: **File size limits** - `"500B" | "5KB" | "10MB" | "1GB" | "500MB"` etc. (size-based rotation). When file reaches this size, it rotates. Can be combined with time-based rotation for more complex policies.
+	- `retention`: Maximum number of rotated files to keep. Older files are automatically deleted on rollover. Set to `None` for unlimited retention.
 	- `date_style`: `"before_ext"` (default) or `"prefix"` — controls where the rotation timestamp is placed in the filename.
-	- `date_enabled`: when False (default) no date is appended to filenames even if rotation is set; set to True to enable dated filenames.
-	- `filter_min_level`: only write to this file if the record level is >= this level (e.g., `"INFO"`).
-	- `filter_module`: only write if the callsite module matches this string.
-	- `filter_function`: only write if the callsite function matches this string.
-	- `async_write`: when True (default), file writes go through a background thread for lower latency.
+	  - `"before_ext"`: `app.2025-08-22.log` (date before file extension)
+	  - `"prefix"`: `2025-08-22.app.log` (date as prefix)
+	- `date_enabled`: when `False` (default) no date is appended to filenames even if rotation is set; set to `True` to enable dated filenames.
+	- `filter_min_level`: only write to this file if the record level is >= this level (e.g., `"INFO"`, `"WARNING"`, `"ERROR"`).
+	- `filter_module`: only write if the callsite module matches this string (e.g., `"myapp.handlers"`, `"django.db"`).
+	- `filter_function`: only write if the callsite function matches this string (e.g., `"process_data"`, `"handle_request"`).
+	- `async_write`: when `True` (default), file writes go through a background thread for lower latency and better performance. Set to `False` for synchronous writes.
 
 	Example — add console and a rotating file sink with retention:
 
@@ -825,6 +869,8 @@ uv run pytest -q
 ## Changelog
 
 For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhammad-fiaz/logly/releases) page.
+
+**Don't forget to ⭐ star the repository if you find it useful!**
 
 
 ## Contributing
