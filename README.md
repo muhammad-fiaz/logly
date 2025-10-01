@@ -30,6 +30,8 @@ Logly is a Rust-powered, Loguru-like logging library for Python that combines th
 
 Logly's core is implemented in Rust using tracing and exposed to Python via PyO3/Maturin for safety and performance.
 
+**⭐ Don't forget to star the repository if you find Logly useful!**
+
 <details>
 <summary><strong>Table of contents</strong></summary>
 
