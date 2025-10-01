@@ -3,7 +3,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
-[![Documentation](https://img.shields.io/badge/docs-muhamad--fiaz.github.io-blue)](https://muhamad-fiaz.github.io/docs/logly)
+[![Documentation](https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue)](https://muhammad-fiaz.github.io/docs/logly)
 [![Donate](https://img.shields.io/badge/Donate-%20-orange)](https://pay.muhammadfiaz.com)
 [![Supported Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
 [![GitHub stars](https://img.shields.io/github/stars/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
@@ -20,7 +20,7 @@
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
 
-**📚 [Complete Documentation](https://muhamad-fiaz.github.io/docs/logly) | [API Reference](https://muhamad-fiaz.github.io/docs/logly/api-reference/) | [Quick Start](https://muhamad-fiaz.github.io/docs/logly/quickstart/)**
+**📚 [Complete Documentation](https://muhammad-fiaz.github.io/docs/logly) | [API Reference](https://muhammad-fiaz.github.io/docs/logly/api-reference/) | [Quick Start](https://muhammad-fiaz.github.io/docs/logly/quickstart/)**
 
 </div>
 
@@ -55,7 +55,9 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 - [API reference (current features)](#api-reference-current-features)
 - [Advanced examples](#advanced-examples)
 - [Testing](#testing)
+- [Changelog](#changelog)
 - [Contributing](#contributing)
+	- [Want to contribute?](#want-to-contribute)
 - [License](#license)
 
 </details>
@@ -820,12 +822,31 @@ uv run pytest -q
 
 ## Changelog
 
-For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhamad-fiaz/logly/releases) page.
+For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhammad-fiaz/logly/releases) page.
+
 
 ## Contributing
 
-Problems, PRs and feature requests are welcome. For implementation tasks that touch Rust code, prefer small incremental PRs so the build and tests stay green.
+Contributions are welcome!
+
+If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request.
+And make sure to follow the [project guidelines](CODE_OF_CONDUCT.md)
+
+### Want to contribute?
+
+If you'd like to contribute to this project, please check out the [contributing guidelines](CONTRIBUTING.md), fork the repository, and submit a pull request. Every contribution is welcome and appreciated!
+
+A big thank you to everyone who contributed to this project! 💖
+
+[![Portfolio contributors](https://contrib.rocks/image?repo=muhammad-fiaz/logly&max=2000)](https://github.com/muhammad-fiaz/logly/graphs/contributors)
 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file in the repository root for the full license text.
+
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=muhammad-fiaz/logly&type=Date)](https://github.com/muhamad-fiaz/logly/)
+
+</div>
