@@ -1,3 +1,9 @@
+---
+title: Changelog - Logly Python Logging Library
+description: Logly changelog and release notes. See what's new in each version, bug fixes, and feature updates for the Python logging library.
+keywords: python, logging, changelog, releases, updates, version, history, logly
+---
+
 # Changelog
 
 ## Release Notes

@@ -127,7 +127,15 @@ def bench_logly(
             logly.logger.configure(level="ERROR", color=False, json=json, pretty_json=pretty_json)
         else:
             logly.logger.add("console")
-            logly.logger.configure(level="INFO", color=False, json=json, pretty_json=pretty_json)
+            logly.logger.configure(
+                level="INFO",
+                color=False,
+                json=json,
+                pretty_json=pretty_json,
+                show_time=False,
+                show_module=False,
+                show_function=False,
+            )
 
     # Prepare base message and a synthetic payload dict
     base = "hello {}" + (" " + ("x" * message_size) if message_size > 0 else "")

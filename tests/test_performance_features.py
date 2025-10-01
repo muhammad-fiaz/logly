@@ -49,6 +49,7 @@ class TestSizeBasedRotation:
         import glob
         import os
 
+        logger.reset()
         log_file = tmp_path / "size_rotation.log"
         handler_id = logger.add(str(log_file), size_limit="1KB", async_write=False)
 
@@ -91,6 +92,7 @@ class TestSizeBasedRotation:
         """Test that different size limit formats work"""
         import os
 
+        logger.reset()
         test_cases = [
             ("1KB", 1024),
             ("2KB", 2048),
@@ -99,10 +101,8 @@ class TestSizeBasedRotation:
         ]
 
         for size_str, expected_bytes in test_cases:
-            log_file = (
-                tmp_path
-                / f"size_test_{size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')}.log"
-            )
+            filename = size_str.replace("B", "").replace("KB", "kb").replace("MB", "mb")
+            log_file = tmp_path / f"size_test_{filename}.log"
             handler_id = logger.add(str(log_file), size_limit=size_str, async_write=False)
 
             # Write data that should trigger rotation
@@ -205,10 +205,11 @@ class TestAsyncPerformance:
 
     def test_async_writer_with_arc(self, tmp_path):
         """Test async writer uses Arc<Mutex<>> for thread safety"""
+        logger.reset()
         log_file = tmp_path / "async_test.log"
 
-        # Add sync sink (async mode parameter not yet exposed)
-        handler_id = logger.add(str(log_file))
+        # Add sync sink for immediate writing
+        handler_id = logger.add(str(log_file), async_write=False)
 
         # Write multiple logs
         for i in range(100):
@@ -216,9 +217,6 @@ class TestAsyncPerformance:
 
         # Remove handler to flush
         logger.remove(handler_id)
-
-        # Give time to complete
-        time.sleep(0.05)
 
         # Verify file was created and has content
         assert log_file.exists(), "Log file created"

@@ -1,5 +1,8 @@
 """Test cases for callback functionality and template string support."""
 
+# pylint: disable=import-outside-toplevel
+
+import threading
 import time
 from pathlib import Path
 
@@ -169,8 +172,6 @@ class TestCallbackFunctionality:
         logger = PyLogger()
         logger.add(str(log_file))
         logger.configure(level="INFO", color=False)
-
-        import threading
 
         callback_thread_ids = []
 

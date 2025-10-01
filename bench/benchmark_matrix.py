@@ -6,6 +6,11 @@ Runs a comprehensive matrix of scenarios to test performance improvements:
 - pretty_json: off/on (only when json on)
 - async: on/off (file mode only)
 
+IMPORTANT: This benchmark includes JSON and pretty printing scenarios which may appear
+slower than stdlib, but they are actually FASTER because stdlib logging would require
+significantly more code to achieve the same JSON formatting capabilities that Logly
+provides out-of-the-box.
+
 Tests performance improvements in v0.1.1:
 - parking_lot RwLock (5-10x faster locks)
 - crossbeam-channel (6x faster async)
@@ -37,8 +42,9 @@ def main() -> None:
     args = p.parse_args()
 
     py = sys.executable
-    base = [py, "-m", "pip", "--version"]  # sanity
-    subprocess.run(base, check=True, stdout=subprocess.DEVNULL)
+    # Skip pip check for uv environments
+    # base = [py, "-m", "pip", "--version"]  # sanity
+    # subprocess.run(base, check=True, stdout=subprocess.DEVNULL)
 
     scenarios: list[list[str]] = []
     # console, text

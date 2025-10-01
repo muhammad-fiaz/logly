@@ -1,3 +1,9 @@
+---
+title: Quick Start - Logly Python Logging Tutorial
+description: Get started with Logly logging library in 5 minutes. Learn basic setup, configuration, and core features for Python applications.
+keywords: python, logging, tutorial, quickstart, setup, configuration, logly
+---
+
 # Quick Start
 
 Get started with Logly in 5 minutes!
@@ -595,7 +601,7 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
     Complete documentation of all methods
 
-    [:octicons-arrow-right-24: API Reference](api-reference/index.md)
+    [API Reference](api-reference/index.md)
 
 -   :material-phone-forward-outline:{ .lg .middle } **Callbacks**
 
@@ -603,7 +609,7 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
     Async callbacks for log events
 
-    [:octicons-arrow-right-24: Callbacks Docs](api-reference/callbacks.md)
+    [Callbacks Docs](api-reference/callbacks.md)
 
 -   :material-tools:{ .lg .middle } **Utilities**
 
@@ -611,6 +617,6 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
     Enable/disable, custom levels, cleanup
 
-    [:octicons-arrow-right-24: Utilities Docs](api-reference/utilities.md)
+    [Utilities Docs](api-reference/utilities.md)
 
 </div>

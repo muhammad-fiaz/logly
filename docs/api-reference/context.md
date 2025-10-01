@@ -1,3 +1,9 @@
+---
+title: Context Management API - Logly Python Logging
+description: Logly context management API reference. Learn how to bind persistent context and use contextualize for temporary context in log messages.
+keywords: python, logging, context, management, api, binding, persistent, temporary, logly
+---
+
 # Context Management
 
 Methods for adding contextual information to log messages.

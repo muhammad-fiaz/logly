@@ -19,7 +19,7 @@ from logly._logly import logger as _rust_logger
 _TEMPLATE_PATTERN = re.compile(r"\{(\w+)\}")
 
 
-class _LoggerProxy:
+class _LoggerProxy:  # pylint: disable=too-many-public-methods
     """Thin Python proxy to keep surface close to Loguru while delegating to Rust.
 
     For MVP we forward methods; advanced features will be added incrementally.
@@ -37,7 +37,7 @@ class _LoggerProxy:
         self._levels: dict[str, str] = {}
 
     # configuration and sinks
-    def add(
+    def add(  # pylint: disable=too-many-arguments
         self,
         sink: str | None = None,
         *,
@@ -48,6 +48,9 @@ class _LoggerProxy:
         filter_module: str | None = None,
         filter_function: str | None = None,
         async_write: bool = True,
+        buffer_size: int = 8192,
+        flush_interval: int = 100,
+        max_buffered_lines: int = 1000,
         date_style: str | None = None,
         date_enabled: bool = False,
     ) -> int:
@@ -63,6 +66,9 @@ class _LoggerProxy:
             filter_module: Only log messages from this module name.
             filter_function: Only log messages from this function name.
             async_write: Enable asynchronous writing for better performance (default: True).
+            buffer_size: Buffer size in bytes for async writing (default: 8192).
+            flush_interval: Flush interval in milliseconds for async writing (default: 1000).
+            max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format style. Options: "rfc3339", "local", "utc".
             date_enabled: Enable timestamp in log output (default: False for console).
 
@@ -91,12 +97,28 @@ class _LoggerProxy:
             filter_module=filter_module,
             filter_function=filter_function,
             async_write=async_write,
+            buffer_size=buffer_size,
+            flush_interval=flush_interval,
+            max_buffered_lines=max_buffered_lines,
             date_style=date_style,
             date_enabled=date_enabled,
         )
 
-    def configure(
-        self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False
+    def configure(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        level: str = "INFO",
+        color: bool = True,
+        level_colors: dict[str, str] | None = None,
+        json: bool = False,
+        pretty_json: bool = False,
+        console: bool = True,
+        show_time: bool = True,
+        show_module: bool = True,
+        show_function: bool = True,
+        console_levels: dict[str, bool] | None = None,
+        time_levels: dict[str, bool] | None = None,
+        color_levels: dict[str, bool] | None = None,
+        storage_levels: dict[str, bool] | None = None,
     ) -> None:
         """Configure global logger settings.
 
@@ -104,8 +126,26 @@ class _LoggerProxy:
             level: Default minimum log level. Options: "TRACE", "DEBUG", "INFO",
                   "SUCCESS", "WARNING", "ERROR", "CRITICAL".
             color: Enable colored output for console logs (default: True).
+            level_colors: Dictionary mapping log levels to ANSI color codes or color names.
+                         If None, uses default colors. Supports both ANSI codes and color names:
+                         ANSI codes: "30" (Black), "31" (Red), "32" (Green), "33" (Yellow),
+                                   "34" (Blue), "35" (Magenta), "36" (Cyan), "37" (White)
+                         Color names: "BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA",
+                                    "CYAN", "WHITE", "BRIGHT_BLACK", "BRIGHT_RED", etc.
             json: Output logs in JSON format (default: False).
             pretty_json: Output logs in pretty-printed JSON format (default: False).
+            console: Enable console output (default: True).
+            show_time: Show timestamps in console output (default: True).
+            show_module: Show module information in console output (default: True).
+            show_function: Show function information in console output (default: True).
+            console_levels: Dictionary mapping log levels to console output enable/disable.
+                           If None, uses global console setting.
+            time_levels: Dictionary mapping log levels to time display enable/disable.
+                        If None, uses global show_time setting.
+            color_levels: Dictionary mapping log levels to color enable/disable.
+                         If None, uses global color setting.
+            storage_levels: Dictionary mapping log levels to file storage enable/disable.
+                           If None, uses global setting (always enabled).
 
         Example:
             >>> from logly import logger
@@ -113,8 +153,50 @@ class _LoggerProxy:
             >>> logger.configure(level="INFO", color=True)
             >>> # Configure with JSON output
             >>> logger.configure(level="DEBUG", json=True)
+            >>> # Configure with custom colors using color names
+            >>> colors = {
+            ...     "INFO": "GREEN",
+            ...     "WARNING": "YELLOW",
+            ...     "ERROR": "RED"
+            ... }
+            >>> logger.configure(level="INFO", level_colors=colors)
+            >>> # Configure without timestamps
+            >>> logger.configure(level="INFO", show_time=False)
+            >>> # Configure without module and function info
+            >>> logger.configure(level="INFO", show_module=False, show_function=False)
+            >>> # Configure per-level console output
+            >>> logger.configure(console_levels={"DEBUG": True, "INFO": False, "WARN": True})
+            >>> # Configure per-level time display
+            >>> logger.configure(time_levels={"DEBUG": True, "INFO": False})
         """
-        self._inner.configure(level=level, color=color, json=json, pretty_json=pretty_json)
+        self._inner.configure(
+            level=level,
+            color=color,
+            level_colors=level_colors,
+            json=json,
+            pretty_json=pretty_json,
+            console=console,
+            show_time=show_time,
+            show_module=show_module,
+            show_function=show_function,
+            console_levels=console_levels,
+            time_levels=time_levels,
+            color_levels=color_levels,
+            storage_levels=storage_levels,
+        )
+
+    def reset(self) -> None:
+        """Reset logger configuration to default settings.
+
+        Resets all logger settings to their default values, clearing any
+        per-level controls and custom configurations.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.configure(level="DEBUG", console_levels={"INFO": False})
+            >>> logger.reset()  # Back to defaults
+        """
+        self._inner.reset()
 
     def remove(self, handler_id: int) -> bool:
         """Remove a logging sink by its handler ID.

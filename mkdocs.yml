@@ -5,6 +5,15 @@ site_description: >-
   Rust-powered, Loguru-like logging for Python.
   High-performance async logging with callbacks, template strings, and rotation.
 
+# SEO Configuration
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/muhammad-fiaz
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/logly/
+
 # Repository
 repo_name: muhammad-fiaz/logly
 repo_url: https://github.com/muhammad-fiaz/logly
@@ -104,6 +113,21 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Quick Start: quickstart.md
+  - Examples:
+    - Basic Console Logging: examples/basic-console.md
+    - Template Strings: examples/template-strings.md
+    - Per-Level Controls: examples/per-level-controls.md
+    - File Logging with Rotation: examples/file-rotation.md
+    - JSON Logging: examples/json-logging.md
+    - Async Logging: examples/async-logging.md
+    - Context Binding: examples/context-binding.md
+    - Exception Handling: examples/exception-handling.md
+    - Multi-Sink Setup: examples/multi-sink.md
+  - Guides:
+    - Getting Started: guides/getting-started.md
+    - Configuration: guides/configuration.md
+    - Production Deployment: guides/production-deployment.md
+    - Development: guides/development.md
   - API Reference:
     - api-reference/index.md
     - Configuration: api-reference/configuration.md
@@ -113,14 +137,6 @@ nav:
     - Exception Handling: api-reference/exceptions.md
     - Utility Methods: api-reference/utilities.md
   - Changelog: changelog.md
-
-# Extra
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/muhammad-fiaz
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/logly/
 
 # Additional CSS
 extra_css:

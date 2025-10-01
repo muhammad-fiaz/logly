@@ -1,33 +1,84 @@
-# Logl[![PyPI](https://img.shields.io/pypi/v/logly)](https://pypi.org/project/logly/)
-[![Downloads](https://img.shields.io/pypi/dm/logly)](https://pypistats.org/packages/logly)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
-[![License](https://img.shields.io/github/license/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly)
+---
+title: Logly - High-Performance Python Logging Library
+description: Rust-powered logging for Python with async I/O, beautiful output, and 3x faster performance than standard logging. Features template strings, callbacks, and smart rotation.
+keywords: python, logging, rust, async, performance, loguru, pyo3, high-performance
+---
+
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="Logly Logo" width="400" />
+<h1>Logly</h1>
+
+  <img src="../assets/logly-logo.png" alt="Logly Logo" width="400" />
   <p><em>Rust-powered, Loguru-like logging for Python</em></p>
 
-  [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
-  [![Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
-  [![Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
-  [![License](https://img.shields.io/github/license/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
+  <a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly.svg" alt="PyPI"></a>
+  <a href="https://pypistats.org/packages/logly"><img src="https://img.shields.io/pypi/dm/logly.svg" alt="Downloads"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg" alt="Python"></a>
+  <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly.svg" alt="License"></a>
 </div>
 
 ---
 
 ## Overview
 
-**Logly** is a high-performance logging library for Python that combines the familiarity of Python's standard logging API with the speed and safety of Rust. Built with **tracing** and **PyO3**, Logly delivers efficient, reliable logging for applications that generate large volumes of log messages.
+**Logly** is a high-performance, enterprise-grade logging library for Python, powered by Rust. It combines the familiar Loguru-like API with blazing-fast performance, structured JSON logging, and production-ready features like async buffering, file rotation, and multi-sink architecture.
+
+Built with a modular Rust backend using PyO3/Maturin, Logly delivers exceptional performance while maintaining memory safety and thread safety. The codebase is organized into focused modules (backend, config, format, utils) for maintainability and extensibility.
+
+!!! note "Active Development"
+    Logly is actively developed and optimized. Performance continues to improve with each release. For the best experience, use the latest version.
 
 ### Key Features
 
-- 🚀 **Blazing Fast** - Rust-powered backend with async I/O
-- 🎨 **Beautiful Output** - Colored console logs with JSON support
-- 📁 **Smart Rotation** - Time and size-based file rotation
-- 🔄 **Async Callbacks** - Zero-blocking event handlers
-- 📝 **Template Strings** - `{variable}` syntax with deferred evaluation
-- 🎯 **Context Binding** - Persistent and temporary context fields
-- 🛡️ **Type Safe** - Full type stubs for IDE support
-- ⚡ **Zero Dependencies** - Single wheel, no external requirements
+- 🚀 **High Performance**: Rust-powered backend with async buffering and optimized data structures
+- 📦 **Modular Architecture**: Clean separation of concerns with backend, config, format, and utils modules
+- 🔄 **Async Logging**: Background thread writing with configurable buffers and flush intervals
+- 📋 **Structured JSON**: Full JSON logging support with custom fields and pretty printing
+- 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and file storage per log level
+- 🔧 **Granular Configuration**: Per-level console, time, color, and storage controls for maximum flexibility
+- � **File Rotation**: Time-based and size-based rotation with retention policies
+- �️ **Compression**: Built-in support for gzip and zstd compression
+- 🎯 **Multi-Sink**: Multiple output destinations with per-sink filtering
+- � **Rich Filtering**: Filter by log level, module, function, or custom criteria
+- 📞 **Callbacks**: Custom processing functions with async execution
+- � **Template Strings**: Dynamic log formatting with variable interpolation
+- 🛡️ **Memory Safe**: Zero-cost abstractions and proper error handling
+- 🧵 **Thread Safe**: Lock-free operations where possible, parking_lot for performance
+
+---
+
+## Architecture
+
+Logly's architecture is designed for high performance, maintainability, and extensibility:
+
+### 🏗️ **Modular Rust Backend**
+```
+src/
+├── backend/          # Core logging functionality
+│   ├── logging.rs    # Main logging logic with JSON/text formatting
+│   ├── async.rs      # Asynchronous buffered writing
+│   └── file.rs       # File appenders with rotation
+├── config/           # Configuration and state management
+│   └── state.rs      # Global state with thread-safe structures
+├── format/           # Output formatting utilities
+│   └── json.rs       # JSON record serialization
+└── utils/            # Shared utilities and types
+    └── levels.rs     # Log levels and rotation policies
+```
+
+### 🔧 **Key Components**
+
+- **Backend Module**: Handles core logging operations, message formatting, and output dispatching
+- **Config Module**: Manages global logger state, sink configurations, and thread-safe data structures
+- **Format Module**: Provides JSON serialization and record formatting utilities
+- **Utils Module**: Contains shared types, log levels, and rotation policies
+
+### 🚀 **Performance Optimizations**
+
+- **Async Buffering**: Background thread writing with configurable flush intervals
+- **Memory Safety**: Zero-cost abstractions with proper error handling
+- **Thread Safety**: Lock-free operations where possible, parking_lot Mutex for performance
+- **Fast Hashing**: ahash for high-performance hash operations
+- **Efficient Data Structures**: Crossbeam channels, Arc pointers, and optimized collections
 
 ---
 
@@ -283,43 +334,29 @@ logger.critical("Service unresponsive")
 
 ---
 
-## What's Next?
+## 🚀 Quick Start
 
-<div class="grid cards" markdown>
+Get up and running in 5 minutes
 
--   :material-rocket-launch:{ .lg .middle } **Quick Start**
+[Quick Start Guide](quickstart.md)
 
-    ---
+## 📚 API Reference
 
-    Get up and running in 5 minutes
+Complete documentation of all methods
 
-    [:octicons-arrow-right-24: Quick Start Guide](quickstart.md)
+[API Reference](api-reference/index.md)
 
--   :material-api:{ .lg .middle } **API Reference**
+## 📝 Changelog
 
-    ---
+See what's new in each version
 
-    Complete documentation of all methods
+[View Changelog](changelog.md)
 
-    [:octicons-arrow-right-24: API Reference](api-reference/index.md)
+## ⬇️ Installation
 
--   :material-history:{ .lg .middle } **Changelog**
+Install Logly with pip, uv, or poetry
 
-    ---
-
-    See what's new in each version
-
-    [:octicons-arrow-right-24: View Changelog](changelog.md)
-
--   :material-download:{ .lg .middle } **Installation**
-
-    ---
-
-    Install Logly with pip, uv, or poetry
-
-    [:octicons-arrow-right-24: Installation Guide](installation.md)
-
-</div>
+[Installation Guide](installation.md)
 
 ---
 
