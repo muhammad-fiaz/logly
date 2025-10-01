@@ -26,8 +26,8 @@ impl PyLogger {
     /// # Returns
     /// A new PyLogger with default settings
     #[new]
-    pub fn new() -> Self { 
-        PyLogger 
+    pub fn new() -> Self {
+        PyLogger
     }
 
     /// Initialize and configure the global logger.
@@ -43,7 +43,13 @@ impl PyLogger {
     /// # Returns
     /// PyResult indicating success or error
     #[pyo3(signature = (level="INFO", color=true, json=false, pretty_json=false))]
-    pub fn configure(&self, level: &str, color: bool, json: bool, pretty_json: bool) -> PyResult<()> {
+    pub fn configure(
+        &self,
+        level: &str,
+        color: bool,
+        json: bool,
+        pretty_json: bool,
+    ) -> PyResult<()> {
         backend::configure(level, color, json, pretty_json)
     }
 
@@ -54,6 +60,7 @@ impl PyLogger {
     /// # Arguments
     /// * `sink` - "console" for stdout or file path for file output
     /// * `rotation` - Rotation policy: "daily", "hourly", "minutely", or None
+    /// * `size_limit` - Maximum file size before rotation (e.g., "5KB", "10MB", "1GB")
     /// * `filter_min_level` - Minimum log level for this sink
     /// * `filter_module` - Only log messages from this module
     /// * `filter_function` - Only log messages from this function
@@ -65,21 +72,42 @@ impl PyLogger {
     /// # Returns
     /// Handler ID that can be used to remove the sink later
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (sink, *, rotation=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=false, retention=None))]
-    pub fn add(&self, sink: &str, rotation: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> PyResult<usize> {
-        if sink == "console" { return Ok(0); }
+    #[pyo3(signature = (sink, *, rotation=None, size_limit=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=false, retention=None))]
+    pub fn add(
+        &self,
+        sink: &str,
+        rotation: Option<&str>,
+        size_limit: Option<&str>,
+        filter_min_level: Option<&str>,
+        filter_module: Option<&str>,
+        filter_function: Option<&str>,
+        async_write: bool,
+        date_style: Option<&str>,
+        date_enabled: bool,
+        retention: Option<usize>,
+    ) -> PyResult<usize> {
+        if sink == "console" {
+            return Ok(0);
+        }
         with_state(|s| {
             s.file_path = Some(sink.to_string());
             s.file_rotation = rotation.map(|r| r.to_string());
             s.file_date_style = date_style.map(|d| d.to_string());
             s.file_date_enabled = date_enabled;
             s.retention_count = retention;
-            s.file_writer = Some(backend::make_file_appender(sink, rotation, date_style, date_enabled, retention));
+            s.file_writer = Some(backend::make_file_appender(
+                sink,
+                rotation,
+                date_style,
+                date_enabled,
+                retention,
+                size_limit,
+            ));
             // filters
-            if let Some(min) = filter_min_level {
-                if let Some(level) = crate::levels::to_level(min) {
-                    s.filter_min_level = Some(crate::levels::to_filter(level));
-                }
+            if let Some(min) = filter_min_level
+                && let Some(level) = crate::levels::to_level(min)
+            {
+                s.filter_min_level = Some(crate::levels::to_filter(level));
             }
             s.filter_module = filter_module.map(|m| m.to_string());
             s.filter_function = filter_function.map(|f| f.to_string());
@@ -98,7 +126,47 @@ impl PyLogger {
     ///
     /// # Returns
     /// True if sink was removed (currently always returns true)
-    pub fn remove(&self, _handler_id: usize) -> PyResult<bool> { Ok(true) }
+    pub fn remove(&self, _handler_id: usize) -> PyResult<bool> {
+        Ok(true)
+    }
+
+    /// Add a callback function that executes asynchronously on each log event.
+    ///
+    /// The callback function will be called in the background with a log record
+    /// containing timestamp, level, message, and any additional fields.
+    ///
+    /// # Arguments
+    /// * `callback` - Python callable that accepts a log record dict
+    ///
+    /// # Returns
+    /// Callback ID that can be used to remove the callback later
+    pub fn add_callback(&self, callback: Py<PyAny>) -> PyResult<usize> {
+        let callback_arc = std::sync::Arc::new(callback);
+        let id = crate::state::with_state(|s| {
+            s.callbacks.push(callback_arc);
+            s.callbacks.len() - 1
+        });
+        Ok(id)
+    }
+
+    /// Remove a callback function by its ID.
+    ///
+    /// # Arguments
+    /// * `callback_id` - Callback ID returned by add_callback()
+    ///
+    /// # Returns
+    /// True if callback was removed, false if ID was invalid
+    pub fn remove_callback(&self, callback_id: usize) -> PyResult<bool> {
+        let removed = crate::state::with_state(|s| {
+            if callback_id < s.callbacks.len() {
+                s.callbacks.remove(callback_id);
+                true
+            } else {
+                false
+            }
+        });
+        Ok(removed)
+    }
 
     /// Log a message at TRACE level (most verbose).
     ///
@@ -106,55 +174,69 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn trace(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::TRACE, msg, kwargs); }
-    
+    pub fn trace(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::TRACE, msg, kwargs);
+    }
+
     /// Log a message at DEBUG level.
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn debug(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::DEBUG, msg, kwargs); }
-    
+    pub fn debug(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::DEBUG, msg, kwargs);
+    }
+
     /// Log a message at INFO level.
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn info(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::INFO, msg, kwargs); }
-    
+    pub fn info(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::INFO, msg, kwargs);
+    }
+
     /// Log a message at SUCCESS level (mapped to INFO in tracing).
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn success(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::INFO, msg, kwargs); }
-    
+    pub fn success(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::INFO, msg, kwargs);
+    }
+
     /// Log a message at WARNING level.
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn warning(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::WARN, msg, kwargs); }
-    
+    pub fn warning(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::WARN, msg, kwargs);
+    }
+
     /// Log a message at ERROR level.
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn error(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::ERROR, msg, kwargs); }
-    
+    pub fn error(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::ERROR, msg, kwargs);
+    }
+
     /// Log a message at CRITICAL level (mapped to ERROR in tracing).
     ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) { backend::log_message(Level::ERROR, msg, kwargs); }
+    pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message(Level::ERROR, msg, kwargs);
+    }
 
     /// Log a message at a custom or aliased level.
     ///
@@ -176,12 +258,16 @@ impl PyLogger {
     ///
     /// Call this before application shutdown to ensure buffered logs
     /// (especially from async sinks) are persisted to disk.
-    pub fn complete(&self) { crate::backend::complete(); }
+    pub fn complete(&self) {
+        crate::backend::complete();
+    }
 
     // Extra conveniences for tests and control
     /// Reset internal state for testing purposes.
     ///
     /// WARNING: This is for internal testing only and should not be used
     /// in production code. It does not reset the global tracing subscriber.
-    pub fn _reset_for_tests(&self) { crate::state::reset_state(); }
+    pub fn _reset_for_tests(&self) {
+        crate::state::reset_state();
+    }
 }

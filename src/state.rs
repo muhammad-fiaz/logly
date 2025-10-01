@@ -4,14 +4,16 @@
 //! including compression, rotation policies, sink configuration, metrics,
 //! and thread-safe state tracking using parking_lot and ahash for optimal performance.
 
+use ahash::AHashMap;
+use crossbeam_channel::Sender;
 use once_cell::sync::Lazy;
-use parking_lot::{RwLock, Mutex};
+use parking_lot::{Mutex, RwLock};
+use pyo3::Py;
+use pyo3::types::PyAny;
+use std::io::Write;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tracing_subscriber::filter::LevelFilter;
-use std::io::Write;
-use crossbeam_channel::Sender;
-use ahash::AHashMap;
 
 /// Handler ID for managing sinks.
 ///
@@ -150,7 +152,7 @@ pub struct LoggerState {
     pub format_json: bool,
     /// Format logs as pretty-printed JSON
     pub pretty_json: bool,
-    
+
     // Sink management (support multiple sinks using fast AHashMap)
     /// Map of handler IDs to sink configurations
     pub sinks: AHashMap<HandlerId, SinkConfig>,
@@ -158,29 +160,33 @@ pub struct LoggerState {
     pub next_handler_id: HandlerId,
     /// Thread-safe file writers wrapped in Arc<Mutex<>> for concurrent access
     pub file_writers: AHashMap<HandlerId, Arc<Mutex<Box<dyn Write + Send>>>>,
-    
+
     // Async writing infrastructure using crossbeam (lock-free channels)
     /// Crossbeam channel senders for async log writing
     pub async_senders: AHashMap<HandlerId, Sender<String>>,
     /// Background thread handles for async writers
     pub async_handles: Vec<JoinHandle<()>>,
-    
+
     // Global context for all log records
     /// Key-value context automatically attached to all logs
     pub global_context: AHashMap<String, String>,
-    
+
     // Performance metrics
     /// Real-time logger performance statistics
     pub metrics: LoggerMetrics,
-    
+
     // Sampling/throttling for high-volume scenarios (future feature)
     /// Sample rate for probabilistic logging (0.0-1.0, None = no sampling)
     pub sample_rate: Option<f64>,
-    
+
     // Caller information capture (file:line:function like loguru, future feature)
     /// Capture source location information (file, line, function)
     pub capture_caller: bool,
-    
+
+    // Callback functions for custom processing
+    /// Registered callback functions that run asynchronously on each log
+    pub callbacks: Vec<std::sync::Arc<Py<PyAny>>>,
+
     // Backward compatibility fields (deprecated, will be removed in 1.0)
     /// Legacy file path (use sinks instead)
     pub file_path: Option<String>,
@@ -206,7 +212,7 @@ impl Default for LoggerState {
             color: true,
             format_json: false,
             pretty_json: false,
-            
+
             // New fields
             sinks: AHashMap::new(),
             next_handler_id: 1,
@@ -217,7 +223,8 @@ impl Default for LoggerState {
             metrics: LoggerMetrics::default(),
             sample_rate: None,
             capture_caller: false,
-            
+            callbacks: Vec::new(),
+
             // Backward compatibility (deprecated)
             file_path: None,
             file_rotation: None,
@@ -254,7 +261,7 @@ pub fn reset_state() {
         let handles = std::mem::take(&mut s.async_handles);
         s.async_senders.clear();
         drop(handles);
-        
+
         *s = LoggerState::default();
     });
 }

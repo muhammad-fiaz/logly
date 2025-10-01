@@ -145,7 +145,7 @@ def bench_logly(
     return end - start
 
 
-def main():
+def main():  # type: ignore[no-untyped-def]
     p = argparse.ArgumentParser()
     p.add_argument("--count", type=int, default=10000, help="number of log messages per run")
     p.add_argument("--repeat", type=int, default=3, help="how many times to repeat and average")

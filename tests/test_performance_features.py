@@ -44,6 +44,80 @@ class TestSizeBasedRotation:
         # Rust enum RotationPolicy { Size(String), Time(...) } ready
         assert True, "RotationPolicy enum with Size variant added"
 
+    def test_size_based_rotation_works(self, tmp_path):
+        """Test that size-based rotation creates multiple files"""
+        import glob
+        import os
+
+        log_file = tmp_path / "size_rotation.log"
+        handler_id = logger.add(str(log_file), size_limit="1KB", async_write=False)
+
+        # Write enough data to trigger multiple rotations
+        for i in range(30):
+            logger.info(f"Message {i}: " + "x" * 50)  # ~60 bytes each
+
+        logger.remove(handler_id)
+
+        # Should have multiple files (original + rotated)
+        log_files = glob.glob(str(tmp_path / "size_rotation*"))
+        assert len(log_files) > 1, f"Expected multiple files, got {len(log_files)}: {log_files}"
+
+        # Check that files have reasonable sizes
+        for log_file_path in log_files:
+            size = os.path.getsize(log_file_path)
+            assert size > 0, f"File {log_file_path} should not be empty"
+            assert size < 3000, f"File {log_file_path} should be under 3KB, got {size} bytes"
+
+    def test_size_based_rotation_with_retention(self, tmp_path):
+        """Test size-based rotation with retention limit"""
+        import glob
+
+        log_file = tmp_path / "size_retention.log"
+        handler_id = logger.add(str(log_file), size_limit="500B", retention=3, async_write=False)
+
+        # Write enough data to trigger many rotations
+        for i in range(50):
+            logger.info(f"Message {i}: " + "x" * 30)  # ~40 bytes each
+
+        logger.remove(handler_id)
+
+        # Should have at most 4 files (3 rotated + 1 current)
+        log_files = glob.glob(str(tmp_path / "size_retention*"))
+        assert len(log_files) <= 4, (
+            f"Expected at most 4 files with retention=3, got {len(log_files)}: {log_files}"
+        )
+
+    def test_size_limit_parsing(self, tmp_path):
+        """Test that different size limit formats work"""
+        import os
+
+        test_cases = [
+            ("1KB", 1024),
+            ("2KB", 2048),
+            ("1MB", 1024 * 1024),
+            ("500B", 500),
+        ]
+
+        for size_str, expected_bytes in test_cases:
+            log_file = (
+                tmp_path
+                / f"size_test_{size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')}.log"
+            )
+            handler_id = logger.add(str(log_file), size_limit=size_str, async_write=False)
+
+            # Write data that should trigger rotation
+            msg_size = expected_bytes // 4  # Quarter of limit
+            for _ in range(6):  # Should exceed limit
+                logger.info("x" * msg_size)
+
+            logger.remove(handler_id)
+
+            # Check that rotation occurred
+            log_files = [f for f in os.listdir(tmp_path) if f.startswith(log_file.stem)]
+            assert len(log_files) > 1, (
+                f"Size limit {size_str} should trigger rotation, got {len(log_files)} files"
+            )
+
 
 class TestSamplingAndThrottling:
     """Test sampling/throttling functionality"""

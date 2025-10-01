@@ -24,19 +24,46 @@ class PyLogger:
         """
         ...
 
-    def add(self, sink: str, *, rotation: str | None = ...) -> int:
+    def add(
+        self,
+        sink: str,
+        *,
+        rotation: str | None = ...,
+        size_limit: str | None = ...,
+        filter_min_level: str | None = ...,
+        filter_module: str | None = ...,
+        filter_function: str | None = ...,
+        async_write: bool = ...,
+        date_style: str | None = ...,
+        date_enabled: bool = ...,
+        retention: int | None = ...,
+    ) -> int:
         """Add a logging sink (output destination).
 
         Args:
             sink: Path to log file or "console" for stdout.
             rotation: Time-based rotation policy ("daily", "hourly", "minutely").
+            size_limit: Maximum file size before rotation (e.g., "5KB", "10MB", "1GB").
+            filter_min_level: Minimum log level for this sink (e.g., "INFO", "ERROR").
+            filter_module: Only log messages from this module.
+            filter_function: Only log messages from this function.
+            async_write: Enable background async writing (default: True).
+            date_style: Date format ("rfc3339", "local", "utc").
+            date_enabled: Include timestamp in log output (default: False).
+            retention: Number of rotated files to keep (older files auto-deleted).
 
         Returns:
             Handler ID that can be used to remove this sink later.
         """
         ...
 
-    def configure(self, level: str = ..., color: bool = ..., json: bool = ...) -> None:
+    def configure(
+        self,
+        level: str = ...,
+        color: bool = ...,
+        json: bool = ...,
+        pretty_json: bool = ...,
+    ) -> None:
         """Configure global logger settings.
 
         Args:
@@ -44,6 +71,7 @@ class PyLogger:
                   "WARNING", "ERROR", "CRITICAL").
             color: Enable colored output for console logs.
             json: Output logs in JSON format.
+            pretty_json: Format logs as pretty-printed JSON (more readable, higher cost).
         """
         ...
 
@@ -136,6 +164,36 @@ class PyLogger:
 
         This method should be called before application shutdown to ensure
         all buffered logs (especially from async sinks) are persisted.
+        """
+        ...
+
+    def add_callback(self, callback: object) -> int:
+        """Register a callback function to be invoked on every log message.
+
+        The callback will be executed asynchronously in a background thread,
+        ensuring zero impact on application performance.
+
+        Args:
+            callback: A callable that accepts a single dict argument containing
+                     log record information (timestamp, level, message, and fields).
+
+        Returns:
+            Callback ID (integer) that can be used with remove_callback().
+
+        Note:
+            Callbacks execute in background threads and are thread-safe.
+            If a callback raises an exception, it will be silently caught.
+        """
+        ...
+
+    def remove_callback(self, callback_id: int) -> bool:
+        """Remove a previously registered callback by its ID.
+
+        Args:
+            callback_id: The ID returned by add_callback() when registering.
+
+        Returns:
+            True if the callback was successfully removed, False otherwise.
         """
         ...
 

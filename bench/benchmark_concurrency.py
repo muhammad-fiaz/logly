@@ -38,7 +38,7 @@ def bench_std_concurrent(threads: int, count_per_thread: int) -> float:
     fh.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logger.addHandler(fh)
 
-    def worker():
+    def worker():  # type: ignore[no-untyped-def]
         for i in range(count_per_thread):
             logger.info("hello %d", i)
 
@@ -76,7 +76,7 @@ def bench_logly_concurrent(
     logly.logger.add(tmp, async_write=async_write, filter_min_level="INFO")
     logly.logger.configure(level="ERROR", color=False, json=json, pretty_json=pretty_json)
 
-    def worker():
+    def worker():  # type: ignore[no-untyped-def]
         for i in range(count_per_thread):
             logly.logger.info("hello %d", i)
 

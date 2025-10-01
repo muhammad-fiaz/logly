@@ -1,0 +1,127 @@
+site_name: Logly Documentation
+site_url: https://muhammad-fiaz.github.io/logly/
+site_author: Muhammad Fiaz
+site_description: >-
+  Rust-powered, Loguru-like logging for Python.
+  High-performance async logging with callbacks, template strings, and rotation.
+
+# Repository
+repo_name: muhammad-fiaz/logly
+repo_url: https://github.com/muhammad-fiaz/logly
+edit_uri: edit/main/docs/
+
+# Copyright
+copyright: Copyright &copy; 2025 Muhammad Fiaz
+
+# Configuration
+theme:
+  name: material
+  language: en
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - toc.follow
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - header.autohide
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.footnote.tooltips
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/file-document-multiple
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Page tree
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quick Start: quickstart.md
+  - API Reference:
+    - api-reference/index.md
+    - Configuration: api-reference/configuration.md
+    - Logging Methods: api-reference/logging.md
+    - Context Management: api-reference/context.md
+    - Callbacks: api-reference/callbacks.md
+    - Exception Handling: api-reference/exceptions.md
+    - Utility Methods: api-reference/utilities.md
+  - Changelog: changelog.md
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/muhammad-fiaz
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/logly/
+
+# Additional CSS
+extra_css:
+  - stylesheets/extra.css

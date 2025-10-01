@@ -1,28 +1,30 @@
 use crate::levels::{level_to_str, to_filter, to_level};
+use chrono::{DateTime, Utc};
+use crossbeam_channel::unbounded as channel;
+use parking_lot::Mutex;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use serde::Serialize;
 use serde_json::json;
-use chrono::{Utc, DateTime};
-use std::io;
-use std::thread;
-use std::sync::Arc;
-use parking_lot::Mutex;
-use tracing::{debug, error, info, trace, warn, Level};
-use tracing_appender::rolling::Rotation;
 use std::fs::{File, OpenOptions};
+use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::thread;
+use tracing::{Level, debug, error, info, trace, warn};
+use tracing_appender::rolling::Rotation;
 use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
-use crossbeam_channel::unbounded as channel;
+use tracing_subscriber::{EnvFilter, Registry, fmt, prelude::*};
 
 pub fn init_global_if_needed() -> PyResult<()> {
     // Check and set state without returning PyResult from the locked closure to avoid
     // type inference issues. Build subscriber and set it, then mark state inited.
     let already = crate::state::with_state(|s| s.inited);
-    if already { return Ok(()); }
+    if already {
+        return Ok(());
+    }
 
     // build console layer using current state snapshot
     let (color, level_filter) = crate::state::with_state(|s| (s.color, s.level_filter));
@@ -58,6 +60,42 @@ pub fn rotation_from_str(rotation: Option<&str>) -> Rotation {
     }
 }
 
+/// Parse size strings like "5KB", "10MB", "1GB" into bytes
+pub fn parse_size_limit(size_str: Option<&str>) -> Option<u64> {
+    size_str.and_then(|s| {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+
+        // Find where the number ends and unit begins
+        let mut num_end = 0;
+        for (i, c) in s.chars().enumerate() {
+            if !c.is_ascii_digit() {
+                num_end = i;
+                break;
+            }
+        }
+
+        if num_end == 0 {
+            return None; // No number found
+        }
+
+        let num_str = &s[..num_end];
+        let unit = s[num_end..].trim().to_uppercase();
+
+        let multiplier = match unit.as_str() {
+            "B" | "" => 1,
+            "KB" | "K" => 1024,
+            "MB" | "M" => 1024 * 1024,
+            "GB" | "G" => 1024 * 1024 * 1024,
+            _ => return None, // Invalid unit
+        };
+
+        num_str.parse::<u64>().ok().map(|n| n * multiplier)
+    })
+}
+
 // A simple rolling writer that places the rotation timestamp before the file extension,
 // e.g. `app.log` -> `app.2025-08-22.log` for daily rotation. This avoids appending
 // the date after the extension which some users find unexpected.
@@ -68,14 +106,32 @@ struct SimpleRollingWriter {
     file: File,
     date_style: String, // "before_ext" or "prefix"
     retention_count: Option<usize>,
+    size_limit: Option<u64>, // Maximum file size in bytes
+    current_size: u64,       // Current file size in bytes
 }
 
 impl SimpleRollingWriter {
-    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>, retention: Option<usize>) -> io::Result<Self> {
+    fn new(
+        path: &Path,
+        rotation: Rotation,
+        date_style: Option<&str>,
+        retention: Option<usize>,
+        size_limit: Option<u64>,
+    ) -> io::Result<Self> {
         let style = date_style.unwrap_or("before_ext").to_string();
         let current_period = Self::period_string(&rotation);
         let file = Self::open_for_period(path, &current_period, &style)?;
-        Ok(SimpleRollingWriter { base_path: path.to_path_buf(), rotation, current_period, file, date_style: style, retention_count: retention })
+        let current_size = file.metadata()?.len();
+        Ok(SimpleRollingWriter {
+            base_path: path.to_path_buf(),
+            rotation,
+            current_period,
+            file,
+            date_style: style,
+            retention_count: retention,
+            size_limit,
+            current_size,
+        })
     }
 
     fn period_string(rotation: &Rotation) -> String {
@@ -89,8 +145,13 @@ impl SimpleRollingWriter {
     }
 
     fn path_for_period(base: &Path, period: &str, date_style: &str) -> PathBuf {
-        if period.is_empty() { return base.to_path_buf(); }
-        let file_name = base.file_name().and_then(|s| s.to_str()).unwrap_or_default();
+        if period.is_empty() {
+            return base.to_path_buf();
+        }
+        let file_name = base
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
         if date_style == "prefix" {
             // prefix style: place the date before the filename separated by a dot
             // e.g. `2025-08-22.app.log` (preferred) and handle dot-leading filenames
@@ -123,16 +184,37 @@ impl SimpleRollingWriter {
         OpenOptions::new().create(true).append(true).open(p)
     }
 
-    fn rotate_if_needed(&mut self) -> io::Result<()> {
+    fn rotate_if_needed(&mut self, upcoming_write_size: usize) -> io::Result<()> {
         let new_period = Self::period_string(&self.rotation);
-        if new_period != self.current_period {
-            self.current_period = new_period.clone();
-            self.file = Self::open_for_period(&self.base_path, &new_period, &self.date_style)?;
+        let needs_time_rotation = new_period != self.current_period;
+        let needs_size_rotation = self
+            .size_limit
+            .is_some_and(|limit| self.current_size + upcoming_write_size as u64 >= limit);
+
+        if needs_time_rotation || needs_size_rotation {
+            let actual_period = if needs_size_rotation && !needs_time_rotation {
+                // For size-based rotation when time rotation is disabled, use timestamp
+                chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string()
+            } else {
+                new_period.clone()
+            };
+
+            self.current_period = actual_period.clone();
+            self.file = Self::open_for_period(&self.base_path, &actual_period, &self.date_style)?;
+            self.current_size = 0; // Reset size for new file
+
             // prune old files if retention is configured
             if let Some(keep) = self.retention_count {
-                let current_path = Self::path_for_period(&self.base_path, &self.current_period, &self.date_style);
+                let current_path =
+                    Self::path_for_period(&self.base_path, &self.current_period, &self.date_style);
                 if let Some(dir) = current_path.parent() {
-                    let _ = prune_old_files(dir, &self.base_path, &self.date_style, keep, &current_path);
+                    let _ = prune_old_files(
+                        dir,
+                        &self.base_path,
+                        &self.date_style,
+                        keep,
+                        &current_path,
+                    );
                 }
             }
         }
@@ -142,41 +224,79 @@ impl SimpleRollingWriter {
 
 impl Write for SimpleRollingWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        if self.rotation != Rotation::NEVER {
-            let _ = self.rotate_if_needed();
+        // Check if we need to rotate due to time or size
+        let needs_rotation = if self.rotation != Rotation::NEVER {
+            let new_period = Self::period_string(&self.rotation);
+            new_period != self.current_period
+        } else {
+            false
+        } || self
+            .size_limit
+            .is_some_and(|limit| self.current_size + buf.len() as u64 > limit);
+
+        if needs_rotation {
+            let _ = self.rotate_if_needed(buf.len());
         }
-        self.file.write(buf)
+
+        let written = self.file.write(buf)?;
+        self.current_size += written as u64;
+        Ok(written)
     }
 
-    fn flush(&mut self) -> io::Result<()> { self.file.flush() }
+    fn flush(&mut self) -> io::Result<()> {
+        self.file.flush()
+    }
 }
 
-fn prune_old_files(dir: &Path, base: &Path, date_style: &str, keep: usize, current_path: &Path) -> io::Result<()> {
+fn prune_old_files(
+    dir: &Path,
+    base: &Path,
+    date_style: &str,
+    keep: usize,
+    current_path: &Path,
+) -> io::Result<()> {
     use std::fs;
     let base_name = base.file_name().and_then(|s| s.to_str()).unwrap_or("");
     let (stem, ext_opt) = match base_name.rfind('.') {
-        Some(pos) => (&base_name[..pos], Some(&base_name[pos+1..])),
+        Some(pos) => (&base_name[..pos], Some(&base_name[pos + 1..])),
         None => (base_name, None),
     };
     let mut candidates: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
     for entry in fs::read_dir(dir)? {
-        let entry = match entry { Ok(e) => e, Err(_) => continue };
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
         let path = entry.path();
-        if path == current_path { continue; }
-        if !path.is_file() { continue; }
-        let name = match path.file_name().and_then(|s| s.to_str()) { Some(n) => n, None => continue };
+        if path == current_path {
+            continue;
+        }
+        if !path.is_file() {
+            continue;
+        }
+        let name = match path.file_name().and_then(|s| s.to_str()) {
+            Some(n) => n,
+            None => continue,
+        };
         let matches = if date_style == "prefix" {
             // rotated form ends with ".<base_name>"
             name.ends_with(&format!(".{}", base_name))
         } else {
             // before_ext: stem.period.ext or name starts with "stem." (no ext)
             match ext_opt {
-                Some(ext) => name.starts_with(&format!("{}.", stem)) && name.ends_with(&format!(".{}", ext)),
+                Some(ext) => {
+                    name.starts_with(&format!("{}.", stem)) && name.ends_with(&format!(".{}", ext))
+                }
                 None => name.starts_with(&format!("{}.", stem)),
             }
         };
-        if !matches { continue; }
-        let modified = entry.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+        if !matches {
+            continue;
+        }
+        let modified = entry
+            .metadata()
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
         candidates.push((modified, path));
     }
     if candidates.len() > keep {
@@ -189,20 +309,34 @@ fn prune_old_files(dir: &Path, base: &Path, date_style: &str, keep: usize, curre
     Ok(())
 }
 
-pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> Arc<Mutex<Box<dyn Write + Send>>> {
+pub fn make_file_appender(
+    path: &str,
+    rotation: Option<&str>,
+    date_style: Option<&str>,
+    date_enabled: bool,
+    retention: Option<usize>,
+    size_limit: Option<&str>,
+) -> Arc<Mutex<Box<dyn Write + Send>>> {
     let mut rot = rotation_from_str(rotation);
-    if !date_enabled { rot = Rotation::NEVER; }
+    if !date_enabled {
+        rot = Rotation::NEVER;
+    }
+    let size_bytes = parse_size_limit(size_limit);
     let p = Path::new(path);
     // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
-    match SimpleRollingWriter::new(p, rot, date_style, retention) {
+    match SimpleRollingWriter::new(p, rot, date_style, retention, size_bytes) {
         Ok(w) => Arc::new(Mutex::new(Box::new(w))),
         Err(_) => {
             // fallback: open a simple append file
             let _ = std::fs::create_dir_all(p.parent().unwrap_or_else(|| Path::new(".")));
-            let f = OpenOptions::new().create(true).append(true).open(p).unwrap_or_else(|_| {
-                // If all else fails, create a no-op writer
-                File::create("fallback.log").expect("Cannot create fallback log file")
-            });
+            let f = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(p)
+                .unwrap_or_else(|_| {
+                    // If all else fails, create a no-op writer
+                    File::create("fallback.log").expect("Cannot create fallback log file")
+                });
             Arc::new(Mutex::new(Box::new(f)))
         }
     }
@@ -215,17 +349,26 @@ pub fn dict_to_pairs(d: &pyo3::Bound<'_, PyDict>) -> Vec<(String, String)> {
 }
 
 pub fn py_any_to_string(value: &pyo3::Bound<'_, pyo3::PyAny>) -> String {
-    if let Ok(s) = value.extract::<String>() { return s; }
-    value.str().map(|s| s.to_string()).unwrap_or_else(|_| "<unrepr>".to_string())
+    if let Ok(s) = value.extract::<String>() {
+        return s;
+    }
+    value
+        .str()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|_| "<unrepr>".to_string())
 }
 
 #[inline]
 pub fn fast_format_suffix(pairs: &[(String, String)]) -> String {
-    if pairs.is_empty() { return String::new(); }
+    if pairs.is_empty() {
+        return String::new();
+    }
     let mut out = String::with_capacity(pairs.len() * 16);
     out.push_str(" | ");
     for (i, (k, v)) in pairs.iter().enumerate() {
-        if i > 0 { out.push_str(", "); }
+        if i > 0 {
+            out.push_str(", ");
+        }
         out.push_str(k);
         out.push('=');
         out.push_str(v);
@@ -243,23 +386,77 @@ struct JsonRecord<'a> {
 
 pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDict>>) {
     let pairs = extra.map(|d| dict_to_pairs(d)).unwrap_or_default();
+
+    // Create log record data for callbacks
+    let timestamp = chrono::Utc::now().to_rfc3339();
+    let level_str = level_to_str(level).to_string();
+    let message = msg.to_string();
+    let extra_fields = pairs.clone();
+
+    // Call callbacks asynchronously in background thread
+    let has_callbacks = crate::state::with_state(|s| !s.callbacks.is_empty());
+
+    if has_callbacks {
+        let timestamp_bg = timestamp.clone();
+        let level_str_bg = level_str.clone();
+        let message_bg = message.clone();
+        let extra_fields_bg = extra_fields.clone();
+
+        thread::spawn(move || {
+            Python::attach(|py| {
+                let callbacks = crate::state::with_state(|s| s.callbacks.clone());
+                for callback in callbacks {
+                    // Create the record dict in the background thread
+                    let dict = pyo3::types::PyDict::new(py);
+                    let _ = dict.set_item("timestamp", &timestamp_bg);
+                    let _ = dict.set_item("level", &level_str_bg);
+                    let _ = dict.set_item("message", &message_bg);
+
+                    // Add extra fields
+                    for (k, v) in &extra_fields_bg {
+                        let _ = dict.set_item(k, v);
+                    }
+
+                    // Call the callback with the record
+                    let _ = callback.call1(py, (&dict,));
+                }
+            });
+        });
+    }
+
     // Emit structured JSON when requested, otherwise keep legacy formatted suffix.
     crate::state::with_state(|s| {
         // filter checks (file sink filters only apply to file writes; console honored by global level)
         let mut allow_file = true;
         if let Some(min) = s.filter_min_level {
             let current: tracing_subscriber::filter::LevelFilter = to_filter(level);
-            if current < min { allow_file = false; }
+            if current < min {
+                allow_file = false;
+            }
         }
         if let Some(ref want_mod) = s.filter_module {
             let mut found = false;
-            for (k, v) in &pairs { if k == "module" && v == want_mod { found = true; break; } }
-            if !found { allow_file = false; }
+            for (k, v) in &pairs {
+                if k == "module" && v == want_mod {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                allow_file = false;
+            }
         }
         if let Some(ref want_fn) = s.filter_function {
             let mut found = false;
-            for (k, v) in &pairs { if k == "function" && v == want_fn { found = true; break; } }
-            if !found { allow_file = false; }
+            for (k, v) in &pairs {
+                if k == "function" && v == want_fn {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                allow_file = false;
+            }
         }
         let lvl_str = level_to_str(level);
         if s.format_json {
@@ -273,7 +470,12 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
                 }
                 serde_json::Value::Object(map)
             };
-            let rec = JsonRecord { timestamp: Utc::now(), level: lvl_str, message: msg, fields };
+            let rec = JsonRecord {
+                timestamp: Utc::now(),
+                level: lvl_str,
+                message: msg,
+                fields,
+            };
             if s.console_enabled {
                 // print JSON to stderr for console layer compatibility
                 if s.pretty_json {
@@ -285,16 +487,28 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
             if allow_file {
                 if s.async_write {
                     if let Some(tx) = s.async_sender.as_ref() {
-                        let line = if s.pretty_json { serde_json::to_string_pretty(&rec).unwrap_or_default() } else { serde_json::to_string(&rec).unwrap_or_default() };
+                        let line = if s.pretty_json {
+                            serde_json::to_string_pretty(&rec).unwrap_or_default()
+                        } else {
+                            serde_json::to_string(&rec).unwrap_or_default()
+                        };
                         let _ = tx.send(line);
                     }
                 } else if let Some(writer) = s.file_writer.as_ref() {
                     let mut w = writer.lock();
-                    let _ = writeln!(&mut **w, "{}", serde_json::to_string(&rec).unwrap_or_default());
+                    let _ = writeln!(
+                        &mut **w,
+                        "{}",
+                        serde_json::to_string(&rec).unwrap_or_default()
+                    );
                 }
             }
         } else {
-            let suffix = if pairs.is_empty() { String::new() } else { fast_format_suffix(&pairs) };
+            let suffix = if pairs.is_empty() {
+                String::new()
+            } else {
+                fast_format_suffix(&pairs)
+            };
             match level {
                 Level::TRACE => trace!(target: "logly", "{}{}", msg, suffix),
                 Level::DEBUG => debug!(target: "logly", "{}{}", msg, suffix),
