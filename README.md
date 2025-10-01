@@ -32,7 +32,7 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 
 **⭐ Don't forget to star the repository if you find Logly useful!**
 
-> This Project is still in Active development and Improvements are ongoing based on user feedback and real-world usage. Please report any issues or feature requests on GitHub. Performance may vary as optimizations are continuously implemented. If you still like other logging utility you can use that instead :)
+> This Project is still in Active development and Improvements are ongoing based on user feedback and real-world usage. Please report any issues or feature requests on GitHub. Performance may vary as optimizations are continuously implemented. Currently planning to support Windows and Linux only for now. If you still like other logging utility you can use that instead :)
 
 
 <details>
