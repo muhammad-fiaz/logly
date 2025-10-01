@@ -54,6 +54,7 @@ impl PyLogger {
     /// # Arguments
     /// * `sink` - "console" for stdout or file path for file output
     /// * `rotation` - Rotation policy: "daily", "hourly", "minutely", or None
+    /// * `size_limit` - Maximum file size before rotation (e.g., "5KB", "10MB", "1GB")
     /// * `filter_min_level` - Minimum log level for this sink
     /// * `filter_module` - Only log messages from this module
     /// * `filter_function` - Only log messages from this function
@@ -65,8 +66,8 @@ impl PyLogger {
     /// # Returns
     /// Handler ID that can be used to remove the sink later
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (sink, *, rotation=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=false, retention=None))]
-    pub fn add(&self, sink: &str, rotation: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> PyResult<usize> {
+    #[pyo3(signature = (sink, *, rotation=None, size_limit=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, date_style=None, date_enabled=false, retention=None))]
+    pub fn add(&self, sink: &str, rotation: Option<&str>, size_limit: Option<&str>, filter_min_level: Option<&str>, filter_module: Option<&str>, filter_function: Option<&str>, async_write: bool, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> PyResult<usize> {
         if sink == "console" { return Ok(0); }
         with_state(|s| {
             s.file_path = Some(sink.to_string());
@@ -74,7 +75,7 @@ impl PyLogger {
             s.file_date_style = date_style.map(|d| d.to_string());
             s.file_date_enabled = date_enabled;
             s.retention_count = retention;
-            s.file_writer = Some(backend::make_file_appender(sink, rotation, date_style, date_enabled, retention));
+            s.file_writer = Some(backend::make_file_appender(sink, rotation, date_style, date_enabled, retention, size_limit));
             // filters
             if let Some(min) = filter_min_level {
                 if let Some(level) = crate::levels::to_level(min) {

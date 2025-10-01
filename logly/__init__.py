@@ -36,6 +36,7 @@ class _LoggerProxy:
         sink: str | None = None,
         *,
         rotation: str | None = None,
+        size_limit: str | None = None,
         retention: int | None = None,
         filter_min_level: str | None = None,
         filter_module: str | None = None,
@@ -49,7 +50,7 @@ class _LoggerProxy:
         Args:
             sink: Path to log file or "console" for stdout. Defaults to console.
             rotation: Time-based rotation policy. Options: "daily", "hourly", "minutely".
-                     Size-based rotation coming soon (e.g., "10 MB").
+            size_limit: Size-based rotation limit (e.g., "5KB", "10MB", "1GB").
             retention: Number of rotated files to keep. Older files are deleted.
             filter_min_level: Minimum log level for this sink. Options: "TRACE", "DEBUG",
                             "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL".
@@ -68,6 +69,8 @@ class _LoggerProxy:
             >>> logger.add("console")
             >>> # Add file sink with daily rotation
             >>> logger.add("app.log", rotation="daily", retention=7)
+            >>> # Add file sink with size-based rotation
+            >>> logger.add("app.log", size_limit="10MB", retention=5)
             >>> # Add filtered sink for errors only
             >>> logger.add("errors.log", filter_min_level="ERROR")
         """
@@ -76,6 +79,7 @@ class _LoggerProxy:
         return self._inner.add(
             sink,
             rotation=rotation,
+            size_limit=size_limit,
             retention=retention,
             filter_min_level=filter_min_level,
             filter_module=filter_module,

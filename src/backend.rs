@@ -58,6 +58,42 @@ pub fn rotation_from_str(rotation: Option<&str>) -> Rotation {
     }
 }
 
+/// Parse size strings like "5KB", "10MB", "1GB" into bytes
+pub fn parse_size_limit(size_str: Option<&str>) -> Option<u64> {
+    size_str.and_then(|s| {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+
+        // Find where the number ends and unit begins
+        let mut num_end = 0;
+        for (i, c) in s.chars().enumerate() {
+            if !c.is_ascii_digit() {
+                num_end = i;
+                break;
+            }
+        }
+
+        if num_end == 0 {
+            return None; // No number found
+        }
+
+        let num_str = &s[..num_end];
+        let unit = s[num_end..].trim().to_uppercase();
+
+        let multiplier = match unit.as_str() {
+            "B" | "" => 1,
+            "KB" | "K" => 1024,
+            "MB" | "M" => 1024 * 1024,
+            "GB" | "G" => 1024 * 1024 * 1024,
+            _ => return None, // Invalid unit
+        };
+
+        num_str.parse::<u64>().ok().map(|n| n * multiplier)
+    })
+}
+
 // A simple rolling writer that places the rotation timestamp before the file extension,
 // e.g. `app.log` -> `app.2025-08-22.log` for daily rotation. This avoids appending
 // the date after the extension which some users find unexpected.
@@ -68,14 +104,26 @@ struct SimpleRollingWriter {
     file: File,
     date_style: String, // "before_ext" or "prefix"
     retention_count: Option<usize>,
+    size_limit: Option<u64>, // Maximum file size in bytes
+    current_size: u64,       // Current file size in bytes
 }
 
 impl SimpleRollingWriter {
-    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>, retention: Option<usize>) -> io::Result<Self> {
+    fn new(path: &Path, rotation: Rotation, date_style: Option<&str>, retention: Option<usize>, size_limit: Option<u64>) -> io::Result<Self> {
         let style = date_style.unwrap_or("before_ext").to_string();
         let current_period = Self::period_string(&rotation);
         let file = Self::open_for_period(path, &current_period, &style)?;
-        Ok(SimpleRollingWriter { base_path: path.to_path_buf(), rotation, current_period, file, date_style: style, retention_count: retention })
+        let current_size = file.metadata()?.len();
+        Ok(SimpleRollingWriter {
+            base_path: path.to_path_buf(),
+            rotation,
+            current_period,
+            file,
+            date_style: style,
+            retention_count: retention,
+            size_limit,
+            current_size,
+        })
     }
 
     fn period_string(rotation: &Rotation) -> String {
@@ -123,11 +171,23 @@ impl SimpleRollingWriter {
         OpenOptions::new().create(true).append(true).open(p)
     }
 
-    fn rotate_if_needed(&mut self) -> io::Result<()> {
+    fn rotate_if_needed(&mut self, upcoming_write_size: usize) -> io::Result<()> {
         let new_period = Self::period_string(&self.rotation);
-        if new_period != self.current_period {
-            self.current_period = new_period.clone();
-            self.file = Self::open_for_period(&self.base_path, &new_period, &self.date_style)?;
+        let needs_time_rotation = new_period != self.current_period;
+        let needs_size_rotation = self.size_limit.map_or(false, |limit| self.current_size + upcoming_write_size as u64 >= limit);
+
+        if needs_time_rotation || needs_size_rotation {
+            let actual_period = if needs_size_rotation && !needs_time_rotation {
+                // For size-based rotation when time rotation is disabled, use timestamp
+                chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string()
+            } else {
+                new_period.clone()
+            };
+
+            self.current_period = actual_period.clone();
+            self.file = Self::open_for_period(&self.base_path, &actual_period, &self.date_style)?;
+            self.current_size = 0; // Reset size for new file
+
             // prune old files if retention is configured
             if let Some(keep) = self.retention_count {
                 let current_path = Self::path_for_period(&self.base_path, &self.current_period, &self.date_style);
@@ -142,10 +202,21 @@ impl SimpleRollingWriter {
 
 impl Write for SimpleRollingWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        if self.rotation != Rotation::NEVER {
-            let _ = self.rotate_if_needed();
+        // Check if we need to rotate due to time or size
+        let needs_rotation = if self.rotation != Rotation::NEVER {
+            let new_period = Self::period_string(&self.rotation);
+            new_period != self.current_period
+        } else {
+            false
+        } || self.size_limit.map_or(false, |limit| self.current_size + buf.len() as u64 > limit);
+
+        if needs_rotation {
+            let _ = self.rotate_if_needed(buf.len());
         }
-        self.file.write(buf)
+
+        let written = self.file.write(buf)?;
+        self.current_size += written as u64;
+        Ok(written)
     }
 
     fn flush(&mut self) -> io::Result<()> { self.file.flush() }
@@ -189,12 +260,13 @@ fn prune_old_files(dir: &Path, base: &Path, date_style: &str, keep: usize, curre
     Ok(())
 }
 
-pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> Arc<Mutex<Box<dyn Write + Send>>> {
+pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>, size_limit: Option<&str>) -> Arc<Mutex<Box<dyn Write + Send>>> {
     let mut rot = rotation_from_str(rotation);
     if !date_enabled { rot = Rotation::NEVER; }
+    let size_bytes = parse_size_limit(size_limit);
     let p = Path::new(path);
     // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
-    match SimpleRollingWriter::new(p, rot, date_style, retention) {
+    match SimpleRollingWriter::new(p, rot, date_style, retention, size_bytes) {
         Ok(w) => Arc::new(Mutex::new(Box::new(w))),
         Err(_) => {
             // fallback: open a simple append file

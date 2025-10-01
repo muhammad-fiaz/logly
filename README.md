@@ -40,11 +40,11 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 	- [Filename rotation and retention](#filename-rotation-and-retention)
 - [What’s new (features)](#whats-new-features)
 - [Performance \& Benchmarks](#performance--benchmarks)
-	- [🚀 v0.1.1 Performance Results](#-v011-performance-results)
+	- [🚀 v0.1.2 Performance Results](#-v012-performance-results)
 		- [File Logging (50,000 messages, 3 repeats)](#file-logging-50000-messages-3-repeats)
 		- [Concurrent Logging (4 threads × 25,000 messages, 3 repeats)](#concurrent-logging-4-threads--25000-messages-3-repeats)
 		- [Latency Microbenchmark (30,000 messages)](#latency-microbenchmark-30000-messages)
-	- [What's New in v0.1.1](#whats-new-in-v011)
+	- [What's New in v0.1.2](#whats-new-in-v012)
 	- [Reproduce These Benchmarks](#reproduce-these-benchmarks)
 	- [Additional Benchmark Options](#additional-benchmark-options)
 - [Concurrency benchmark](#concurrency-benchmark)
@@ -145,7 +145,8 @@ from logly import logger
 # Add sinks (logger.add)
 # -----------------------------
 # sink: "console" or a file path. Returns a handler id (int).
-# rotation: "daily" | "hourly" | "minutely" | "never" (MVP supports simple rolling behavior).
+# rotation: "daily" | "hourly" | "minutely" | "never" (time-based rotation)
+# size_limit: "500B" | "5KB" | "10MB" | "1GB" (size-based rotation)
 console_hid = logger.add("console")                  # writes human-readable text to stderr
 daily_file_hid = logger.add(
 	"logs/app.log",
@@ -165,6 +166,11 @@ daily_file_hid = logger.add(
 	filter_function=None,               # or match a specific function name
 	async_write=True,                   # write via background thread
 )
+
+# Size-based rotation examples:
+logger.add("logs/app.log", size_limit="10MB")        # rotate when file reaches 10MB
+logger.add("logs/debug.log", size_limit="1GB", retention=5)  # rotate at 1GB, keep 5 files
+logger.add("logs/small.log", size_limit="500KB", rotation="daily")  # combine time and size
 
 # Examples of other rotation values:
 logger.add("logs/hourly.log", rotation="hourly")
@@ -342,9 +348,9 @@ The latest iteration adds performance-focused and convenience features, with sim
 
 ## Performance & Benchmarks
 
-**Logly v0.1.1** delivers significant performance improvements through Rust-powered optimizations. The core is implemented using high-performance libraries (`parking_lot`, `crossbeam-channel`, `ahash`) to minimize overhead in high-volume logging scenarios.
+**Logly v0.1.2** delivers significant performance improvements through Rust-powered optimizations. The core is implemented using high-performance libraries (`parking_lot`, `crossbeam-channel`, `ahash`) to minimize overhead in high-volume logging scenarios.
 
-### 🚀 v0.1.1 Performance Results
+### 🚀 v0.1.2 Performance Results
 
 **Benchmark Environment:** Windows, PowerShell, Python 3.12.9
 
@@ -352,22 +358,27 @@ The latest iteration adds performance-focused and convenience features, with sim
 | Library | Mean Time | Speedup |
 |---------|-----------|---------|
 | Python stdlib logging | 0.729s | baseline |
-| **Logly v0.1.1** | **0.205s** | **3.55x faster** 🚀 |
+| **Logly** | **0.205s** | **3.55x faster** 🚀 |
 
 #### Concurrent Logging (4 threads × 25,000 messages, 3 repeats)
 | Library | Mean Time | Speedup |
 |---------|-----------|---------|
 | Python stdlib logging | 3.919s | baseline |
-| **Logly v0.1.1** | **0.405s** | **9.67x faster** 🚀 |
+| **Logly** | **0.405s** | **9.67x faster** 🚀 |
 
 #### Latency Microbenchmark (30,000 messages)
-| Percentile | stdlib logging | Logly v0.1.1 | Improvement |
-|------------|----------------|--------------|-------------|
+| Percentile | stdlib logging | Logly | Improvement |
+|------------|----------------|-------|-------------|
 | **p50** | 0.014ms | **0.002ms** | **7x faster** 🚀 |
 | **p95** | 0.029ms | **0.002ms** | **14.5x faster** 🚀 |
 | **p99** | 0.043ms | **0.015ms** | **2.9x faster** 🚀 |
 
-### What's New in v0.1.1
+### What's New in v0.1.2
+
+**New Features:**
+- 📏 **Size-based rotation**: Rotate log files based on file size (e.g., "10MB", "1GB", "500KB")
+- 🔄 **Combined rotation**: Use both time-based and size-based rotation together
+- 📊 **Enhanced retention**: Works with both time and size-based rotation
 
 **Performance Optimizations:**
 - 🔒 `parking_lot::RwLock` - 5-10x faster than std::sync::Mutex
@@ -377,9 +388,8 @@ The latest iteration adds performance-focused and convenience features, with sim
 - 🔄 `Arc<Mutex<>>` - Thread-safe file writers
 - ⚡ Lock-free atomic operations with `arc-swap`
 
-**Infrastructure Added (APIs coming soon):**
+**Infrastructure Added:**
 - 🗜️ Compression support (gzip, zstd)
-- 📏 Size-based rotation (10MB, 1GB, etc.)
 - 🎲 Log sampling/throttling
 - 📊 Performance metrics
 - 🎯 Caller information capture
@@ -431,11 +441,11 @@ uv run python bench/benchmark_logging.py --mode file --json --count 100000 --rep
 
 ## Concurrency benchmark
 
-Logly v0.1.1's `crossbeam-channel` and `parking_lot::RwLock` provide excellent multi-threaded performance. The concurrency benchmark stresses parallel producers writing to a shared file sink.
+Logly's `crossbeam-channel` and `parking_lot::RwLock` provide excellent multi-threaded performance. The concurrency benchmark stresses parallel producers writing to a shared file sink.
 
-**v0.1.1 Results (4 threads × 25,000 messages):**
+**Results (4 threads × 25,000 messages):**
 - stdlib logging: 3.919s
-- **Logly v0.1.1: 0.405s (9.67x faster)** 🚀
+- **Logly: 0.405s (9.67x faster)** 🚀
 
 ```powershell
 # Run the benchmark (4 threads × 25k messages, 3 repeats)
@@ -461,7 +471,7 @@ uv run python bench/benchmark_concurrency.py --threads 4 --count-per-thread 1000
 
 Measure per-call latency distribution for detailed performance analysis:
 
-**v0.1.1 Results (30,000 messages):**
+**Results (30,000 messages):**
 - **p50 latency: 0.002ms (7x faster than stdlib)**
 - **p95 latency: 0.002ms (14.5x faster than stdlib)**
 - **p99 latency: 0.015ms (2.9x faster than stdlib)**
@@ -489,9 +499,10 @@ Creation
 
 Configuration & sinks
 
-- `logger.add(sink: str | None = None, *, rotation: str | None = None, retention: int | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True, date_style: str | None = None, date_enabled: bool = False) -> int`
+- `logger.add(sink: str | None = None, *, rotation: str | None = None, size_limit: str | None = None, retention: int | None = None, filter_min_level: str | None = None, filter_module: str | None = None, filter_function: str | None = None, async_write: bool = True, date_style: str | None = None, date_enabled: bool = False) -> int`
 	- Add a sink. Use `"console"` for stdout/stderr or a file path to write logs to disk. Returns a handler id (int).
-	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender). **Size-based rotation coming soon** (e.g., `"10 MB"`, `"1 GB"`).
+	- `rotation`: `"daily" | "hourly" | "minutely" | "never"` (rolling appender).
+	- `size_limit`: `"500B" | "5KB" | "10MB" | "1GB"` (size-based rotation). Can be combined with time-based rotation.
 	- `retention`: Maximum number of rotated files to keep. Older files are automatically deleted on rollover.
 	- `date_style`: `"before_ext"` (default) or `"prefix"` — controls where the rotation timestamp is placed in the filename.
 	- `date_enabled`: when False (default) no date is appended to filenames even if rotation is set; set to True to enable dated filenames.
@@ -511,6 +522,16 @@ Configuration & sinks
 		filter_min_level="INFO",
 		async_write=True,
 	)
+	```
+
+	Size-based rotation examples:
+
+	```python
+	# Size-based rotation
+	logger.add("logs/app.log", size_limit="10MB")
+	
+	# Combined time and size rotation
+	logger.add("logs/combined.log", rotation="daily", size_limit="500KB", retention=10)
 	```
 
 - `logger.configure(level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False) -> None`

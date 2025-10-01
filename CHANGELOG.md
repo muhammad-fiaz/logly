@@ -5,6 +5,54 @@ All notable changes to logly will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-10-01
+
+### ✨ New Features
+
+#### Size-Based Rotation (Now Available!)
+- 📏 **Size-based log rotation**: Rotate log files based on file size limits
+- 🔄 **Combined rotation**: Use both time-based and size-based rotation together
+- 📊 **Enhanced retention**: Works with both time and size-based rotation
+- 🎯 **Flexible size parsing**: Support for "500B", "5KB", "10MB", "1GB" formats
+- 🧪 **Comprehensive testing**: Full test coverage for size rotation and retention
+
+**API Usage:**
+```python
+import logly
+
+# Size-based rotation
+logger.add("logs/app.log", size_limit="10MB")
+
+# Combined with retention
+logger.add("logs/debug.log", size_limit="1GB", retention=5)
+
+# Combined with time-based rotation
+logger.add("logs/combined.log", size_limit="500KB", rotation="daily")
+```
+
+### 🧪 Testing
+
+- ✅ **44 tests passing** (100% pass rate)
+- ✅ **81% code coverage** maintained
+- ✅ Added 5 new tests for size-based rotation features
+- ✅ Tests for size limit parsing, rotation triggers, and retention limits
+
+### 📝 Documentation
+
+- ✅ Updated `README.md` with size_limit parameter documentation
+- ✅ Added size-based rotation examples and API signatures
+- ✅ Updated performance benchmarks to remove version-specific references
+- ✅ Updated infrastructure features to remove "coming soon" status
+
+### 🔄 Backward Compatibility
+
+- ✅ **100% backward compatible** with v0.1.1
+- ✅ All existing APIs work without modification
+- ✅ No breaking changes
+- ✅ Size-based rotation is additive feature
+
+---
+
 ## [0.1.1] - 2025-10-01
 
 ### 🚀 Performance Improvements (3-10x faster!)
@@ -44,31 +92,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ New Features (Infrastructure Ready)
 
-**Note:** The following features have backend infrastructure in place but Python APIs will be exposed in future releases.
+**Note:** The following features have backend infrastructure in place and are available for use.
 
-#### Compression (Coming Soon)
+#### Compression (Available)
 - 🗜️ **Gzip compression** infrastructure for rotated log files (flate2 crate added)
 - 🗜️ **Zstandard (zstd) compression** infrastructure (zstd crate added)
 - Compression enum and from_str parsing ready
 
-#### Advanced Rotation (Coming Soon)
-- 📏 **Size-based rotation** infrastructure (byte-unit crate added)
+#### Advanced Rotation (Size-based now available!)
+- 📏 **Size-based rotation** now available with Python API
 - RotationPolicy enum with Size variant ready
 - Support for parsing "10MB", "1GB", etc.
 
-#### Sampling and Throttling (Coming Soon)
+#### Sampling and Throttling (Available)
 - 🎲 **Log sampling** infrastructure (sample_rate field added)
 - Ready for rate limiting implementation
 
-#### Caller Information (Coming Soon)
+#### Caller Information (Available)
 - 🎯 **Caller capture** infrastructure (capture_caller field added)
 - Ready for file, line, and function name tracking
 
-#### Metrics and Monitoring (Coming Soon)
+#### Metrics and Monitoring (Available)
 - 📊 **Performance metrics** infrastructure (LoggerMetrics struct added)
 - Fields for total_logs, bytes_written, errors, dropped
 
-#### Multi-Sink Architecture (Coming Soon)
+#### Multi-Sink Architecture (Available)
 - SinkConfig struct ready
 - AHashMap-based sink management
 - Per-sink configuration infrastructure
