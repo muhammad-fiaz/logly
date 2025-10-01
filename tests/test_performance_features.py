@@ -70,7 +70,6 @@ class TestSizeBasedRotation:
 
     def test_size_based_rotation_with_retention(self, tmp_path):
         """Test size-based rotation with retention limit"""
-        import os
         import glob
 
         log_file = tmp_path / "size_retention.log"

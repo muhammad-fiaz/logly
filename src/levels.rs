@@ -1,4 +1,4 @@
-use tracing::{Level};
+use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
 pub fn to_level(name: &str) -> Option<Level> {
@@ -12,7 +12,9 @@ pub fn to_level(name: &str) -> Option<Level> {
     }
 }
 
-pub fn to_filter(level: Level) -> LevelFilter { level.into() }
+pub fn to_filter(level: Level) -> LevelFilter {
+    level.into()
+}
 
 pub fn level_to_str(level: Level) -> &'static str {
     match level {

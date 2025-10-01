@@ -1,7 +1,7 @@
-mod levels;
-mod state;
 mod backend;
+mod levels;
 mod logger;
+mod state;
 
 use pyo3::prelude::*;
 

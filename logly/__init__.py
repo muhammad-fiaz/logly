@@ -9,6 +9,8 @@ Example:
     >>> logger.add("app.log", rotation="daily")
 """
 
+from contextlib import contextmanager
+
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
 
@@ -421,7 +423,6 @@ class _LoggerProxy:
         return new
 
     # context manager to temporarily attach values
-    from contextlib import contextmanager  # pylint: disable=import-outside-toplevel
 
     @contextmanager
     def contextualize(self, **kwargs):
