@@ -43,6 +43,9 @@ Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 [dependency-groups]
 dev = [
   "maturin==1.9.1",
+  "mkdocs>=1.5.0",
+  "mkdocs-material>=9.0.0",
+  "mkdocs-minify-plugin>=0.8.0",
   "mypy[faster-cache]==1.16.1",
   "pre-commit==4.2.0",
   "pylint>=3.3.8",

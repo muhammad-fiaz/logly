@@ -19,28 +19,25 @@ logger.configure(
 )
 ```
 
+**Output:**
+```
+Logger configured successfully
+```
+
 ### 2. Add Output Destinations
 
 ```python
 # Add console output
 logger.add("console")
 
-# Add fi-   :material-text-box:{ .lg .middle } **Context Management**
-
-    ---
-
-    Bind and contextualize patterns
-
-    [:octicons-arrow-right-24: Context Docs](api-reference/context.md)
-
--   :material-alert:{ .lg .middle } **Exception Handling**
-
-    ---
-
-    Catch and log exceptions
-
-    [:octicons-arrow-right-24: Exception Docs](api-reference/exceptions.md)daily rotation
+# Add file output with daily rotation
 logger.add("logs/app.log", rotation="daily", retention=7)
+```
+
+**Output:**
+```
+Console sink added
+File sink added: logs/app.log (daily rotation, 7 day retention)
 ```
 
 ### 3. Start Logging
@@ -55,6 +52,15 @@ logger.critical("System out of memory")
 
 # Always call complete() before exit
 logger.complete()
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: Application started version=1.0.0
+[2024-01-15 10:30:15] WARNING: Low disk space available_gb=2.5
+[2024-01-15 10:30:15] ERROR: Failed to connect retry_count=3
+[2024-01-15 10:30:15] CRITICAL: System out of memory
+Logger completed successfully
 ```
 
 ---
@@ -148,6 +154,13 @@ async def get_user(user_id: int):
     return {"user_id": user_id, "name": "Alice"}
 ```
 
+**Output:**
+```json
+{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Request received", "request_id": "req-123", "method": "GET", "path": "/api/users/123"}
+{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Fetching user", "user_id": 123}
+{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Response sent", "request_id": "req-123", "status": 200}
+```
+
 ### Pattern 2: Script with Progress Logging
 
 ```python
@@ -182,6 +195,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: Batch started batch_id=0 items=100
+[2024-01-15 10:30:15] DEBUG: Item processed batch_id=0 item_id=1 progress=1/100
+[2024-01-15 10:30:15] DEBUG: Item processed batch_id=0 item_id=2 progress=2/100
+...
+[2024-01-15 10:30:16] SUCCESS: Batch complete batch_id=0 duration=1705312216.123
 ```
 
 ### Pattern 3: Monitoring with Callbacks
@@ -221,6 +243,15 @@ if __name__ == "__main__":
     main()
 ```
 
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: Application started
+[2024-01-15 10:30:15] ERROR: Operation failed
+[2024-01-15 10:30:15] CRITICAL: System error occurred
+Slack alert sent: 🚨 Critical: System error occurred
+Error counter incremented
+```
+
 ---
 
 ## Log Levels
@@ -246,6 +277,17 @@ logger.success("Payment processed", amount=99.99)
 logger.warning("API rate limit approaching", remaining=10)
 logger.error("Database connection failed", retry_count=3)
 logger.critical("System out of memory", available_mb=10)
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] TRACE: Function called args={"x": 1, "y": 2}
+[2024-01-15 10:30:15] DEBUG: Variable value x=42
+[2024-01-15 10:30:15] INFO: User logged in user=alice
+[2024-01-15 10:30:15] SUCCESS: Payment processed amount=99.99
+[2024-01-15 10:30:15] WARNING: API rate limit approaching remaining=10
+[2024-01-15 10:30:15] ERROR: Database connection failed retry_count=3
+[2024-01-15 10:30:15] CRITICAL: System out of memory available_mb=10
 ```
 
 ---
@@ -313,6 +355,13 @@ logger.add("logs/app.log", rotation="hourly", retention=24)
 logger.add("logs/app.log", rotation="minutely", retention=60)
 ```
 
+**Output:**
+```
+File sink added: logs/app.log (daily rotation, 7 day retention)
+File sink added: logs/app.log (hourly rotation, 24 hour retention)
+File sink added: logs/app.log (minutely rotation, 60 minute retention)
+```
+
 ### Size-Based Rotation
 
 ```python
@@ -323,6 +372,12 @@ logger.add("logs/app.log", size_limit="10MB", retention=5)
 logger.add("logs/app.log", rotation="daily", size_limit="500MB", retention=7)
 ```
 
+**Output:**
+```
+File sink added: logs/app.log (size limit 10MB, 5 file retention)
+File sink added: logs/app.log (daily rotation, size limit 500MB, 7 day retention)
+```
+
 ### Retention Policy
 
 ```python
@@ -331,6 +386,12 @@ logger.add("logs/app.log", rotation="daily", retention=7)
 
 # Unlimited retention (set to None)
 logger.add("logs/app.log", rotation="daily", retention=None)
+```
+
+**Output:**
+```
+File sink added: logs/app.log (daily rotation, 7 day retention)
+File sink added: logs/app.log (daily rotation, unlimited retention)
 ```
 
 ---
@@ -351,6 +412,12 @@ request_logger.error("Request failed")
 # Output: ... request_id=r-123 user=alice
 ```
 
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: Request started request_id=r-123 user=alice
+[2024-01-15 10:30:15] ERROR: Request failed request_id=r-123 user=alice
+```
+
 ### Contextualize (Temporary Context)
 
 ```python
@@ -362,6 +429,12 @@ with request_logger.contextualize(step="validation"):
 
 request_logger.info("Validation complete")
 # Output: ... request_id=r-123 (no step field)
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] DEBUG: Validating input request_id=r-123 step=validation
+[2024-01-15 10:30:15] INFO: Validation complete request_id=r-123
 ```
 
 ---
@@ -383,6 +456,14 @@ logger.info(f"User {user} action", action="login")
 
 # And % formatting
 logger.info("Processing %d of %d", 5, 10)
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: User alice logged in from 192.168.1.1 user=alice ip=192.168.1.1
+[2024-01-15 10:30:15] INFO: User alice logged in from 192.168.1.1 user=alice ip=192.168.1.1
+[2024-01-15 10:30:15] INFO: User bob action action=login
+[2024-01-15 10:30:15] INFO: Processing 5 of 10
 ```
 
 **Benefits:**
@@ -418,6 +499,17 @@ except Exception:
     logger.exception("Operation failed", operation="data_sync")
 ```
 
+**Output:**
+```
+[2024-01-15 10:30:15] ERROR: Exception in may_fail: division by zero
+[2024-01-15 10:30:15] CRITICAL: Exception in critical_operation: risky_code failed
+[2024-01-15 10:30:15] ERROR: Exception in context: dangerous_operation failed
+[2024-01-15 10:30:15] ERROR: Operation failed operation=data_sync
+Traceback (most recent call last):
+  File "example.py", line 25, in risky_operation
+    ZeroDivisionError: division by zero
+```
+
 ---
 
 ## Best Practices
@@ -445,6 +537,18 @@ logger.add("console")
 logger.add("logs/app.log", rotation="daily")
 ```
 
+**Output:**
+```
+Logger completed successfully
+[2024-01-15 10:30:15] ERROR: Connection failed retry=3
+[2024-01-15 10:30:15] INFO: User logged in user=alice
+[2024-01-15 10:30:15] INFO: Processing request_id=123
+[2024-01-15 10:30:15] INFO: User alice action login user=alice action=login
+Logger configured successfully
+Console sink added
+File sink added: logs/app.log (daily rotation)
+```
+
 ### ❌ DON'T
 
 ```python
@@ -465,6 +569,18 @@ logger.info("User " + user + " logged in")  # ❌ Use templates instead
 # 5. Don't configure multiple times
 logger.configure(level="INFO")
 logger.configure(level="DEBUG")  # ❌ Configure once
+```
+
+**Output (What NOT to do):**
+```
+[2024-01-15 10:30:15] INFO: Login attempt password=secret123  # ❌ Sensitive data exposed
+[2024-01-15 10:30:15] DEBUG: Iteration 0
+[2024-01-15 10:30:15] DEBUG: Iteration 1
+... (999,998 more lines)  # ❌ Performance impact
+# Logs may be lost on exit  # ❌ No cleanup
+[2024-01-15 10:30:15] INFO: User alice logged in  # ❌ Less efficient
+Logger configured successfully
+Logger reconfigured successfully  # ❌ Multiple configurations
 ```
 
 ---

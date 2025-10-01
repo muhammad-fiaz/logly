@@ -1,5 +1,6 @@
 /* Custom CSS for Logly Documentation */
 
+/* Color scheme */
 :root {
   --md-primary-fg-color: #3f51b5;
   --md-accent-fg-color: #536dfe;
@@ -50,4 +51,120 @@ a:hover {
 code {
   padding: 0.1em 0.4em;
   border-radius: 0.25rem;
+}
+
+/* Responsive improvements */
+@media screen and (max-width: 768px) {
+  /* Adjust header logo size on mobile */
+  .md-header__button.md-logo img {
+    height: 1.5rem;
+  }
+
+  /* Make tables scrollable on mobile */
+  .md-typeset table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Adjust code block padding on mobile */
+  .highlight pre {
+    padding: 1rem;
+  }
+
+  /* Improve navigation on mobile */
+  .md-nav__link {
+    padding: 0.5rem 1rem;
+  }
+
+  /* Improve grid cards for mobile */
+  .grid.cards {
+    display: block !important;
+  }
+
+  .grid.cards > ul {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .grid.cards > ul > li {
+    display: block !important;
+    width: 100% !important;
+    margin: 1rem 0 !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Better spacing for mobile content */
+  .md-typeset .grid.cards {
+    margin: 2rem 0;
+  }
+}
+
+/* Tablet responsive improvements */
+@media screen and (max-width: 1024px) and (min-width: 769px) {
+  /* Two-column layout for tablets */
+  .grid.cards > ul > li {
+    width: calc(50% - 1rem) !important;
+    margin: 0.5rem !important;
+  }
+
+  .grid.cards > ul {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+  }
+}
+
+/* Better spacing for content */
+.md-typeset h1, .md-typeset h2, .md-typeset h3,
+.md-typeset h4, .md-typeset h5, .md-typeset h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.md-typeset p {
+  margin-bottom: 1rem;
+}
+
+/* Improve button styles */
+.md-button {
+  border-radius: 0.5rem;
+}
+
+/* Better focus states */
+.md-button:focus, .md-nav__link:focus {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+/* Improve search results */
+.md-search-result__article {
+  margin-bottom: 1rem;
+}
+
+/* Better spacing for lists */
+.md-typeset ul, .md-typeset ol {
+  margin-bottom: 1rem;
+}
+
+.md-typeset li {
+  margin-bottom: 0.5rem;
+}
+
+/* Improve API documentation */
+.api-method {
+  background: var(--md-code-bg-color);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid var(--md-accent-fg-color);
+}
+
+/* Better code annotation */
+.code-annotation {
+  background: rgba(255, 255, 0, 0.1);
+  border-left: 3px solid #ffeb3b;
+  padding: 0.5rem;
+  margin: 1rem 0;
 }

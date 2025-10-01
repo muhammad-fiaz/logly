@@ -1,5 +1,7 @@
-# Logly
-
+# Logl[![PyPI](https://img.shields.io/pypi/v/logly)](https://pypi.org/project/logly/)
+[![Downloads](https://img.shields.io/pypi/dm/logly)](https://pypistats.org/packages/logly)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/muhammad-fiaz/logly)](https://github.com/muhammad-fiaz/logly)
 <div align="center">
   <img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="Logly Logo" width="400" />
   <p><em>Rust-powered, Loguru-like logging for Python</em></p>

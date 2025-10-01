@@ -136,7 +136,7 @@ Thanks to all contributors, issue reporters, and users!
 
 ## Links
 
-- **Documentation**: [muhammad-fiaz.github.io/docs/logly](https://muhammad-fiaz.github.io/docs/logly)
+- **Documentation**: [muhammad-fiaz.github.io/logly](https://muhammad-fiaz.github.io/logly/)
 - **PyPI**: [pypi.org/project/logly](https://pypi.org/project/logly/)
 - **GitHub**: [github.com/muhammad-fiaz/logly](https://github.com/muhammad-fiaz/logly)
 - **Issues**: [github.com/muhammad-fiaz/logly/issues](https://github.com/muhammad-fiaz/logly/issues)
@@ -148,8 +148,8 @@ Thanks to all contributors, issue reporters, and users!
 
 ### Getting Help
 
-- **Documentation**: Check the [docs](https://muhammad-fiaz.github.io/docs/logly)
-- **API Reference**: See [API docs](https://muhammad-fiaz.github.io/docs/logly/api-reference/)
+- **Documentation**: Check the [docs](https://muhammad-fiaz.github.io/logly/)
+- **API Reference**: See [API docs](https://muhammad-fiaz.github.io/logly/api-reference/)
 - **Issues**: Open an [issue](https://github.com/muhammad-fiaz/logly/issues)
 - **Discussions**: Ask in [discussions](https://github.com/muhammad-fiaz/logly/discussions)
 
@@ -163,7 +163,7 @@ For commercial support, consulting, or custom features:
 
 ## License
 
-Logly is released under the [MIT License](../LICENSE).
+Logly is released under the [MIT License](https://github.com/muhammad-fiaz/logly/blob/main/LICENSE).
 
 Copyright (c) 2025 Muhammad Fiaz
 

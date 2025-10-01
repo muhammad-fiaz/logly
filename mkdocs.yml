@@ -1,5 +1,5 @@
 site_name: Logly Documentation
-site_url: https://muhammad-fiaz.github.io/docs/logly
+site_url: https://muhammad-fiaz.github.io/logly/
 site_author: Muhammad Fiaz
 site_description: >-
   Rust-powered, Loguru-like logging for Python.
@@ -54,6 +54,7 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.footnote.tooltips
   icon:
     repo: fontawesome/brands/github
     logo: material/file-document-multiple

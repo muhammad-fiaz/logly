@@ -65,6 +65,11 @@ import logly
 print(logly.__version__)  # e.g., "0.1.2"
 ```
 
+**Output:**
+```
+0.1.2
+```
+
 ---
 
 ## Platform-Specific Installation
@@ -248,11 +253,26 @@ If you encounter import errors:
 ImportError: cannot import name 'logger' from 'logly'
 ```
 
+**Output:**
+```
+Traceback (most recent call last):
+  File "test.py", line 1, in <module>
+    ImportError: cannot import name 'logger' from 'logly'
+```
+
 **Solution**: Ensure you're using Python 3.9+:
 
 ```bash
 python --version  # Should be >= 3.9
 pip install --upgrade logly
+```
+
+**Output:**
+```
+Python 3.12.0
+Collecting logly
+  Downloading logly-0.1.2.tar.gz (15 kB)
+Successfully installed logly-0.1.2
 ```
 
 ### Build Errors (Source Installation)
