@@ -12,6 +12,8 @@ use tracing_subscriber::filter::LevelFilter;
 use std::io::Write;
 use crossbeam_channel::Sender;
 use ahash::AHashMap;
+use pyo3::Py;
+use pyo3::types::PyAny;
 
 /// Handler ID for managing sinks.
 ///
@@ -181,6 +183,10 @@ pub struct LoggerState {
     /// Capture source location information (file, line, function)
     pub capture_caller: bool,
     
+    // Callback functions for custom processing
+    /// Registered callback functions that run asynchronously on each log
+    pub callbacks: Vec<std::sync::Arc<Py<PyAny>>>,
+    
     // Backward compatibility fields (deprecated, will be removed in 1.0)
     /// Legacy file path (use sinks instead)
     pub file_path: Option<String>,
@@ -217,6 +223,7 @@ impl Default for LoggerState {
             metrics: LoggerMetrics::default(),
             sample_rate: None,
             capture_caller: false,
+            callbacks: Vec::new(),
             
             // Backward compatibility (deprecated)
             file_path: None,

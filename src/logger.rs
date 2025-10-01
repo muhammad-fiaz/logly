@@ -101,6 +101,44 @@ impl PyLogger {
     /// True if sink was removed (currently always returns true)
     pub fn remove(&self, _handler_id: usize) -> PyResult<bool> { Ok(true) }
 
+    /// Add a callback function that executes asynchronously on each log event.
+    ///
+    /// The callback function will be called in the background with a log record
+    /// containing timestamp, level, message, and any additional fields.
+    ///
+    /// # Arguments
+    /// * `callback` - Python callable that accepts a log record dict
+    ///
+    /// # Returns
+    /// Callback ID that can be used to remove the callback later
+    pub fn add_callback(&self, callback: Py<PyAny>) -> PyResult<usize> {
+        let callback_arc = std::sync::Arc::new(callback);
+        let id = crate::state::with_state(|s| {
+            s.callbacks.push(callback_arc);
+            s.callbacks.len() - 1
+        });
+        Ok(id)
+    }
+
+    /// Remove a callback function by its ID.
+    ///
+    /// # Arguments
+    /// * `callback_id` - Callback ID returned by add_callback()
+    ///
+    /// # Returns
+    /// True if callback was removed, false if ID was invalid
+    pub fn remove_callback(&self, callback_id: usize) -> PyResult<bool> {
+        let removed = crate::state::with_state(|s| {
+            if callback_id < s.callbacks.len() {
+                s.callbacks.remove(callback_id);
+                true
+            } else {
+                false
+            }
+        });
+        Ok(removed)
+    }
+
     /// Log a message at TRACE level (most verbose).
     ///
     /// # Arguments

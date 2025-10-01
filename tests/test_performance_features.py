@@ -84,7 +84,9 @@ class TestSizeBasedRotation:
 
         # Should have at most 4 files (3 rotated + 1 current)
         log_files = glob.glob(str(tmp_path / "size_retention*"))
-        assert len(log_files) <= 4, f"Expected at most 4 files with retention=3, got {len(log_files)}: {log_files}"
+        assert len(log_files) <= 4, (
+            f"Expected at most 4 files with retention=3, got {len(log_files)}: {log_files}"
+        )
 
     def test_size_limit_parsing(self, tmp_path):
         """Test that different size limit formats work"""
@@ -98,7 +100,10 @@ class TestSizeBasedRotation:
         ]
 
         for size_str, expected_bytes in test_cases:
-            log_file = tmp_path / f"size_test_{size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')}.log"
+            log_file = (
+                tmp_path
+                / f"size_test_{size_str.replace('B', '').replace('KB', 'kb').replace('MB', 'mb')}.log"
+            )
             handler_id = logger.add(str(log_file), size_limit=size_str, async_write=False)
 
             # Write data that should trigger rotation
@@ -110,7 +115,9 @@ class TestSizeBasedRotation:
 
             # Check that rotation occurred
             log_files = [f for f in os.listdir(tmp_path) if f.startswith(log_file.stem)]
-            assert len(log_files) > 1, f"Size limit {size_str} should trigger rotation, got {len(log_files)} files"
+            assert len(log_files) > 1, (
+                f"Size limit {size_str} should trigger rotation, got {len(log_files)} files"
+            )
 
 
 class TestSamplingAndThrottling:

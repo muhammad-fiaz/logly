@@ -3,6 +3,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/logly.svg)](https://pypistats.org/packages/logly)
+[![Documentation](https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue)](https://muhammad-fiaz.github.io/docs/logly)
 [![Donate](https://img.shields.io/badge/Donate-%20-orange)](https://pay.muhammadfiaz.com)
 [![Supported Python](https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg)](https://www.python.org/)
 [![GitHub stars](https://img.shields.io/github/stars/muhammad-fiaz/logly.svg)](https://github.com/muhammad-fiaz/logly)
@@ -18,6 +19,8 @@
 
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
+
+**📚 [Complete Documentation](https://muhammad-fiaz.github.io/docs/logly) | [API Reference](https://muhammad-fiaz.github.io/docs/logly/api-reference/) | [Quick Start](https://muhammad-fiaz.github.io/docs/logly/quickstart/)**
 
 </div>
 
@@ -339,11 +342,31 @@ The latest iteration adds performance-focused and convenience features, with sim
 - Count-based file retention for rotated logs
 	- Set `retention` to keep at most N rotated files; oldest are pruned on rollover.
 
-- **Infrastructure Added (APIs Coming Soon):**
-	- **Size-based rotation** - Rotate logs when files reach specified sizes (e.g., `"10 MB"`, `"1 GB"`)
-	- **Compression support** - Automatic compression of rotated log files (Gzip, Zstd)
-	- **Performance metrics** - Built-in monitoring of log throughput, errors, and dropped messages
-	- **Log sampling/throttling** - Control log volume in high-throughput scenarios
+- **Async Callbacks:**
+	- Register callback functions that execute asynchronously when logs are emitted
+	- Zero performance impact - callbacks run in background threads
+	- Perfect for real-time monitoring, alerting, and log aggregation
+	- Example:
+		```python
+		def alert_on_error(record):
+			if record.get("level") == "ERROR":
+				send_alert(record)
+		
+		callback_id = logger.add_callback(alert_on_error)
+		logger.error("Something failed!")  # Callback executes asynchronously
+		logger.complete()  # Ensure all callbacks finish
+		```
+
+- **Template Strings:**
+	- Use `{variable}` syntax for efficient, deferred string interpolation
+	- Variables are extracted and become structured context fields
+	- Works seamlessly with f-strings, % formatting, `bind()`, and `contextualize()`
+	- Better performance - variables only evaluated if log passes level filter
+	- Example:
+		```python
+		logger.info("User {user} logged in", user="alice", ip="192.168.1.1")
+		# Output: "User alice logged in" with ip as context field
+		```
 
 
 ## Performance & Benchmarks
@@ -613,10 +636,94 @@ Context & convenience
 - `logger.complete()`
 	- Flushes or completes any buffered output for the current proxy (useful in short-lived scripts or tests).
 
+Callbacks
+
+Logly supports registering callback functions that are invoked asynchronously whenever a log message is emitted. This feature enables real-time log processing, monitoring, alerting, or forwarding logs to external systems without blocking the main application thread.
+
+- `logger.add_callback(callback: Callable[[dict], None]) -> int`
+	- Register a callback function that will be called for every log message. The callback receives a dictionary containing log record information.
+	- Returns a callback ID (integer) that can be used to remove the callback later.
+	- **Asynchronous execution**: Callbacks run in background threads, ensuring zero impact on application performance.
+	- **Thread-safe**: Multiple callbacks can be registered and executed concurrently.
+	
+	**Callback Record Structure:**
+	The callback receives a dictionary with the following fields:
+	- `timestamp`: ISO-8601 formatted timestamp string
+	- `level`: Log level name (e.g., "INFO", "ERROR", "DEBUG")
+	- `message`: The formatted log message string
+	- Additional fields from `bind()`, `contextualize()`, and kwargs
+	
+	Example — add a callback for real-time monitoring:
+	
+	```python
+	# Define a callback for alerting
+	def alert_on_error(record):
+		if record.get("level") == "ERROR":
+			send_notification(f"Error: {record['message']}")
+	
+	# Register the callback
+	callback_id = logger.add_callback(alert_on_error)
+	
+	# Log an error - callback executes in background
+	logger.error("Database connection failed", retry_count=3)
+	
+	# Ensure callbacks complete before exit
+	logger.complete()
+	```
+
+- `logger.remove_callback(callback_id: int) -> bool`
+	- Remove a previously registered callback using its ID.
+	- Returns `True` if the callback was successfully removed, `False` if the ID was not found.
+	
+	Example:
+	
+	```python
+	# Remove the callback when no longer needed
+	success = logger.remove_callback(callback_id)
+	```
+
+**Performance Notes:**
+- Callbacks execute in background threads with no blocking on the main thread
+- Multiple callbacks can be registered and run concurrently
+- If a callback raises an exception, it's silently caught to prevent logging disruption
+- Always call `logger.complete()` before program exit to ensure all callbacks finish
+
+Template Strings
+
+Template strings provide an intuitive and Pythonic way to format log messages using `{variable}` syntax with deferred evaluation for better performance.
+
+**Usage:**
+
+```python
+# Template strings with deferred evaluation
+logger.info("User {user} logged in from {ip}", user="alice", ip="192.168.1.1")
+# Output: "User alice logged in from 192.168.1.1" with structured fields
+
+# Works with f-strings (pre-evaluated)
+user = "bob"
+logger.info(f"User {user} logged in", session_id="sess-123")
+
+# Works with % formatting (legacy)
+logger.info("Processing item %d of %d", 5, 10)
+
+# Works with bind() for persistent context
+req_logger = logger.bind(request_id="r-123")
+req_logger.info("User {user} action {action}", user="alice", action="login")
+# All three fields (request_id, user, action) included
+```
+
+**Benefits:**
+- **Performance**: Variables only evaluated if log passes level filter
+- **Structured logging**: Variables become fields in JSON mode
+- **Readable**: More maintainable than manual string concatenation
+- **Flexible**: Works with all Python string formats (f-strings, %, template)
+- **PEP 750 inspired**: Deferred evaluation for efficiency
+
 Notes
 
 - When `json=False` (default), kwargs are appended as a `key=value` suffix in text output for quick human readability.
 - When `json=True`, kwargs and bound context are placed in the `fields` object of the emitted JSON record for structured logging.
+- Callbacks receive all log records regardless of `json` mode setting.
 
 
 ## Advanced examples
@@ -711,6 +818,9 @@ Run the unit tests with:
 uv run pytest -q
 ```
 
+## Changelog
+
+For detailed release notes and version history, see the [GitHub Releases](https://github.com/muhammad-fiaz/logly/releases) page.
 
 ## Contributing
 

@@ -1,0 +1,53 @@
+/* Custom CSS for Logly Documentation */
+
+:root {
+  --md-primary-fg-color: #3f51b5;
+  --md-accent-fg-color: #536dfe;
+}
+
+/* Code blocks */
+.highlight {
+  border-radius: 0.5rem;
+}
+
+/* Admonitions */
+.admonition {
+  border-radius: 0.5rem;
+}
+
+/* Grid cards */
+.grid.cards {
+  margin-top: 1.5rem;
+}
+
+/* Logo adjustments */
+.md-header__button.md-logo img {
+  width: auto;
+  height: 2rem;
+}
+
+/* Tables */
+table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Code inline */
+code {
+  padding: 0.1em 0.4em;
+  border-radius: 0.25rem;
+}

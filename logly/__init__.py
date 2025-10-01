@@ -175,6 +175,46 @@ class _LoggerProxy:
             pass
         return kwargs
 
+    def _process_template_string(self, message: str, kwargs: dict) -> tuple[str, dict]:
+        """Process template strings with {variable} syntax for deferred interpolation.
+
+        Enables efficient logging with template strings similar to PEP 750 proposal.
+        Supports all Python string formats: f-strings, % formatting, and template strings.
+
+        Args:
+            message: Log message that may contain {variable} placeholders
+            kwargs: Context fields, some may match template variables
+
+        Returns:
+            Tuple of (formatted_message, remaining_kwargs)
+        """
+        import re  # pylint: disable=import-outside-toplevel
+
+        # Find all {variable} placeholders
+        pattern = r"\{(\w+)\}"
+        placeholders = set(re.findall(pattern, message))
+
+        if not placeholders:
+            return message, kwargs
+
+        # Separate template values from remaining context
+        template_values = {}
+        remaining_kwargs = {}
+
+        for key, value in kwargs.items():
+            if key in placeholders:
+                template_values[key] = value
+            else:
+                remaining_kwargs[key] = value
+
+        # Format message with template values
+        try:
+            formatted_message = message.format(**template_values)
+        except (KeyError, ValueError, IndexError):
+            return message, kwargs
+
+        return formatted_message, remaining_kwargs
+
     def trace(self, message: str, /, *args, **kwargs):
         """Log a message at TRACE level (most verbose).
 
@@ -192,6 +232,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.trace(msg, **merged)
 
     def debug(self, message: str, /, *args, **kwargs):
@@ -211,6 +252,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.debug(msg, **merged)
 
     def info(self, message: str, /, *args, **kwargs):
@@ -230,6 +272,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.info(msg, **merged)
 
     def success(self, message: str, /, *args, **kwargs):
@@ -249,6 +292,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.success(msg, **merged)
 
     def warning(self, message: str, /, *args, **kwargs):
@@ -268,6 +312,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.warning(msg, **merged)
 
     def error(self, message: str, /, *args, **kwargs):
@@ -287,6 +332,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.error(msg, **merged)
 
     def critical(self, message: str, /, *args, **kwargs):
@@ -306,6 +352,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.critical(msg, **merged)
 
     def log(self, level: str, message: str, /, *args, **kwargs):
@@ -329,6 +376,7 @@ class _LoggerProxy:
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
+        msg, merged = self._process_template_string(msg, merged)
         self._inner.log(lvl, msg, **merged)
 
     def complete(self) -> None:
@@ -517,6 +565,68 @@ class _LoggerProxy:
             >>> logger.log("FATAL", "Fatal error occurred")
         """
         self._levels[name] = mapped_to
+
+    # callback functionality for async log processing
+    def add_callback(self, callback) -> int:
+        """Register a callback function to be invoked for every log message.
+
+        The callback executes asynchronously in a background thread, allowing
+        real-time log processing without impacting application performance.
+
+        Args:
+            callback: A callable that accepts a dictionary containing log record data.
+                     The dictionary includes: timestamp, level, message, and any
+                     additional fields from bind(), contextualize(), or kwargs.
+
+        Returns:
+            int: A unique callback ID that can be used to remove the callback later.
+
+        Example:
+            >>> from logly import logger
+            >>> # Define a callback for error alerting
+            >>> def alert_on_error(record):
+            ...     if record.get("level") == "ERROR":
+            ...         send_alert(f"Error: {record['message']}")
+            >>>
+            >>> # Register the callback
+            >>> callback_id = logger.add_callback(alert_on_error)
+            >>>
+            >>> # Log an error - callback executes asynchronously
+            >>> logger.error("Database connection failed", retry_count=3)
+            >>>
+            >>> # Remove callback when done
+            >>> logger.remove_callback(callback_id)
+            >>>
+            >>> # Ensure all callbacks complete before exit
+            >>> logger.complete()
+
+        Notes:
+            - Callbacks run in background threads (zero blocking)
+            - Multiple callbacks can be registered
+            - Exceptions in callbacks are silently caught to prevent disruption
+            - Always call logger.complete() before program exit to ensure callbacks finish
+        """
+        return self._inner.add_callback(callback)
+
+    def remove_callback(self, callback_id: int) -> bool:
+        """Remove a previously registered callback using its ID.
+
+        Args:
+            callback_id: The ID returned by add_callback() when the callback was registered.
+
+        Returns:
+            bool: True if the callback was successfully removed, False if not found.
+
+        Example:
+            >>> from logly import logger
+            >>> # Register a callback
+            >>> callback_id = logger.add_callback(my_callback)
+            >>>
+            >>> # Later, remove it
+            >>> success = logger.remove_callback(callback_id)
+            >>> print(f"Callback removed: {success}")
+        """
+        return self._inner.remove_callback(callback_id)
 
 
 logger = _LoggerProxy(_rust_logger)

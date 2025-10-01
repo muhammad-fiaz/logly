@@ -315,6 +315,44 @@ struct JsonRecord<'a> {
 
 pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDict>>) {
     let pairs = extra.map(|d| dict_to_pairs(d)).unwrap_or_default();
+    
+    // Create log record data for callbacks
+    let timestamp = chrono::Utc::now().to_rfc3339();
+    let level_str = level_to_str(level).to_string();
+    let message = msg.to_string();
+    let extra_fields = pairs.clone();
+    
+    // Call callbacks asynchronously in background thread
+    let has_callbacks = crate::state::with_state(|s| !s.callbacks.is_empty());
+    
+    if has_callbacks {
+        let timestamp_bg = timestamp.clone();
+        let level_str_bg = level_str.clone();
+        let message_bg = message.clone();
+        let extra_fields_bg = extra_fields.clone();
+        
+        thread::spawn(move || {
+            Python::attach(|py| {
+                let callbacks = crate::state::with_state(|s| s.callbacks.clone());
+                for callback in callbacks {
+                    // Create the record dict in the background thread
+                    let dict = pyo3::types::PyDict::new(py);
+                    let _ = dict.set_item("timestamp", &timestamp_bg);
+                    let _ = dict.set_item("level", &level_str_bg);
+                    let _ = dict.set_item("message", &message_bg);
+                    
+                    // Add extra fields
+                    for (k, v) in &extra_fields_bg {
+                        let _ = dict.set_item(k, v);
+                    }
+                    
+                    // Call the callback with the record
+                    let _ = callback.call1(py, (&dict,));
+                }
+            });
+        });
+    }
+    
     // Emit structured JSON when requested, otherwise keep legacy formatted suffix.
     crate::state::with_state(|s| {
         // filter checks (file sink filters only apply to file writes; console honored by global level)
