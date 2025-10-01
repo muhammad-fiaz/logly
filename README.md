@@ -32,19 +32,19 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 
 - [Install (PyPI)](#install-pypi)
 - [Nightly installation](#nightly-installation)
-- [Build from source](#build-from-source)
-	- [Prerequisites](#prerequisites)
-	- [Build steps](#build-steps)
-	- [Docker/Container Installation](#dockercontainer-installation)
+	- [Build from source](#build-from-source)
+		- [Prerequisites](#prerequisites)
+		- [Build steps](#build-steps)
+		- [Docker/Container Installation](#dockercontainer-installation)
 - [Quickstart](#quickstart)
 	- [Filename rotation and retention](#filename-rotation-and-retention)
 - [What’s new (features)](#whats-new-features)
 - [Performance \& Benchmarks](#performance--benchmarks)
-	- [🚀 v0.1.2 Performance Results](#-v012-performance-results)
+	- [🚀 Performance Results](#-performance-results)
 		- [File Logging (50,000 messages, 3 repeats)](#file-logging-50000-messages-3-repeats)
 		- [Concurrent Logging (4 threads × 25,000 messages, 3 repeats)](#concurrent-logging-4-threads--25000-messages-3-repeats)
 		- [Latency Microbenchmark (30,000 messages)](#latency-microbenchmark-30000-messages)
-	- [What's New in v0.1.2](#whats-new-in-v012)
+	- [What's New](#whats-new)
 	- [Reproduce These Benchmarks](#reproduce-these-benchmarks)
 	- [Additional Benchmark Options](#additional-benchmark-options)
 - [Concurrency benchmark](#concurrency-benchmark)
@@ -82,17 +82,17 @@ You can install the latest code from the GitHub repository (useful for nightly b
 
 ⚠️ **Requires Rust toolchain and maturin installed on your system**
 
-## Build from source
+### Build from source
 
 For developers who want to build logly from source code.
 
-### Prerequisites
+#### Prerequisites
 
 - Python 3.8+
 - Rust 1.70+
 - maturin (Python package for building Rust extensions)
 
-### Build steps
+#### Build steps
 
 ```powershell
 # Clone the repository
@@ -115,7 +115,7 @@ maturin build --release  # For production build
 pip install target/wheels/*.whl
 ```
 
-### Docker/Container Installation
+#### Docker/Container Installation
 
 If you're using containers, you can build the wheel in a multi-stage Docker build:
 
@@ -348,9 +348,9 @@ The latest iteration adds performance-focused and convenience features, with sim
 
 ## Performance & Benchmarks
 
-**Logly v0.1.2** delivers significant performance improvements through Rust-powered optimizations. The core is implemented using high-performance libraries (`parking_lot`, `crossbeam-channel`, `ahash`) to minimize overhead in high-volume logging scenarios.
+**Logly** delivers significant performance improvements through Rust-powered optimizations. The core is implemented using high-performance libraries (`parking_lot`, `crossbeam-channel`, `ahash`) to minimize overhead in high-volume logging scenarios.
 
-### 🚀 v0.1.2 Performance Results
+### 🚀 Performance Results
 
 **Benchmark Environment:** Windows, PowerShell, Python 3.12.9
 
@@ -373,7 +373,7 @@ The latest iteration adds performance-focused and convenience features, with sim
 | **p95** | 0.029ms | **0.002ms** | **14.5x faster** 🚀 |
 | **p99** | 0.043ms | **0.015ms** | **2.9x faster** 🚀 |
 
-### What's New in v0.1.2
+### What's New
 
 **New Features:**
 - 📏 **Size-based rotation**: Rotate log files based on file size (e.g., "10MB", "1GB", "500KB")
