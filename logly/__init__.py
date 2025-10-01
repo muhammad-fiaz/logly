@@ -9,10 +9,14 @@ Example:
     >>> logger.add("app.log", rotation="daily")
 """
 
+import re
 from contextlib import contextmanager
 
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
+
+# Cached regex pattern for template string processing
+_TEMPLATE_PATTERN = re.compile(r"\{(\w+)\}")
 
 
 class _LoggerProxy:
@@ -190,11 +194,8 @@ class _LoggerProxy:
         Returns:
             Tuple of (formatted_message, remaining_kwargs)
         """
-        import re  # pylint: disable=import-outside-toplevel
-
-        # Find all {variable} placeholders
-        pattern = r"\{(\w+)\}"
-        placeholders = set(re.findall(pattern, message))
+        # Find all {variable} placeholders using cached pattern
+        placeholders = set(_TEMPLATE_PATTERN.findall(message))
 
         if not placeholders:
             return message, kwargs
@@ -632,4 +633,8 @@ class _LoggerProxy:
 
 logger = _LoggerProxy(_rust_logger)
 
-__all__ = ["__version__", "logger"]
+__all__ = [
+    "PyLogger",
+    "__version__",
+    "logger",
+]
