@@ -847,6 +847,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 <div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=muhammad-fiaz/logly&type=Date)](https://github.com/muhamad-fiaz/logly/)
+[![Star History Chart](https://api.star-history.com/svg?repos=muhammad-fiaz/logly&type=Date)](https://github.com/muhammad-fiaz/logly/)
 
 </div>
