@@ -1,4 +1,16 @@
-from logly._logly import PyLogger, __version__, logger as _rust_logger
+"""Logly: A stupidly simple, yet blazingly fast logging utility for Python.
+
+Powered by Rust for optimal performance with asynchronous background writing.
+Provides a Loguru-like API with high-performance logging capabilities.
+
+Example:
+    >>> from logly import logger
+    >>> logger.info("Hello, World!")
+    >>> logger.add("app.log", rotation="daily")
+"""
+
+from logly._logly import PyLogger, __version__
+from logly._logly import logger as _rust_logger
 
 
 class _LoggerProxy:
@@ -32,6 +44,33 @@ class _LoggerProxy:
         date_style: str | None = None,
         date_enabled: bool = False,
     ) -> int:
+        """Add a logging sink (output destination).
+
+        Args:
+            sink: Path to log file or "console" for stdout. Defaults to console.
+            rotation: Time-based rotation policy. Options: "daily", "hourly", "minutely".
+                     Size-based rotation coming soon (e.g., "10 MB").
+            retention: Number of rotated files to keep. Older files are deleted.
+            filter_min_level: Minimum log level for this sink. Options: "TRACE", "DEBUG",
+                            "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL".
+            filter_module: Only log messages from this module name.
+            filter_function: Only log messages from this function name.
+            async_write: Enable asynchronous writing for better performance (default: True).
+            date_style: Date format style. Options: "rfc3339", "local", "utc".
+            date_enabled: Enable timestamp in log output (default: False for console).
+
+        Returns:
+            Handler ID that can be used to remove this sink later.
+
+        Example:
+            >>> from logly import logger
+            >>> # Add console sink
+            >>> logger.add("console")
+            >>> # Add file sink with daily rotation
+            >>> logger.add("app.log", rotation="daily", retention=7)
+            >>> # Add filtered sink for errors only
+            >>> logger.add("errors.log", filter_min_level="ERROR")
+        """
         if not sink or sink == "console":
             return self._inner.add("console")
         return self._inner.add(
@@ -49,22 +88,73 @@ class _LoggerProxy:
     def configure(
         self, level: str = "INFO", color: bool = True, json: bool = False, pretty_json: bool = False
     ) -> None:
+        """Configure global logger settings.
+
+        Args:
+            level: Default minimum log level. Options: "TRACE", "DEBUG", "INFO",
+                  "SUCCESS", "WARNING", "ERROR", "CRITICAL".
+            color: Enable colored output for console logs (default: True).
+            json: Output logs in JSON format (default: False).
+            pretty_json: Output logs in pretty-printed JSON format (default: False).
+
+        Example:
+            >>> from logly import logger
+            >>> # Configure with colored INFO level
+            >>> logger.configure(level="INFO", color=True)
+            >>> # Configure with JSON output
+            >>> logger.configure(level="DEBUG", json=True)
+        """
         self._inner.configure(level=level, color=color, json=json, pretty_json=pretty_json)
 
     def remove(self, handler_id: int) -> bool:
+        """Remove a logging sink by its handler ID.
+
+        Args:
+            handler_id: The ID returned by add() when the sink was created.
+
+        Returns:
+            True if the sink was successfully removed, False otherwise.
+
+        Example:
+            >>> from logly import logger
+            >>> handler = logger.add("app.log")
+            >>> # Later, remove the sink
+            >>> logger.remove(handler)
+        """
         return self._inner.remove(handler_id)
 
     # enable / disable
     def enable(self) -> None:
+        """Enable logging for this logger instance.
+
+        When disabled, all log messages are silently ignored.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.disable()
+            >>> logger.info("This won't be logged")
+            >>> logger.enable()
+            >>> logger.info("This will be logged")
+        """
         self._enabled = True
 
     def disable(self) -> None:
+        """Disable logging for this logger instance.
+
+        When disabled, all log messages are silently ignored without
+        any performance overhead from formatting or serialization.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.disable()
+            >>> logger.info("This won't be logged")
+        """
         self._enabled = False
 
     # logging methods with kwargs as context key-values
     def _augment_with_callsite(self, kwargs: dict) -> dict:
         try:
-            import inspect
+            import inspect  # pylint: disable=import-outside-toplevel
 
             frame = inspect.currentframe()
             # go back two frames: current -> _augment -> caller method wrapper
@@ -76,11 +166,23 @@ class _LoggerProxy:
                     kwargs["module"] = module
                 if "function" not in kwargs:
                     kwargs["function"] = function
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Introspection can fail for various reasons, catch all exceptions
             pass
         return kwargs
 
     def trace(self, message: str, /, *args, **kwargs):
+        """Log a message at TRACE level (most verbose).
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.trace("Detailed trace info", request_id="abc123")
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -89,6 +191,17 @@ class _LoggerProxy:
         self._inner.trace(msg, **merged)
 
     def debug(self, message: str, /, *args, **kwargs):
+        """Log a message at DEBUG level.
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.debug("Processing item %s", item_id, user="alice")
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -97,6 +210,17 @@ class _LoggerProxy:
         self._inner.debug(msg, **merged)
 
     def info(self, message: str, /, *args, **kwargs):
+        """Log a message at INFO level (general information).
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.info("User logged in", user_id=42)
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -105,6 +229,17 @@ class _LoggerProxy:
         self._inner.info(msg, **merged)
 
     def success(self, message: str, /, *args, **kwargs):
+        """Log a message at SUCCESS level (successful operations).
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.success("Payment processed", amount=100.50)
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -113,6 +248,17 @@ class _LoggerProxy:
         self._inner.success(msg, **merged)
 
     def warning(self, message: str, /, *args, **kwargs):
+        """Log a message at WARNING level.
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.warning("Rate limit approaching", current=95, limit=100)
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -121,6 +267,17 @@ class _LoggerProxy:
         self._inner.warning(msg, **merged)
 
     def error(self, message: str, /, *args, **kwargs):
+        """Log a message at ERROR level.
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.error("Database connection failed", db="postgres")
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -129,6 +286,17 @@ class _LoggerProxy:
         self._inner.error(msg, **merged)
 
     def critical(self, message: str, /, *args, **kwargs):
+        """Log a message at CRITICAL level (most severe).
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.critical("System shutdown imminent", reason="out_of_memory")
+        """
         if not self._enabled:
             return
         merged = {**self._bound, **kwargs}
@@ -137,6 +305,19 @@ class _LoggerProxy:
         self._inner.critical(msg, **merged)
 
     def log(self, level: str, message: str, /, *args, **kwargs):
+        """Log a message at a custom or aliased level.
+
+        Args:
+            level: Log level name (e.g., "INFO", "ERROR", or a custom alias).
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.level("NOTICE", "INFO")  # Create alias
+            >>> logger.log("NOTICE", "Custom level message")
+        """
         if not self._enabled:
             return
         # allow aliasing custom levels
@@ -147,10 +328,39 @@ class _LoggerProxy:
         self._inner.log(lvl, msg, **merged)
 
     def complete(self) -> None:
+        """Flush all pending log messages and ensure they are written.
+
+        This method should be called before application shutdown to ensure
+        all buffered logs (especially from async sinks) are persisted.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.info("Final log message")
+            >>> logger.complete()  # Ensure all logs are written
+        """
         self._inner.complete()
 
     # context binding similar to loguru: returns a new proxy with additional bound context
     def bind(self, **kwargs) -> "_LoggerProxy":
+        """Create a new logger instance with additional context fields bound.
+
+        Bound context fields are automatically attached to all log messages
+        from this logger instance, providing a thread-safe way to add context.
+
+        Args:
+            **kwargs: Key-value pairs to bind as context fields.
+
+        Returns:
+            A new _LoggerProxy instance with the additional context bound.
+
+        Example:
+            >>> from logly import logger
+            >>> # Create logger with request context
+            >>> request_logger = logger.bind(request_id="abc123", user="alice")
+            >>> request_logger.info("Processing request")  # Includes request_id and user
+            >>> # Original logger is unchanged
+            >>> logger.info("Other message")  # No request context
+        """
         new = _LoggerProxy(self._inner)
         new._bound = {**self._bound, **kwargs}
         new._enabled = self._enabled
@@ -159,10 +369,28 @@ class _LoggerProxy:
         return new
 
     # context manager to temporarily attach values
-    from contextlib import contextmanager
+    from contextlib import contextmanager  # pylint: disable=import-outside-toplevel
 
     @contextmanager
     def contextualize(self, **kwargs):
+        """Context manager to temporarily attach context fields.
+
+        Unlike bind(), contextualize() modifies the current logger instance
+        within a context block, automatically restoring original state on exit.
+
+        Args:
+            **kwargs: Key-value pairs to temporarily attach as context fields.
+
+        Yields:
+            None
+
+        Example:
+            >>> from logly import logger
+            >>> logger.info("Before")  # No context
+            >>> with logger.contextualize(request_id="xyz789"):
+            ...     logger.info("During")  # Includes request_id
+            >>> logger.info("After")  # No context again
+        """
         old = dict(self._bound)
         try:
             self._bound.update(kwargs)
@@ -172,7 +400,23 @@ class _LoggerProxy:
 
     # exception logging convenience
     def exception(self, message: str = "", /, **kwargs) -> None:
-        import traceback
+        """Log an exception with traceback at ERROR level.
+
+        Automatically captures the current exception traceback and logs it.
+        Must be called from within an exception handler.
+
+        Args:
+            message: Optional message prefix before the traceback.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> try:
+            ...     1 / 0
+            ... except ZeroDivisionError:
+            ...     logger.exception("Math error occurred")
+        """
+        import traceback  # pylint: disable=import-outside-toplevel
 
         tb = traceback.format_exc()
         full = (message + "\n" + tb).strip() if message else tb
@@ -181,27 +425,65 @@ class _LoggerProxy:
 
     # catch decorator/context manager: logs exceptions; if reraise=True, re-raises
     def catch(self, *, reraise: bool = False):
-        from contextlib import ContextDecorator
+        """Decorator or context manager to automatically log exceptions.
+
+        Can be used as a decorator on functions or as a context manager.
+        By default, catches and logs exceptions without re-raising them.
+
+        Args:
+            reraise: If True, re-raise the exception after logging (default: False).
+
+        Returns:
+            A context manager/decorator that catches and logs exceptions.
+
+        Example:
+            >>> from logly import logger
+            >>> # As a context manager
+            >>> with logger.catch():
+            ...     risky_operation()
+            >>>
+            >>> # As a decorator
+            >>> @logger.catch(reraise=True)
+            ... def my_function():
+            ...     potentially_failing_code()
+        """
+        from contextlib import ContextDecorator  # pylint: disable=import-outside-toplevel
 
         proxy = self
 
         class _Catch(ContextDecorator):
-            def __enter__(self_inner):
+            def __enter__(self):
                 return None
 
-            def __exit__(self_inner, exc_type, exc, tb):
+            def __exit__(self, exc_type, exc, tb):
                 if exc is None:
                     return False
-                import traceback
+                import traceback  # pylint: disable=import-outside-toplevel
 
                 msg = traceback.format_exception(exc_type, exc, tb)
                 proxy._inner.error("".join(msg), **proxy._bound)
-                return False if reraise else True
+                return not reraise
 
         return _Catch()
 
     # options / opt stub (store options locally)
     def opt(self, **options) -> "_LoggerProxy":
+        """Create a new logger instance with additional options.
+
+        Options modify logger behavior for the returned instance.
+        Currently stores options for future use.
+
+        Args:
+            **options: Key-value pairs of options to set.
+
+        Returns:
+            A new _LoggerProxy instance with the options applied.
+
+        Example:
+            >>> from logly import logger
+            >>> # Future use: configure output format, depth, etc.
+            >>> custom_logger = logger.opt(depth=2, colors=False)
+        """
         new = _LoggerProxy(self._inner)
         new._bound = dict(self._bound)
         new._options = {**self._options, **options}
@@ -211,6 +493,25 @@ class _LoggerProxy:
 
     # register alias or custom level mapping to an existing level name
     def level(self, name: str, mapped_to: str) -> None:
+        """Register a custom level name as an alias to an existing level.
+
+        Allows creating custom level names that map to built-in levels.
+        Use with the log() method to log at custom levels.
+
+        Args:
+            name: The custom level name/alias to create.
+            mapped_to: The existing level to map to ("TRACE", "DEBUG", "INFO",
+                      "SUCCESS", "WARNING", "ERROR", "CRITICAL").
+
+        Example:
+            >>> from logly import logger
+            >>> # Create custom level aliases
+            >>> logger.level("NOTICE", "INFO")
+            >>> logger.level("FATAL", "CRITICAL")
+            >>> # Use custom levels
+            >>> logger.log("NOTICE", "This is a notice")
+            >>> logger.log("FATAL", "Fatal error occurred")
+        """
         self._levels[name] = mapped_to
 
 

@@ -45,6 +45,7 @@ dev = [
   "maturin==1.9.1",
   "mypy[faster-cache]==1.16.1",
   "pre-commit==4.2.0",
+  "pylint>=3.3.8",
   "pytest==8.4.1",
   "pytest-cov==6.2.1",
   "ruff==0.12.3",
@@ -69,6 +70,18 @@ addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
 
 [tool.coverage.report]
 exclude_lines = ["if __name__ == .__main__.:", "pragma: no cover"]
+
+[tool.pylint.messages_control]
+disable = [
+    "import-error",
+    "no-name-in-module",
+    "unnecessary-ellipsis",
+    "unused-argument",
+    "protected-access",
+]
+
+[tool.pylint.reports]
+output-format = "colorized"
 
 [tool.ruff]
 line-length = 100

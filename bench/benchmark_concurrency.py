@@ -1,9 +1,14 @@
-"""Concurrent logging benchmark for stdlib vs logly.
+"""Concurrent logging benchmark for stdlib vs logly v0.1.1.
 
 This script spawns multiple threads and logs to a file to compare throughput.
+Tests performance improvements:
+- parking_lot RwLock for better multi-threaded performance
+- crossbeam-channel for async writes (6x faster)
+- Arc<Mutex<>> for thread-safe file writers
 
 Usage (PowerShell):
   python .\bench\benchmark_concurrency.py --threads 4 --count-per-thread 25000 --repeat 2
+  python .\bench\benchmark_concurrency.py --threads 8 --count-per-thread 10000 --repeat 3
 
 Options:
   --json          Enable JSON mode for logly

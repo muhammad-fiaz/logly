@@ -1,10 +1,12 @@
-"""Latency microbenchmark for stdlib logging vs logly.
+"""Latency microbenchmark for stdlib logging vs logly v0.1.1.
 
 Measures p50/p95/p99 latency for console or file sinks.
+Tests low-latency performance with parking_lot RwLock and optimized writes.
 
 Usage (PowerShell):
   python .\bench\benchmark_latency.py --mode console --count 20000
   python .\bench\benchmark_latency.py --mode file --json --count 30000
+  python .\bench\benchmark_latency.py --mode file --count 50000
 """
 
 from __future__ import annotations
