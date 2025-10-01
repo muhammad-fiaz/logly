@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 <img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="logly logo"  />
 
 [![PyPI](https://img.shields.io/pypi/v/logly.svg)](https://pypi.org/project/logly/)
@@ -31,7 +31,8 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 <summary><strong>Table of contents</strong></summary>
 
 - [Install (PyPI)](#install-pypi)
-- [Nightly / install from GitHub](#nightly--install-from-github)
+- [Nightly installation](#nightly-installation)
+- [Build from source](#build-from-source)
 - [Quickstart](#quickstart)
 - [What’s new (features)](#whats-new-features)
 - [Performance \& Benchmarks](#performance--benchmarks)
@@ -43,7 +44,6 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 - [Roadmap (planned features)](#roadmap-planned-features)
 - [Contributing](#contributing)
 - [License](#license)
-- [Development (build from source)](#development-build-from-source)
 
 </details>
 
@@ -51,14 +51,14 @@ Logly's core is implemented in Rust using tracing and exposed to Python via PyO3
 
 ## Install (PyPI)
 
-The recommended installation is from PyPI. Once published, users can install with:
+logly is available on PyPI and can be installed with:
 
 ```powershell
 python -m pip install --upgrade pip
 pip install logly
 ```
 
-If you want to test a pre-release on TestPyPI (when releases are uploaded there):
+For testing pre-releases on TestPyPI:
 
 ```powershell
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple logly
@@ -66,13 +66,82 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 
 If you are a package consumer, this is all you need; the rest of this README documents usage and developer instructions.
 
-## Nightly / install from GitHub
+## Nightly installation
 
-You can install the latest code from the GitHub repository (useful for nightly builds or unreleased fixes). 
+You can install the latest code from the GitHub repository (useful for nightly builds or unreleased fixes).
+
+⚠️ **Requires Rust toolchain and maturin installed on your system**
 
 ```powershell
+# Activate virtual environment (recommended)
+. .\.venv\Scripts\Activate.ps1  # Windows PowerShell
+# or
+source .venv/bin/activate      # Linux/macOS
+
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Install maturin
+pip install maturin
+
+# Install logly from GitHub
 pip install git+https://github.com/muhammad-fiaz/logly.git
 ```
+
+## Build from source
+
+For developers who want to build logly from source code.
+
+### Prerequisites
+
+- Python 3.8+
+- Rust 1.70+
+- maturin (Python package for building Rust extensions)
+
+### Build steps
+
+```powershell
+# Clone the repository
+git clone https://github.com/muhammad-fiaz/logly.git
+cd logly
+
+# Create and activate virtual environment
+python -m venv .venv
+. .\.venv\Scripts\Activate.ps1  # Windows PowerShell
+# or
+source .venv/bin/activate      # Linux/macOS
+
+# Install build dependencies
+pip install maturin
+
+# Build and install
+maturin develop  # For development (editable install)
+# or
+maturin build --release  # For production build
+pip install target/wheels/*.whl
+```
+
+### Docker/Container Installation
+
+If you're using containers, you can build the wheel in a multi-stage Docker build:
+
+```dockerfile
+# Build stage
+FROM rust:1.80-slim as builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y python3 python3-pip
+RUN pip install maturin
+COPY . .
+RUN maturin build --release
+
+# Runtime stage  
+FROM python:3.12-slim
+COPY --from=builder /app/target/wheels/*.whl /tmp/
+RUN pip install /tmp/*.whl
+```
+
+**Note**: Most users should use PyPI releases instead of building from source.
 
 ## Quickstart
 
