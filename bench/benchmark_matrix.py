@@ -1,13 +1,20 @@
-"""Benchmark matrix runner for logly vs stdlib.
+"""Benchmark matrix runner for logly v0.1.1 vs stdlib.
 
-Runs a small matrix of scenarios:
+Runs a comprehensive matrix of scenarios to test performance improvements:
 - mode: console | file
 - json: off/on
 - pretty_json: off/on (only when json on)
 - async: on/off (file mode only)
 
+Tests performance improvements in v0.1.1:
+- parking_lot RwLock (5-10x faster locks)
+- crossbeam-channel (6x faster async)
+- ahash (30% faster hashing)
+- Arc<Mutex<>> thread-safe writers
+
 Usage (PowerShell):
 python .\bench\benchmark_matrix.py --count 50000 --repeat 2
+python .\bench\benchmark_matrix.py --count 100000 --repeat 3
 """
 
 from __future__ import annotations

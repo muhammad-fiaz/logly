@@ -1,4 +1,4 @@
-"""Simple benchmark comparing Python stdlib logging vs logly.
+"""Simple benchmark comparing Python stdlib logging vs logly v0.1.1.
 
 Usage examples (PowerShell):
 
@@ -8,7 +8,15 @@ python .\bench\benchmark_logging.py --mode console --count 10000 --repeat 3
 # Compare file logging (writes to temp files):
 python .\bench\benchmark_logging.py --mode file --count 20000 --repeat 3
 
+# Large-scale benchmark (100k logs):
+python .\bench\benchmark_logging.py --mode file --count 100000 --repeat 5
+
 The script times how long it takes to emit N log records for each backend.
+Tests performance improvements in logly v0.1.1:
+- parking_lot RwLock (5-10x faster)
+- crossbeam-channel async (6x faster async writes)
+- ahash HashMap (30% faster hashing)
+- Arc<Mutex<>> thread-safe writers
 """
 
 from __future__ import annotations

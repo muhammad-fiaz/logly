@@ -1,5 +1,4 @@
 use crate::levels::{level_to_str, to_filter, to_level};
-// ...existing code... (state accessed via crate::state::with_state where needed)
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -8,6 +7,8 @@ use serde_json::json;
 use chrono::{Utc, DateTime};
 use std::io;
 use std::thread;
+use std::sync::Arc;
+use parking_lot::Mutex;
 use tracing::{debug, error, info, trace, warn, Level};
 use tracing_appender::rolling::Rotation;
 use std::fs::{File, OpenOptions};
@@ -15,7 +16,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
-use std::sync::mpsc::channel;
+use crossbeam_channel::unbounded as channel;
 
 pub fn init_global_if_needed() -> PyResult<()> {
     // Check and set state without returning PyResult from the locked closure to avoid
@@ -188,18 +189,21 @@ fn prune_old_files(dir: &Path, base: &Path, date_style: &str, keep: usize, curre
     Ok(())
 }
 
-pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> Box<dyn Write + Send> {
+pub fn make_file_appender(path: &str, rotation: Option<&str>, date_style: Option<&str>, date_enabled: bool, retention: Option<usize>) -> Arc<Mutex<Box<dyn Write + Send>>> {
     let mut rot = rotation_from_str(rotation);
     if !date_enabled { rot = Rotation::NEVER; }
     let p = Path::new(path);
     // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
     match SimpleRollingWriter::new(p, rot, date_style, retention) {
-        Ok(w) => Box::new(w),
+        Ok(w) => Arc::new(Mutex::new(Box::new(w))),
         Err(_) => {
             // fallback: open a simple append file
             let _ = std::fs::create_dir_all(p.parent().unwrap_or_else(|| Path::new(".")));
-            let f = OpenOptions::new().create(true).append(true).open(p).unwrap();
-            Box::new(f)
+            let f = OpenOptions::new().create(true).append(true).open(p).unwrap_or_else(|_| {
+                // If all else fails, create a no-op writer
+                File::create("fallback.log").expect("Cannot create fallback log file")
+            });
+            Arc::new(Mutex::new(Box::new(f)))
         }
     }
 }
@@ -284,8 +288,9 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
                         let line = if s.pretty_json { serde_json::to_string_pretty(&rec).unwrap_or_default() } else { serde_json::to_string(&rec).unwrap_or_default() };
                         let _ = tx.send(line);
                     }
-                } else if let Some(writer) = s.file_writer.as_mut() {
-                    let _ = writeln!(writer, "{}", serde_json::to_string(&rec).unwrap_or_default());
+                } else if let Some(writer) = s.file_writer.as_ref() {
+                    let mut w = writer.lock();
+                    let _ = writeln!(&mut **w, "{}", serde_json::to_string(&rec).unwrap_or_default());
                 }
             }
         } else {
@@ -303,8 +308,9 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&pyo3::Bound<'_, PyDic
                         let line = format!("[{}] {}{}", level_to_str(level), msg, suffix);
                         let _ = tx.send(line);
                     }
-                } else if let Some(writer) = s.file_writer.as_mut() {
-                    let _ = writeln!(writer, "[{}] {}{}", level_to_str(level), msg, suffix);
+                } else if let Some(writer) = s.file_writer.as_ref() {
+                    let mut w = writer.lock();
+                    let _ = writeln!(&mut **w, "[{}] {}{}", level_to_str(level), msg, suffix);
                 }
             }
         }
@@ -325,21 +331,18 @@ pub fn configure(level: &str, color: bool, json: bool, pretty_json: bool) -> PyR
 pub fn start_async_writer_if_needed() {
     // spawn background thread to drain channel and write to file
     crate::state::with_state(|s| {
-        if s.async_write && s.async_sender.is_none() {
-            if s.file_writer.is_some() {
-                let (tx, rx) = channel::<String>();
-                // SAFETY: clone a handle to the underlying writer path by creating a new appender per write is expensive;
-                // we use the existing writer via a mutable borrow in thread. For simplicity, we move the writer into the thread.
-                // To keep state consistent, we reconstruct a new appender for future rotations when add() is called again.
-                let mut file_writer = std::mem::replace(&mut s.file_writer, None).unwrap();
-                let handle = thread::spawn(move || {
-                    while let Ok(line) = rx.recv() {
-                        let _ = writeln!(file_writer, "{}", line);
-                    }
-                });
-                s.async_sender = Some(tx);
-                s.async_handle = Some(handle);
-            }
+        if s.async_write && s.async_sender.is_none() && s.file_writer.is_some() {
+            let (tx, rx) = channel::<String>();
+            // Clone the Arc to the file writer for the background thread
+            let file_writer = s.file_writer.as_ref().unwrap().clone();
+            let handle = thread::spawn(move || {
+                while let Ok(line) = rx.recv() {
+                    let mut w = file_writer.lock();
+                    let _ = writeln!(&mut **w, "{}", line);
+                }
+            });
+            s.async_sender = Some(tx);
+            s.async_handle = Some(handle);
         }
     });
 }
