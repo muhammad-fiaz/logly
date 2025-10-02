@@ -4,7 +4,7 @@ permissions:
   contents: read
 
 # This workflow builds wheels for all platforms (Windows, Linux, macOS) and Python versions (3.10-3.13)
-# and publishes to PyPI when a release is created
+# and publishes to PyPI when a release is created or when manually triggered
 
 on:
   workflow_dispatch:
@@ -83,7 +83,7 @@ jobs:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: [build-wheels, build-sdist]
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published' || github.event_name == 'workflow_dispatch'
     permissions:
       id-token: write  # Required for trusted publishing to PyPI
       contents: read
