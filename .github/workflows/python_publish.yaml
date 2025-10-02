@@ -95,7 +95,8 @@ jobs:
 
       - name: Flatten artifacts
         run: |
-          find dist/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} mv {} dist/
+          find dist/ -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec mv {} dist/ \;
+          find dist/ -mindepth 1 -type d -exec rm -rf {} +
 
       - name: List dist contents
         run: ls -la dist/
