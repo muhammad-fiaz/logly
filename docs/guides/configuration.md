@@ -79,18 +79,27 @@ def my_callback(record):
 
 ## Format Strings
 
-### Built-in Variables
+Logly supports custom format strings with placeholders that get replaced with actual log data. Placeholders are enclosed in curly braces `{}` and are case-insensitive.
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{time}` | ISO timestamp | `2025-01-15T10:30:45Z` |
+### Built-in Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{time}` | ISO 8601 timestamp | `2025-01-15T10:30:45Z` |
 | `{level}` | Log level | `INFO`, `ERROR` |
 | `{message}` | Log message | `User logged in` |
-| `{module}` | Python module | `main`, `utils.auth` |
-| `{function}` | Function name | `login`, `process_data` |
-| `{file}` | Source file | `app.py` |
-| `{line}` | Line number | `42` |
-| `{context}` | Current context | `user_id=123 session=abc` |
+| `{extra}` | All extra fields as `key=value` pairs | `user=alice \| session=123` |
+
+### Extra Field Placeholders
+
+Any key-value pair passed to the log call becomes available as a placeholder:
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{module}` | Python module (if provided) | `main`, `utils.auth` |
+| `{function}` | Function name (if provided) | `login`, `process_data` |
+| `{user_id}` | Custom field | `12345` |
+| `{request_id}` | Custom field | `req-abc-123` |
 
 ### Custom Formatting
 
@@ -98,8 +107,11 @@ def my_callback(record):
 # Simple format
 format="{time} [{level}] {message}"
 
-# Detailed format
-format="{time} | {level:8} | {file}:{line} | {function} | {message}"
+# Include specific extra fields
+format="{time} [{level}] {message} | user={user_id}"
+
+# Use {extra} for all remaining fields
+format="{time} [{level}] {message} | {extra}"
 
 # JSON format
 import json
@@ -107,25 +119,16 @@ format=json.dumps({
     "timestamp": "{time}",
     "level": "{level}",
     "message": "{message}",
-    "location": "{file}:{line}"
+    "extra": "{extra}"
 })
 ```
 
-### Conditional Formatting
+### Placeholder Behavior
 
-```python
-def custom_format(record):
-    """Custom format function"""
-    if record.level >= logging.ERROR:
-        return f"ERROR: {record.time} {record.message}"
-    else:
-        return f"{record.time} {record.level} {record.message}"
-
-logger.configure(
-    format=custom_format,
-    sinks=[{"type": "console"}]
-)
-```
+- **Case-insensitive**: `{TIME}`, `{time}`, and `{Time}` all work
+- **Extra fields**: Any data passed to `logger.info("msg", key="value")` becomes a placeholder
+- **Automatic appending**: Extra fields not used in placeholders are appended at the end (unless `{extra}` is used)
+- **Missing placeholders**: Unmatched placeholders remain as-is in the output
 
 ## Level Configuration
 

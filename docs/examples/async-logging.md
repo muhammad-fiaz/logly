@@ -21,24 +21,22 @@ logger.configure(level="INFO")
 # Add async file sink
 logger.add(
     "async_app.log",
-    async_write=True,      # Enable async writing
-    buffer_size=8192  # Buffer size in bytes
+    async_write=True  # Enable async writing
 )
 
 def worker_thread(thread_id: int):
     """Simulate work that logs frequently"""
-    for i in range(100):
-        logger.info("Thread {thread_id} processing item {item}",
-                   thread_id=thread_id, item=i)
-        time.sleep(0.001)  # Simulate processing time
+    for i in range(10):
+        logger.info("Processing item", thread_id=thread_id, item=i)
+        time.sleep(0.01)
 
-    logger.info("Thread {thread_id} completed", thread_id=thread_id)
+    logger.info("Thread completed", thread_id=thread_id)
 
 # Start multiple worker threads
 threads = []
 start_time = time.time()
 
-for i in range(4):
+for i in range(3):
     t = threading.Thread(target=worker_thread, args=(i,))
     threads.append(t)
     t.start()
@@ -47,30 +45,57 @@ for i in range(4):
 for t in threads:
     t.join()
 
-end_time = time.time()
-logger.info("All threads completed in {duration:.2f} seconds",
-           duration=end_time - start_time)
+duration = time.time() - start_time
+logger.info("All threads completed", duration_seconds=f"{duration:.2f}")
 
 # Cleanup
 logger.complete()
 ```
 
-## Output
+## Expected Output
 
-The async logging runs in the background, so your application continues without waiting for disk I/O. The log file `async_app.log` will contain entries like:
-
+**Console output:**
 ```
-2025-01-15 10:30:45 | INFO | Thread 0 processing item 0
-2025-01-15 10:30:45 | INFO | Thread 1 processing item 0
-2025-01-15 10:30:45 | INFO | Thread 2 processing item 0
-2025-01-15 10:30:45 | INFO | Thread 3 processing item 0
+2025-01-15T10:30:45.123456+00:00 [INFO] Processing item | thread_id=0 | item=0
+2025-01-15T10:30:45.124567+00:00 [INFO] Processing item | thread_id=1 | item=0
+2025-01-15T10:30:45.125678+00:00 [INFO] Processing item | thread_id=2 | item=0
 ...
-2025-01-15 10:30:46 | INFO | Thread 0 completed
-2025-01-15 10:30:46 | INFO | Thread 1 completed
-2025-01-15 10:30:46 | INFO | Thread 2 completed
-2025-01-15 10:30:46 | INFO | Thread 3 completed
-2025-01-15 10:30:46 | INFO | All threads completed in 0.42 seconds
+2025-01-15T10:30:45.523456+00:00 [INFO] Thread completed | thread_id=0
+2025-01-15T10:30:45.524567+00:00 [INFO] Thread completed | thread_id=1
+2025-01-15T10:30:45.525678+00:00 [INFO] Thread completed | thread_id=2
+2025-01-15T10:30:45.526789+00:00 [INFO] All threads completed | duration_seconds=0.42
 ```
+
+**File `async_app.log` contains:**
+```
+2025-01-15T10:30:45.123456+00:00 [INFO] Processing item | thread_id=0 | item=0
+2025-01-15T10:30:45.124567+00:00 [INFO] Processing item | thread_id=1 | item=0
+2025-01-15T10:30:45.125678+00:00 [INFO] Processing item | thread_id=2 | item=0
+...
+(33 total log entries from 3 threads)
+```
+
+### What Happens
+
+1. **`async_write=True` enables async I/O**:
+   - Log messages are written to a buffer immediately
+   - Background thread flushes buffer to disk asynchronously
+   - Main application threads don't wait for disk I/O
+
+2. **Multiple threads log simultaneously**:
+   - Logly is thread-safe, so logs from all threads are interleaved correctly
+   - No locks block your worker threads
+   - Messages maintain correct chronological order
+
+3. **Performance benefit**:
+   - Without async: Each log call waits ~5-10ms for disk write
+   - With async: Log calls return in <1ms, writes happen in background
+   - Result: 5-10x faster for high-volume logging
+
+4. **`logger.complete()` ensures cleanup**:
+   - Flushes any remaining buffered messages
+   - Closes file handles gracefully
+   - Waits for background writer thread to finish
 
 ## Performance Comparison
 
@@ -83,7 +108,7 @@ logger.add("sync.log")
 
 # Asynchronous logging
 logger.configure()
-logger.add("async.log", async_=True)
+logger.add("async.log", async_write=True)
 ```
 
 **Performance Results (1000 logs/second):**
@@ -96,21 +121,15 @@ logger.add("async.log", async_=True)
 
 ```python
 logger.configure(level="INFO")
-logger.add(
-    "app.log",
-    async_=True,
-    buffer_size=8192,      # Buffer size (default: 8192)
-    flush_interval=1000,   # Flush every 1000ms (default: 1000)
-    max_buffered_lines=1000  # Max lines to buffer (default: 1000)
-)
+logger.add("app.log", async_write=True)
 ```
 
 ### Multiple Async Sinks
 
 ```python
 logger.configure(level="INFO")
-logger.add("app.log", async_=True)
-logger.add("errors.log", async_=True, level="ERROR")  # Only errors to this file
+logger.add("app.log", async_write=True)
+logger.add("errors.log", async_write=True, filter_min_level="ERROR")  # Only errors to this file
 ```
 
 ## When to Use Async Logging

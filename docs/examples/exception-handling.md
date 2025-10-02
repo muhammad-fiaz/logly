@@ -11,83 +11,86 @@ This example demonstrates how to use Logly's exception handling features, includ
 ## Code Example
 
 ```python
-from logly import logger, catch
-import requests
+from logly import logger
 
 # Configure logging
-logger.configure(
-    level="INFO",
-    format="{time} | {level} | {message}"
-)
+logger.configure(level="INFO")
+logger.add("console")
 
-# Example 1: Basic exception logging
+# Example 1: Using @logger.catch() decorator (prevents crashes)
+@logger.catch(reraise=False)
 def risky_operation():
     """Function that might raise an exception"""
-    raise ValueError("Something went wrong!")
+    result = 1 / 0  # This will raise ZeroDivisionError
+    return result
 
-try:
-    risky_operation()
-except Exception as e:
-    logger.exception("Operation failed", error=e)
+# Example 2: Catch and reraise (log but still raise)
+@logger.catch(reraise=True)
+def must_succeed():
+    """Function where we want to log AND propagate the exception"""
+    raise ValueError("Critical error that must be handled")
 
-# Example 2: Using the catch decorator
-@catch(level="ERROR", message="API call failed")
-def api_call(url: str):
-    """Make an API call with automatic exception logging"""
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    return response.json()
-
-@catch(level="WARNING", reraise=True)
-def process_data(data: dict):
-    """Process data with warning-level exception logging"""
-    if "required_field" not in data:
-        raise KeyError("Missing required field")
-    return data["required_field"].upper()
-
-# Example 3: Custom exception handling
-@catch()
-def custom_handler(exc: Exception):
-    """Custom exception handler"""
-    logger.error("Custom error occurred", error_type=type(exc).__name__, error_msg=str(exc))
-    # Don't re-raise, handle it here
-
-# Usage
-if __name__ == "__main__":
-    # This will log an error but not crash
-    result1 = api_call("https://httpbin.org/status/404")
-
-    # This will log a warning and re-raise
+# Example 3: Manual exception logging
+def manual_error_handling():
+    """Manually log exceptions in try/except blocks"""
     try:
-        result2 = process_data({})
-    except KeyError:
-        logger.info("Handled the re-raised exception")
+        data = {"key": "value"}
+        result = data["missing_key"]  # KeyError
+    except KeyError as e:
+        logger.error("Key not found in data", key="missing_key", error=str(e))
+        # Handle the error gracefully
+        result = None
+    return result
 
-    # This will use custom handler
-    custom_handler(ValueError("Test error"))
+# Usage examples
+if __name__ == "__main__":
+    # This logs the error but doesn't crash (reraise=False)
+    result1 = risky_operation()
+    logger.info("Program continues after handled exception")
+    
+    # This logs the error and then crashes (reraise=True)
+    try:
+        result2 = must_succeed()
+    except ValueError:
+        logger.info("Caught the re-raised exception")
+    
+    # Manual exception handling with logging
+    result3 = manual_error_handling()
+    logger.info("Manual error handling complete", result=result3)
+    
+    logger.complete()
 ```
 
-## Output
+## Expected Output
 
 ```
-2025-01-15 10:30:45 | ERROR | Operation failed
+[ERROR] An error occurred in function 'risky_operation'
 Traceback (most recent call last):
-  File "example.py", line 15, in <main>
-    ValueError: Something went wrong!
+  File "example.py", line 10, in risky_operation
+    result = 1 / 0
+ZeroDivisionError: division by zero
 
-2025-01-15 10:30:45 | ERROR | API call failed
+[INFO] Program continues after handled exception
+
+[ERROR] An error occurred in function 'must_succeed'
 Traceback (most recent call last):
-  File "example.py", line 22, in api_call
-    requests.exceptions.HTTPError: 404 Client Error
+  File "example.py", line 16, in must_succeed
+    raise ValueError("Critical error that must be handled")
+ValueError: Critical error that must be handled
 
-2025-01-15 10:30:45 | WARN  | Data processing failed
-Traceback (most recent call last):
-  File "example.py", line 29, in process_data
-    KeyError: Missing required field
+[INFO] Caught the re-raised exception
 
-2025-01-15 10:30:45 | INFO  | Handled the re-raised exception
-2025-01-15 10:30:45 | ERROR | Custom error occurred
+[ERROR] Key not found in data | key=missing_key | error='missing_key'
+
+[INFO] Manual error handling complete | result=None
 ```
+
+**What happens:**
+- **`@logger.catch(reraise=False)`**: Logs the full exception with traceback but doesn't crash the program
+- **`@logger.catch(reraise=True)`**: Logs the exception AND re-raises it for you to handle
+- **`logger.error()`**: Manual exception logging with custom messages and context
+- Stack traces are automatically included for debugging
+- The program continues execution after caught exceptions (when `reraise=False`)
 
 ## Catch Decorator Options
 

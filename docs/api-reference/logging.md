@@ -25,7 +25,6 @@ Logly supports 7 log levels (from lowest to highest):
 | **CRITICAL** | `logger.critical()` | Bold Red | Critical errors, system failures |
 
 All logging methods support:
-- ✅ Template strings (`{variable}` syntax)
 - ✅ Structured fields (kwargs become JSON fields)
 - ✅ Context from `.bind()` and `.contextualize()`
 - ✅ Async callbacks
@@ -41,7 +40,7 @@ logger.METHOD(message: str, **kwargs) -> None
 ```
 
 **Parameters:**
-- `message` (str): Log message supporting `{variable}` template syntax
+- `message` (str): Log message
 - `**kwargs`: Additional context fields (become JSON fields or key=value suffix)
 
 **Returns:** `None`
@@ -56,7 +55,6 @@ Log at TRACE level (most verbose). Use for detailed debugging.
 
 ```python
 logger.trace("Function called", function="process_data", args={"x": 1, "y": 2})
-logger.trace("Entering {phase} with {count} items", phase="validation", count=100)
 ```
 
 ### Use Cases
@@ -74,7 +72,6 @@ Log at DEBUG level. Use for development debugging.
 
 ```python
 logger.debug("Variable inspection", x=42, y="hello")
-logger.debug("Processing {item} at step {step}", item="user_data", step=3)
 ```
 
 ### Use Cases
@@ -92,7 +89,6 @@ Log at INFO level. Use for general information.
 
 ```python
 logger.info("Application started", version="1.0.0")
-logger.info("User {user} logged in from {ip}", user="alice", ip="192.168.1.1")
 ```
 
 ### Use Cases
@@ -110,7 +106,6 @@ Log at SUCCESS level (mapped to INFO with green color). Use for successful opera
 
 ```python
 logger.success("Payment processed", order_id=1234, amount=99.99)
-logger.success("User {user} registered successfully", user="bob")
 ```
 
 ### Use Cases
@@ -146,7 +141,6 @@ Log at ERROR level. Use for error conditions.
 
 ```python
 logger.error("Database connection failed", retry_count=3, error="timeout")
-logger.error("Failed to process {item}", item="order-123", reason="invalid_data")
 ```
 
 ### Use Cases
@@ -164,7 +158,6 @@ Log at CRITICAL level (most severe). Use for critical system failures.
 
 ```python
 logger.critical("System out of memory", available_mb=10, required_mb=500)
-logger.critical("Database {db} unreachable", db="primary", fallback="failed")
 ```
 
 ### Use Cases
@@ -199,43 +192,6 @@ logger.log(log_level, "Processing data", records=1000)
 # Custom levels (after registering with logger.level())
 logger.level("NOTICE", mapped_to="INFO")
 logger.log("NOTICE", "Important notice")
-```
-
----
-
-## Template Strings
-
-All logging methods support template string syntax:
-
-### Basic Templates
-
-```python
-logger.info("User {user} logged in", user="alice")
-# Output: "User alice logged in" with user="alice" in fields
-```
-
-### Multiple Variables
-
-```python
-logger.info(
-    "Processing {count} items from {source}",
-    count=100,
-    source="database"
-)
-```
-
-### With f-strings
-
-```python
-user = "bob"
-action = "login"
-logger.info(f"User {user} performed {action}", timestamp=time.time())
-```
-
-### With % formatting
-
-```python
-logger.info("Processing item %d of %d", current, total)
 ```
 
 ---
@@ -295,9 +251,6 @@ logger.warning("Warning message", threshold=90)
 logger.error("Error message", retry_count=3)
 logger.critical("Critical message", status="failed")
 
-# Template strings
-logger.info("User {user} action {action}", user="bob", action="login")
-
 # Runtime level
 level = "ERROR" if error_condition else "INFO"
 logger.log(level, "Conditional logging")
@@ -317,13 +270,10 @@ logger.complete()
 logger.info("User logged in")  # General info
 logger.error("Connection failed")  # Error condition
 
-# 2. Use template strings
-logger.info("User {user} action {action}", user="alice", action="login")
-
-# 3. Include context
+# 2. Include context
 logger.error("Failed to process", item_id=123, retry_count=3)
 
-# 4. Use structured fields
+# 3. Use structured fields
 logger.info("Payment processed", order_id=1234, amount=99.99, currency="USD")
 ```
 
@@ -334,7 +284,7 @@ logger.info("Payment processed", order_id=1234, amount=99.99, currency="USD")
 logger.info("Login", password=password)  # ❌ Security risk
 
 # 2. Don't use string concatenation
-logger.info("User " + user + " logged in")  # ❌ Use templates
+logger.info("User " + user + " logged in")  # ❌ Use structured logging
 
 # 3. Don't log in tight loops
 for i in range(1000000):
@@ -347,20 +297,6 @@ logger.info("Critical error occurred")  # ❌ Use logger.critical()
 ---
 
 ## Performance
-
-### Deferred Evaluation
-
-Template variables are only evaluated if the log passes the level filter:
-
-```python
-logger.configure(level="INFO")
-
-# This DOES NOT call expensive_calculation()
-logger.debug("Result: {result}", result=expensive_calculation())
-
-# This DOES call expensive_calculation()
-logger.info("Result: {result}", result=expensive_calculation())
-```
 
 ### Best Performance
 

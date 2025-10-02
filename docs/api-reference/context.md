@@ -12,13 +12,12 @@ Methods for adding contextual information to log messages.
 
 ## Overview
 
-Logly supports three context management approaches:
+Logly supports two context management approaches:
 
 | Method | Scope | Use Case |
 |--------|-------|----------|
 | `bind()` | **Global** | Add fields to all subsequent logs |
 | `contextualize()` | **Scoped** | Add fields within context manager |
-| `opt()` | **Single log** | Customize behavior for one log call |
 
 All context fields:
 - ✅ Automatically included in log output
@@ -234,99 +233,6 @@ logger.contextualize(**kwargs) -> ContextManager
 
 ---
 
-## logger.opt()
-
-Customize logging behavior for a single log call.
-
-### Signature
-
-```python
-logger.opt(
-    depth: int = 0,
-    exception: bool = False,
-    record: bool = False,
-    lazy: bool = False,
-    colors: bool = False,
-    raw: bool = False,
-    capture: bool = True
-) -> PyLogger
-```
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `depth` | `int` | `0` | Stack depth for file/line information |
-| `exception` | `bool` | `False` | Include exception traceback |
-| `record` | `bool` | `False` | Return log record dict |
-| `lazy` | `bool` | `False` | Defer message evaluation |
-| `colors` | `bool` | `False` | Enable ANSI colors in message |
-| `raw` | `bool` | `False` | Skip formatting, use raw string |
-| `capture` | `bool` | `True` | Capture template variables |
-
-### Returns
-- `PyLogger`: Logger with options applied for next call
-
-### Examples
-
-=== "Stack Depth"
-    ```python
-    def helper():
-        logger.opt(depth=1).info("From helper")
-        # Shows caller's file/line, not helper's
-    
-    def main():
-        helper()  # Log shows main.py:line_X
-    ```
-
-=== "Exception Traceback"
-    ```python
-    try:
-        risky_operation()
-    except Exception:
-        # Include full traceback
-        logger.opt(exception=True).error("Operation failed")
-    ```
-
-=== "Lazy Evaluation"
-    ```python
-    # Message only evaluated if log level matches
-    logger.opt(lazy=True).debug(lambda: expensive_debug_info())
-    ```
-
-=== "Colored Message"
-    ```python
-    logger.opt(colors=True).info(
-        "Status: <green>OK</green> | Errors: <red>{errors}</red>",
-        errors=0
-    )
-    ```
-
-=== "Raw Message"
-    ```python
-    # Skip all formatting, output raw string
-    logger.opt(raw=True).info("2025-01-15 | Custom format | Message")
-    ```
-
-### Notes
-
-!!! tip "When to Use opt()"
-    - **depth**: Wrapper functions that need correct file/line
-    - **exception**: Error handling with tracebacks
-    - **lazy**: Expensive message generation
-    - **colors**: Colored console output
-    - **raw**: Custom log formats
-
-!!! warning "One-Time Use"
-    `opt()` only affects the **next** log call:
-    ```python
-    opt_logger = logger.opt(exception=True)
-    opt_logger.error("Error 1")  # Includes exception
-    opt_logger.error("Error 2")  # Does NOT include exception
-    ```
-
----
-
 ## Context Priority
 
 When the same field is defined in multiple places, the priority is:
@@ -376,9 +282,9 @@ def handle_request(request_id: str, user_id: str):
             result = process_request()
             service_logger.success("Request succeeded", duration_ms=42)
             return result
-        except Exception:
-            # Include exception with opt()
-            service_logger.opt(exception=True).error("Request failed")
+        except Exception as e:
+            # Include exception details
+            service_logger.error("Request failed", error=str(e), error_type=type(e).__name__)
             raise
 
 # Usage
@@ -405,11 +311,11 @@ with logger.contextualize(stage="validation"):
 # 3. Chain bind() for readability
 logger.bind(service="api").bind(version="1.0").info("Started")
 
-# 4. Use opt(exception=True) for errors
+# 4. Include exception details in errors
 try:
     risky_op()
-except Exception:
-    logger.opt(exception=True).error("Failed")
+except Exception as e:
+    logger.error("Failed", error=str(e), error_type=type(e).__name__)
 ```
 
 ### ❌ DON'T

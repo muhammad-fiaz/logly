@@ -8,7 +8,7 @@ keywords: python, logging, installation, pip, uv, poetry, setup, logly
 
 ## Prerequisites
 
-- **Python**: 3.9 or higher
+- **Python**: 3.10 or higher
 - **Operating System**: Windows, macOS, or Linux
 - **pip**: Latest version recommended
 
@@ -109,7 +109,7 @@ For developers or users who want the latest development version:
 
 ### Prerequisites for Building
 
-- **Python**: 3.9+
+- **Python**: 3.10+
 - **Rust**: 1.70+ ([Install Rust](https://rustup.rs/))
 - **maturin**: Python package for building Rust extensions
 
@@ -266,10 +266,10 @@ Traceback (most recent call last):
     ImportError: cannot import name 'logger' from 'logly'
 ```
 
-**Solution**: Ensure you're using Python 3.9+:
+**Solution**: Ensure you're using Python 3.10+:
 
 ```bash
-python --version  # Should be >= 3.9
+python --version  # Should be >= 3.10
 pip install --upgrade logly
 ```
 
@@ -341,7 +341,7 @@ pip uninstall logly
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
-| Python | 3.9 | 3.11+ |
+| Python | 3.10 | 3.11+ |
 | RAM | 50 MB | 100 MB+ |
 | Disk | 5 MB | 10 MB+ |
 | CPU | Any | Multi-core for async |

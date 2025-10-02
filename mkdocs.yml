@@ -3,7 +3,7 @@ site_url: https://muhammad-fiaz.github.io/logly/
 site_author: Muhammad Fiaz
 site_description: >-
   Rust-powered, Loguru-like logging for Python.
-  High-performance async logging with callbacks, template strings, and rotation.
+  High-performance async logging with callbacks, and rotation.
 
 # SEO Configuration
 extra:
@@ -64,9 +64,13 @@ theme:
     - content.code.annotate
     - content.tabs.link
     - content.footnote.tooltips
+    - content.action.edit
   icon:
     repo: fontawesome/brands/github
     logo: material/file-document-multiple
+    edit: material/pencil
+    view: material/eye
+  custom_dir: overrides
 
 # Plugins
 plugins:
@@ -115,8 +119,8 @@ nav:
   - Quick Start: quickstart.md
   - Examples:
     - Basic Console Logging: examples/basic-console.md
-    - Template Strings: examples/template-strings.md
     - Per-Level Controls: examples/per-level-controls.md
+    - Template String Formatting: examples/template-strings.md
     - File Logging with Rotation: examples/file-rotation.md
     - JSON Logging: examples/json-logging.md
     - Async Logging: examples/async-logging.md
@@ -130,6 +134,7 @@ nav:
     - Development: guides/development.md
   - API Reference:
     - api-reference/index.md
+    - Complete Reference: api-reference/complete-reference.md
     - Configuration: api-reference/configuration.md
     - Logging Methods: api-reference/logging.md
     - Context Management: api-reference/context.md

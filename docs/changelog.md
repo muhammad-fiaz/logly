@@ -68,7 +68,6 @@ logger.info("Hello")
 
 **Key Differences:**
 - ✅ **Explicit sinks**: Must call `logger.add()` to add output targets
-- ✅ **Template strings**: Use `{variable}` syntax instead of `%s`
 - ✅ **Structured logging**: Use kwargs for structured fields
 - ✅ **Cleanup required**: Call `logger.complete()` at exit
 

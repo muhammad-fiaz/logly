@@ -14,7 +14,7 @@ Complete reference documentation for all Logly methods and features.
 
 <div class="grid cards" markdown>
 
--   :material-cog:{ .lg .middle } **Configuration**
+-   **Configuration**
 
     ---
 
@@ -22,7 +22,7 @@ Complete reference documentation for all Logly methods and features.
 
     [Configuration Methods](configuration.md)
 
--   :material-message-text:{ .lg .middle } **Logging**
+-   **Logging**
 
     ---
 
@@ -30,7 +30,7 @@ Complete reference documentation for all Logly methods and features.
 
     [Logging Methods](logging.md)
 
--   :material-link-variant:{ .lg .middle } **Context**
+-   **Context**
 
     ---
 
@@ -38,7 +38,7 @@ Complete reference documentation for all Logly methods and features.
 
     [Context Management](context.md)
 
--   :material-bell:{ .lg .middle } **Callbacks**
+-   **Callbacks**
 
     ---
 
@@ -46,7 +46,7 @@ Complete reference documentation for all Logly methods and features.
 
     [Callback Methods](callbacks.md)
 
--   :material-alert-circle:{ .lg .middle } **Exceptions**
+-   **Exceptions**
 
     ---
 
@@ -54,7 +54,7 @@ Complete reference documentation for all Logly methods and features.
 
     [Exception Handling](exceptions.md)
 
--   :material-wrench:{ .lg .middle } **Utilities**
+-   **Utilities**
 
     ---
 
@@ -89,7 +89,6 @@ Methods for managing contextual information in logs.
 
 - `bind()` - Create logger with persistent context
 - `contextualize()` - Temporary context within a block
-- `opt()` - Per-call options
 
 ### Callback Methods
 Methods for registering event handlers that execute asynchronously.
@@ -120,7 +119,6 @@ from logly import logger
 
 The global `logger` instance is a `_LoggerProxy` that wraps the Rust `PyLogger` backend, providing:
 
-- Template string processing
 - Context binding
 - Python-side convenience methods
 - Full type hints and IDE support

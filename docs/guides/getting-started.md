@@ -12,7 +12,7 @@ Welcome to Logly! This guide will walk you through installing Logly and setting 
 
 Before you begin, ensure you have:
 
-- **Python 3.9+** installed
+- **Python 3.10+** installed
 - **pip** package manager
 - Basic familiarity with Python
 
@@ -86,16 +86,6 @@ logger.info("General information")
 logger.warning("Warning messages")
 logger.error("Error messages")
 logger.critical("Critical errors")
-```
-
-### Template Strings
-
-Use `{variable}` syntax for dynamic content:
-
-```python
-user_id = 12345
-logger.info("User {user_id} logged in", user_id=user_id)
-# Output: User 12345 logged in
 ```
 
 ### Extra Data
@@ -226,7 +216,7 @@ Now that you have the basics, explore:
 
 **Import error?**
 - Verify Logly is installed: `pip list | grep logly`
-- Check Python version: `python --version` (needs 3.9+)
+- Check Python version: `python --version` (needs 3.10+)
 
 **Colors not showing?**
 - Some terminals don't support colors - try setting `colorize: false` in console sink

@@ -20,30 +20,16 @@ from logly import logger
 # Configure logging level and output format
 logger.configure(
     level="INFO",      # Minimum log level
-    color=True,        # Colored output
-    json=False         # Text format (set True for JSON)
+    color=True         # Colored output for console
 )
-```
-
-**Output:**
-```
-Logger configured successfully
 ```
 
 ### 2. Add Output Destinations
 
 ```python
-# Add console output
-logger.add("console")
-
+# Add console output (automatically added by configure)
 # Add file output with daily rotation
 logger.add("logs/app.log", rotation="daily", retention=7)
-```
-
-**Output:**
-```
-Console sink added
-File sink added: logs/app.log (daily rotation, 7 day retention)
 ```
 
 ### 3. Start Logging
@@ -60,14 +46,15 @@ logger.critical("System out of memory")
 logger.complete()
 ```
 
-**Output:**
+**Expected Output:**
 ```
-[2024-01-15 10:30:15] INFO: Application started version=1.0.0
-[2024-01-15 10:30:15] WARNING: Low disk space available_gb=2.5
-[2024-01-15 10:30:15] ERROR: Failed to connect retry_count=3
-[2024-01-15 10:30:15] CRITICAL: System out of memory
-Logger completed successfully
+2025-01-15T10:30:15.123456+00:00 [INFO] Application started | version=1.0.0
+2025-01-15T10:30:15.124567+00:00 [WARN] Low disk space | available_gb=2.5
+2025-01-15T10:30:15.125678+00:00 [ERROR] Failed to connect | retry_count=3
+2025-01-15T10:30:15.126789+00:00 [CRITICAL] System out of memory
 ```
+
+Note: The DEBUG message doesn't appear because the level is set to INFO.
 
 ---
 
@@ -111,13 +98,13 @@ if __name__ == "__main__":
     main()
 ```
 
-**Output:**
+**Expected Output:**
 ```
-2025-01-15 10:30:45 | INFO     | Application starting version=1.0.0
-2025-01-15 10:30:45 | DEBUG    | Processing data records=1000
-2025-01-15 10:30:46 | INFO     | Data processed successfully
-2025-01-15 10:30:46 | SUCCESS  | Processing complete
+2025-01-15T10:30:45.123456+00:00 [INFO] Application starting | version=1.0.0
+2025-01-15T10:30:46.234567+00:00 [INFO] Data processed successfully
 ```
+
+Note: The DEBUG and SUCCESS messages won't appear because level is set to INFO.
 
 ---
 
@@ -160,11 +147,29 @@ async def get_user(user_id: int):
     return {"user_id": user_id, "name": "Alice"}
 ```
 
-**Output:**
+**Expected Output (console and logs/api.log with pretty JSON):**
 ```json
-{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Request received", "request_id": "req-123", "method": "GET", "path": "/api/users/123"}
-{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Fetching user", "user_id": 123}
-{"timestamp": "2024-01-15T10:30:15Z", "level": "INFO", "message": "Response sent", "request_id": "req-123", "status": 200}
+{
+  "timestamp": "2025-01-15T10:30:15.123456+00:00",
+  "level": "INFO",
+  "message": "Request received",
+  "request_id": "req-123",
+  "method": "GET",
+  "path": "/api/users/123"
+}
+{
+  "timestamp": "2025-01-15T10:30:15.234567+00:00",
+  "level": "INFO",
+  "message": "Fetching user",
+  "user_id": 123
+}
+{
+  "timestamp": "2025-01-15T10:30:15.345678+00:00",
+  "level": "INFO",
+  "message": "Response sent",
+  "request_id": "req-123",
+  "status": 200
+}
 ```
 
 ### Pattern 2: Script with Progress Logging
@@ -445,40 +450,6 @@ request_logger.info("Validation complete")
 
 ---
 
-## Template Strings
-
-Use `{variable}` syntax for cleaner code:
-
-```python
-# Template strings (recommended)
-logger.info("User {user} logged in from {ip}", user="alice", ip="192.168.1.1")
-
-# Equivalent to
-logger.info("User alice logged in from 192.168.1.1", user="alice", ip="192.168.1.1")
-
-# Also works with f-strings
-user = "bob"
-logger.info(f"User {user} action", action="login")
-
-# And % formatting
-logger.info("Processing %d of %d", 5, 10)
-```
-
-**Output:**
-```
-[2024-01-15 10:30:15] INFO: User alice logged in from 192.168.1.1 user=alice ip=192.168.1.1
-[2024-01-15 10:30:15] INFO: User alice logged in from 192.168.1.1 user=alice ip=192.168.1.1
-[2024-01-15 10:30:15] INFO: User bob action action=login
-[2024-01-15 10:30:15] INFO: Processing 5 of 10
-```
-
-**Benefits:**
-- Cleaner, more readable code
-- Deferred evaluation (better performance)
-- Variables become structured fields in JSON mode
-
----
-
 ## Exception Handling
 
 ### Automatic Exception Logging
@@ -534,10 +505,7 @@ logger.info("User logged in", user="alice")  # Normal info
 request_logger = logger.bind(request_id=req_id)
 request_logger.info("Processing")
 
-# 4. Use template strings
-logger.info("User {user} action {action}", user="alice", action="login")
-
-# 5. Configure once at startup
+# 4. Configure once at startup
 logger.configure(level="INFO", json=True)
 logger.add("console")
 logger.add("logs/app.log", rotation="daily")
@@ -549,7 +517,6 @@ Logger completed successfully
 [2024-01-15 10:30:15] ERROR: Connection failed retry=3
 [2024-01-15 10:30:15] INFO: User logged in user=alice
 [2024-01-15 10:30:15] INFO: Processing request_id=123
-[2024-01-15 10:30:15] INFO: User alice action login user=alice action=login
 Logger configured successfully
 Console sink added
 File sink added: logs/app.log (daily rotation)
@@ -570,7 +537,7 @@ for i in range(1000000):
 # (missing logger.complete())  # ❌ Buffered logs may be lost
 
 # 4. Don't use string concatenation
-logger.info("User " + user + " logged in")  # ❌ Use templates instead
+logger.info("User " + user + " logged in")  # ❌ Use structured logging instead
 
 # 5. Don't configure multiple times
 logger.configure(level="INFO")
@@ -595,7 +562,7 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
 <div class="grid cards" markdown>
 
--   :material-api:{ .lg .middle } **API Reference**
+-   **API Reference**
 
     ---
 
@@ -603,7 +570,7 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
     [API Reference](api-reference/index.md)
 
--   :material-phone-forward-outline:{ .lg .middle } **Callbacks**
+-   **Callbacks**
 
     ---
 
@@ -611,7 +578,7 @@ Logger reconfigured successfully  # ❌ Multiple configurations
 
     [Callbacks Docs](api-reference/callbacks.md)
 
--   :material-tools:{ .lg .middle } **Utilities**
+-   **Utilities**
 
     ---
 

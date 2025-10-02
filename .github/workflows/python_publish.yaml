@@ -1,18 +1,126 @@
 name: Publish Python distributions
 
+permissions:
+  contents: read
+
+# This workflow builds:
+# - Windows: Both abi3 universal wheels AND separate wheels for each Python version (3.10-3.14)
+# - Linux/macOS: Both abi3 universal wheels AND separate wheels for each Python version
+
 on:
   workflow_dispatch:
   release:
     types: [created, published]
 
 jobs:
-  build:
-    name: Build wheels on ${{ matrix.os }}
+  build-windows:
+    name: Build Windows wheels for Python ${{ matrix.python-version }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+
+      - name: Build wheels
+        run: |
+          maturin build --release --strip
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.python-version }}
+          path: target/wheels/*.whl
+
+  build-windows-abi3:
+    name: Build Windows abi3 universal wheel
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+
+      - name: Build abi3 wheel
+        run: |
+          maturin build --release --strip --compatibility windows
+
+      - name: Upload abi3 wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-abi3
+          path: target/wheels/*.whl
+
+  build-universal-abi3:
+    name: Build abi3 universal wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            compatibility: linux
+          - os: macos-latest
+            compatibility: macos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+
+      - name: Build abi3 wheels
+        run: |
+          maturin build --release --strip --compatibility ${{ matrix.compatibility }}
+
+      - name: Upload abi3 wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-abi3
+          path: target/wheels/*.whl
+
+  build-cross-platform:
+    name: Build cross-platform wheels for Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +155,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -72,8 +180,11 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [build, build-sdist]
+    needs: [build-windows, build-windows-abi3, build-universal-abi3, build-cross-platform, build-sdist]
     if: github.event_name == 'release' && github.event.action == 'published'
+    permissions:
+      id-token: write  # Required for trusted publishing to PyPI
+      contents: read
 
     steps:
       - uses: actions/download-artifact@v4
