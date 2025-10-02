@@ -4,7 +4,7 @@ permissions:
   contents: read
 
 # This workflow builds:
-# - Windows: Both abi3 universal wheels AND separate wheels for each Python version (3.10-3.14)
+# - Windows: Both abi3 universal wheels AND separate wheels for each Python version (3.10-3.13)
 # - Linux/macOS: Both abi3 universal wheels AND separate wheels for each Python version
 
 on:
@@ -18,7 +18,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build abi3 wheel
         run: |
-          maturin build --release --strip --compatibility windows
+          maturin build --release --strip
 
       - name: Upload abi3 wheel
         uses: actions/upload-artifact@v4
@@ -82,11 +82,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            compatibility: linux
-          - os: macos-latest
-            compatibility: macos
 
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +101,7 @@ jobs:
 
       - name: Build abi3 wheels
         run: |
-          maturin build --release --strip --compatibility ${{ matrix.compatibility }}
+          maturin build --release --strip
 
       - name: Upload abi3 wheels
         uses: actions/upload-artifact@v4
@@ -120,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v4
