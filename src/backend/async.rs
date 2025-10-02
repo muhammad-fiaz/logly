@@ -397,7 +397,11 @@ mod tests {
 
         // Verify they were cleaned up
         state::with_state_read(|s| {
-            assert!(s.async_senders.is_empty(), "async_senders not empty: {:?}", s.async_senders.keys());
+            assert!(
+                s.async_senders.is_empty(),
+                "async_senders not empty: {:?}",
+                s.async_senders.keys()
+            );
             assert!(s.async_handles.is_empty());
             assert!(s.async_sender.is_none());
             assert!(s.async_handle.is_none());

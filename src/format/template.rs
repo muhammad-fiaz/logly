@@ -39,19 +39,24 @@ pub fn format_with_template(
     // Replace placeholders using regex
     // Matches {key} patterns (case-insensitive)
     let re = Regex::new(r"\{([^}]+)\}").unwrap();
-    result = re.replace_all(&result, |caps: &regex::Captures| {
-        let key = caps[1].to_lowercase();
-        if key == "extra" {
-            // Special handling for {extra} - format all extra fields
-            let extra_parts: Vec<String> = extra_fields
-                .iter()
-                .map(|(k, v)| format!("{}={}", k, v))
-                .collect();
-            extra_parts.join(" | ")
-        } else {
-            fields.get(&key).cloned().unwrap_or_else(|| format!("{{{}}}", &caps[1]))
-        }
-    }).to_string();
+    result = re
+        .replace_all(&result, |caps: &regex::Captures| {
+            let key = caps[1].to_lowercase();
+            if key == "extra" {
+                // Special handling for {extra} - format all extra fields
+                let extra_parts: Vec<String> = extra_fields
+                    .iter()
+                    .map(|(k, v)| format!("{}={}", k, v))
+                    .collect();
+                extra_parts.join(" | ")
+            } else {
+                fields
+                    .get(&key)
+                    .cloned()
+                    .unwrap_or_else(|| format!("{{{}}}", &caps[1]))
+            }
+        })
+        .to_string();
 
     // If no extra fields were included in the template and {extra} is not used, append them at the end
     // (for backward compatibility with the old format)
@@ -59,7 +64,10 @@ pub fn format_with_template(
         let mut extra_parts = Vec::new();
         for (key, value) in extra_fields {
             let key_lower = key.to_lowercase();
-            if !template.to_lowercase().contains(&format!("{{{}}}", key_lower)) {
+            if !template
+                .to_lowercase()
+                .contains(&format!("{{{}}}", key_lower))
+            {
                 extra_parts.push(format!("{}={}", key, value));
             }
         }
@@ -101,7 +109,10 @@ mod tests {
             "Test message",
             &extra,
         );
-        assert_eq!(result, "2023-01-01T12:00:00Z [INFO] Test message | module=test_module");
+        assert_eq!(
+            result,
+            "2023-01-01T12:00:00Z [INFO] Test message | module=test_module"
+        );
     }
 
     #[test]
@@ -131,6 +142,9 @@ mod tests {
             "Test message",
             &extra,
         );
-        assert_eq!(result, "2023-01-01T12:00:00Z [INFO] Test message | user=alice | session_id=12345");
+        assert_eq!(
+            result,
+            "2023-01-01T12:00:00Z [INFO] Test message | user=alice | session_id=12345"
+        );
     }
 }

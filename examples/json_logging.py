@@ -14,7 +14,7 @@ def demo_json_logging():
     json_sink = logger.add(
         "app.jsonl",
         json=True,  # Enable JSON formatting for this file sink
-        async_write=True
+        async_write=True,
     )
 
     print(f"Added JSON sink with ID: {json_sink}")
@@ -29,18 +29,19 @@ def demo_json_logging():
         "profile": {
             "name": "Alice Smith",
             "email": "alice@example.com",
-            "preferences": {
-                "theme": "dark",
-                "notifications": True,
-                "device": "mobile"
-            }
+            "preferences": {"theme": "dark", "notifications": True, "device": "mobile"},
         }
     }
 
     logger.info("User profile updated", **user_data)
 
     # Log with arrays
-    logger.info("Batch processing completed", processed_items=[1, 2, 3, 4, 5], failed_items=[], duration_ms=1500)
+    logger.info(
+        "Batch processing completed",
+        processed_items=[1, 2, 3, 4, 5],
+        failed_items=[],
+        duration_ms=1500,
+    )
 
     logger.info("JSON logging demo completed")
     logger.remove(json_sink)
@@ -56,7 +57,7 @@ def demo_json_with_context():
     # Add JSON sink
     json_sink = logger.add(
         "context.jsonl",
-        json=True  # Enable JSON formatting
+        json=True,  # Enable JSON formatting
     )
 
     # Bind persistent context
@@ -88,15 +89,8 @@ def demo_json_with_levels():
     logger.configure(level="TRACE", console=False)
 
     # Add separate JSON files for different levels
-    all_sink = logger.add(
-        "all_levels.jsonl",
-        json=True
-    )
-    error_sink = logger.add(
-        "errors_only.jsonl",
-        json=True,
-        filter_min_level="ERROR"
-    )
+    all_sink = logger.add("all_levels.jsonl", json=True)
+    error_sink = logger.add("errors_only.jsonl", json=True, filter_min_level="ERROR")
 
     print("Added JSON sinks for all levels and errors only")
 
@@ -105,7 +99,9 @@ def demo_json_with_levels():
     logger.debug("Detailed debug info", component="auth", user_id=789)
     logger.info("General information", action="login", success=True)
     logger.warning("Warning message", warning_type="deprecated", feature="old_api")
-    logger.error("Error occurred", error_type="validation", field="email", error_message="Invalid format")
+    logger.error(
+        "Error occurred", error_type="validation", field="email", error_message="Invalid format"
+    )
     logger.critical("Critical system error", system="database", impact="high")
 
     logger.remove(all_sink)
@@ -120,16 +116,16 @@ def demo_json_pretty_print():
     logger.configure(level="INFO", console=False)
 
     # Add pretty JSON sink (for development/debugging)
-    pretty_sink = logger.add(
-        "pretty.json",
-        json=True
-    )
+    pretty_sink = logger.add("pretty.json", json=True)
 
     print(f"Added pretty JSON sink with ID: {pretty_sink}")
 
     # Log some data
     logger.info("Application started", version="1.2.3", environment="development")
-    logger.info("Configuration loaded", config={"database": {"host": "localhost", "port": 5432}, "cache": {"ttl": 3600}})
+    logger.info(
+        "Configuration loaded",
+        config={"database": {"host": "localhost", "port": 5432}, "cache": {"ttl": 3600}},
+    )
 
     logger.remove(pretty_sink)
 
@@ -142,10 +138,7 @@ def demo_json_custom_fields():
     logger.configure(level="INFO", console=False)
 
     # Add JSON sink with custom fields in format string
-    custom_sink = logger.add(
-        "custom.jsonl",
-        json=True
-    )
+    custom_sink = logger.add("custom.jsonl", json=True)
 
     print(f"Added JSON sink with custom fields: {custom_sink}")
 
@@ -173,7 +166,7 @@ def main():
         print("\n📁 Generated JSON files:")
 
         # List generated files
-        json_files = [f for f in os.listdir('.') if f.endswith(('.json', '.jsonl'))]
+        json_files = [f for f in os.listdir(".") if f.endswith((".json", ".jsonl"))]
         for json_file in sorted(json_files):
             if os.path.exists(json_file):
                 size = os.path.getsize(json_file)

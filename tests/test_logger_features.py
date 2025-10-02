@@ -12,7 +12,6 @@ def read_log(path: Path) -> str:
     assert path.exists()
     return path.read_text()
 
-
     def test_add_configure_and_basic_logging(tmp_path: Path):
         """Test basic logging configuration and file output."""
         p = tmp_path / "basic.log"
@@ -26,6 +25,8 @@ def read_log(path: Path) -> str:
         content = read_log(p)
         assert "hello world" in content
         assert "user=bob" in content
+
+
 def test_bind_and_contextualize(tmp_path: Path):
     """Test binding context and contextualize functionality."""
     p = tmp_path / "bind.log"
@@ -140,7 +141,7 @@ def test_remove_and_complete_noop(tmp_path: Path):
     # Log after removal - should not appear in file
     logger.info("after remove")
     logger.complete()
-    
+
     # Content should still only have the first message
     content = read_log(p)
     assert "before remove" in content
@@ -497,24 +498,24 @@ def test_per_sink_custom_formatting(tmp_path: Path):
 
     # Check file has custom format
     content = read_log(file_log)
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     assert len(lines) == 2
 
     # First line should have RFC3339 timestamp, level, message, and extra fields
     first_line = lines[0]
-    assert '[INFO]' in first_line
-    assert 'Test message' in first_line
-    assert 'user=alice' in first_line
-    assert 'action=login' in first_line
+    assert "[INFO]" in first_line
+    assert "Test message" in first_line
+    assert "user=alice" in first_line
+    assert "action=login" in first_line
     # Should have RFC3339 timestamp format
-    assert 'T' in first_line and '+' in first_line
+    assert "T" in first_line and "+" in first_line
 
     # Second line should have warning
     second_line = lines[1]
-    assert '[WARN]' in second_line
-    assert 'Warning message' in second_line
-    assert 'code=404' in second_line
-    assert 'path=/api/users' in second_line
+    assert "[WARN]" in second_line
+    assert "Warning message" in second_line
+    assert "code=404" in second_line
+    assert "path=/api/users" in second_line
 
 
 def test_per_sink_format_with_extra_placeholder(tmp_path: Path):
@@ -529,7 +530,7 @@ def test_per_sink_format_with_extra_placeholder(tmp_path: Path):
     logger.complete()
 
     content = read_log(log_file)
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     assert len(lines) == 2
 
     # First line: no extra fields, but module/function are always added
@@ -558,7 +559,7 @@ def test_per_sink_format_case_insensitive(tmp_path: Path):
     assert " | INFO | Case test message | module=" in content
     assert "function=" in content
     # Should have RFC3339 timestamp
-    assert 'T' in content and '+' in content
+    assert "T" in content and "+" in content
 
 
 def test_per_sink_format_mixed_placeholders(tmp_path: Path):
@@ -576,13 +577,13 @@ def test_per_sink_format_mixed_placeholders(tmp_path: Path):
     line = content.strip()
 
     # Should contain all expected elements
-    assert '[INFO]' in line
-    assert 'Mixed format test' in line
-    assert 'user=testuser' in line
-    assert 'action=click' in line
-    assert 'button=submit' in line
+    assert "[INFO]" in line
+    assert "Mixed format test" in line
+    assert "user=testuser" in line
+    assert "action=click" in line
+    assert "button=submit" in line
     # Should have timestamp
-    assert 'T' in line and '+' in line
+    assert "T" in line and "+" in line
 
 
 def test_per_sink_format_backward_compatibility(tmp_path: Path):
@@ -608,11 +609,13 @@ def test_per_sink_format_with_filters(tmp_path: Path):
     error_log = tmp_path / "error.log"
 
     logger.add(str(info_log), format="{level}: {message}", filter_min_level="INFO")
-    logger.add(str(error_log), format="ERROR - {time} - {message} | {extra}", filter_min_level="ERROR")
+    logger.add(
+        str(error_log), format="ERROR - {time} - {message} | {extra}", filter_min_level="ERROR"
+    )
     logger.configure(level="DEBUG", color=False)
 
     logger.debug("Debug message")  # Should not appear in either
-    logger.info("Info message")    # Should appear in info.log
+    logger.info("Info message")  # Should appear in info.log
     logger.error("Error message", code=500)  # Should appear in error.log
     logger.complete()
 

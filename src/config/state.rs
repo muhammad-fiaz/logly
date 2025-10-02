@@ -2,8 +2,8 @@ use ahash::AHashMap;
 use crossbeam_channel::Sender;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
-use pyo3::Py;
 use pyo3::types::PyAny;
+use pyo3::Py;
 use std::io::Write;
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -400,9 +400,7 @@ mod tests {
         reset_state();
 
         // Test reading state
-        let result = with_state_read(|state| {
-            (state.inited, state.console_enabled)
-        });
+        let result = with_state_read(|state| (state.inited, state.console_enabled));
         assert_eq!(result, (false, true));
     }
 
@@ -413,7 +411,9 @@ mod tests {
             state.inited = true;
             state.console_enabled = false;
             state.next_handler_id = 100;
-            state.global_context.insert("test".to_string(), "value".to_string());
+            state
+                .global_context
+                .insert("test".to_string(), "value".to_string());
         });
 
         // Verify state was modified
@@ -471,6 +471,9 @@ mod tests {
         assert_eq!(config.date_style, "rfc3339");
         assert_eq!(config.date_enabled, true);
         assert_eq!(config.retention, Some(10));
-        assert_eq!(config.format, Some("{time} | {level} | {message}".to_string()));
+        assert_eq!(
+            config.format,
+            Some("{time} | {level} | {message}".to_string())
+        );
     }
 }

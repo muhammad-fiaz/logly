@@ -29,8 +29,8 @@ def demo_size_rotation():
     size_sink = logger.add(
         "app.log",
         size_limit="500KB",  # Rotate when file reaches 500KB
-        retention=3,         # Keep 3 rotated files
-        async_write=True     # Use async writing for performance
+        retention=3,  # Keep 3 rotated files
+        async_write=True,  # Use async writing for performance
     )
 
     print(f"Added size-based sink with ID: {size_sink}")
@@ -39,9 +39,11 @@ def demo_size_rotation():
     for i in range(2000):
         logger.info(f"Processing transaction {i:04d}", transaction_id=i, amount=100.50 + i)
         if i % 500 == 0:
-            logger.warning(f"Checkpoint reached: {i+1} transactions processed", checkpoint=i+1)
+            logger.warning(f"Checkpoint reached: {i + 1} transactions processed", checkpoint=i + 1)
         if i % 1000 == 0:
-            logger.error(f"Simulated error at transaction {i}", error_code="TXN_FAIL", transaction=i)
+            logger.error(
+                f"Simulated error at transaction {i}", error_code="TXN_FAIL", transaction=i
+            )
 
         # Small delay to avoid overwhelming
         time.sleep(0.001)
@@ -64,9 +66,9 @@ def demo_time_rotation():
     time_sink = logger.add(
         "hourly.log",
         rotation="hourly",
-        date_style="prefix",    # Put date before filename
-        date_enabled=True,      # Include date in filename
-        retention=5
+        date_style="prefix",  # Put date before filename
+        date_enabled=True,  # Include date in filename
+        retention=5,
     )
 
     print(f"Added time-based sink with ID: {time_sink}")
@@ -90,11 +92,11 @@ def demo_combined_rotation():
     # Add sink with both size and time rotation
     combined_sink = logger.add(
         "combined.log",
-        rotation="daily",       # Rotate daily
-        size_limit="1MB",       # Or when reaching 1MB
-        retention=7,            # Keep 7 files
-        date_style="before_ext", # Date before file extension
-        date_enabled=True
+        rotation="daily",  # Rotate daily
+        size_limit="1MB",  # Or when reaching 1MB
+        retention=7,  # Keep 7 files
+        date_style="before_ext",  # Date before file extension
+        date_enabled=True,
     )
 
     print(f"Added combined sink with ID: {combined_sink}")
@@ -161,7 +163,7 @@ def main():
         print("\n📁 Generated log files:")
 
         # List generated files
-        log_files = [f for f in os.listdir('.') if f.endswith('.log')]
+        log_files = [f for f in os.listdir(".") if f.endswith(".log")]
         for log_file in sorted(log_files):
             if os.path.exists(log_file):
                 size = os.path.getsize(log_file)

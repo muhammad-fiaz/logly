@@ -41,7 +41,7 @@ def main():
 
     # Simulate some work
     for i in range(5):
-        logger.info("Processing item %d", i, progress=f"{i+1}/5")
+        logger.info("Processing item %d", i, progress=f"{i + 1}/5")
 
     logger.success("All tasks completed successfully!")
 

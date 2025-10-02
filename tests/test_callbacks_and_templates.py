@@ -1,4 +1,4 @@
-﻿"""Test callback functionality and template strings."""
+"""Test callback functionality and template strings."""
 
 import time
 import threading
@@ -95,6 +95,7 @@ def test_multiple_callbacks():
 
 def test_callback_exception_handling():
     """Test that callback exceptions don't break logging."""
+
     def failing_callback(record):
         raise ValueError("Callback failed")
 

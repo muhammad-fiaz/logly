@@ -3,7 +3,6 @@ from __future__ import annotations
 __version__: str
 """The version string of the logly library."""
 
-
 class PyLogger:
     """High-performance logger implemented in Rust with asynchronous writing.
 
@@ -234,6 +233,4 @@ class PyLogger:
         """
         ...
 
-
 logger: PyLogger
-

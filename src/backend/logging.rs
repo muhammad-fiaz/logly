@@ -1,9 +1,9 @@
 use ahash::AHashMap;
 use chrono::{Local, Utc};
-use pyo3::Bound;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use pyo3::Bound;
 use tracing::Level;
 
 use crate::config::state;
@@ -216,17 +216,27 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
                 // JSON formatting for this sink
                 let filtered_pairs = filter_caller_info(&pairs, s.show_module, s.show_function);
                 let mut json_obj = serde_json::Map::new();
-                
-                json_obj.insert("timestamp".to_string(), serde_json::Value::String(timestamp_rfc3339.clone()));
-                json_obj.insert("level".to_string(), serde_json::Value::String(level_str.clone()));
-                json_obj.insert("message".to_string(), serde_json::Value::String(msg.to_string()));
-                
+
+                json_obj.insert(
+                    "timestamp".to_string(),
+                    serde_json::Value::String(timestamp_rfc3339.clone()),
+                );
+                json_obj.insert(
+                    "level".to_string(),
+                    serde_json::Value::String(level_str.clone()),
+                );
+                json_obj.insert(
+                    "message".to_string(),
+                    serde_json::Value::String(msg.to_string()),
+                );
+
                 // Add extra fields
                 for (k, v) in filtered_pairs {
                     json_obj.insert(k.clone(), serde_json::Value::String(v.clone()));
                 }
-                
-                serde_json::to_string(&json_obj).unwrap_or_else(|_| format!("JSON serialization error for message: {}", msg))
+
+                serde_json::to_string(&json_obj)
+                    .unwrap_or_else(|_| format!("JSON serialization error for message: {}", msg))
             } else if let Some(ref format_str) = sink_config.format {
                 // Use custom format string
                 format_with_template(format_str, &timestamp_rfc3339, &level_str, msg, &pairs)
@@ -234,20 +244,33 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
                 // JSON formatting for console output
                 let filtered_pairs = filter_caller_info(&pairs, s.show_module, s.show_function);
                 let mut json_obj = serde_json::Map::new();
-                
-                json_obj.insert("timestamp".to_string(), serde_json::Value::String(timestamp_rfc3339.clone()));
-                json_obj.insert("level".to_string(), serde_json::Value::String(level_str.clone()));
-                json_obj.insert("message".to_string(), serde_json::Value::String(msg.to_string()));
-                
+
+                json_obj.insert(
+                    "timestamp".to_string(),
+                    serde_json::Value::String(timestamp_rfc3339.clone()),
+                );
+                json_obj.insert(
+                    "level".to_string(),
+                    serde_json::Value::String(level_str.clone()),
+                );
+                json_obj.insert(
+                    "message".to_string(),
+                    serde_json::Value::String(msg.to_string()),
+                );
+
                 // Add extra fields
                 for (k, v) in filtered_pairs {
                     json_obj.insert(k.clone(), serde_json::Value::String(v.clone()));
                 }
-                
+
                 if s.pretty_json {
-                    serde_json::to_string_pretty(&json_obj).unwrap_or_else(|_| format!("JSON serialization error for message: {}", msg))
+                    serde_json::to_string_pretty(&json_obj).unwrap_or_else(|_| {
+                        format!("JSON serialization error for message: {}", msg)
+                    })
                 } else {
-                    serde_json::to_string(&json_obj).unwrap_or_else(|_| format!("JSON serialization error for message: {}", msg))
+                    serde_json::to_string(&json_obj).unwrap_or_else(|_| {
+                        format!("JSON serialization error for message: {}", msg)
+                    })
                 }
             } else {
                 // Use default format with extra fields (backward compatibility)
@@ -255,9 +278,11 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
 
                 if show_time_for_level && !is_console {
                     // For file output with timestamp: "timestamp [LEVEL] message | extra"
-                    let mut result = format!("{} [{}] {}", timestamp_local, level_str.to_uppercase(), msg);
+                    let mut result =
+                        format!("{} [{}] {}", timestamp_local, level_str.to_uppercase(), msg);
                     if !filtered_pairs.is_empty() {
-                        let extra_str = filtered_pairs.iter()
+                        let extra_str = filtered_pairs
+                            .iter()
                             .map(|(k, v)| format!("{}={}", k, v))
                             .collect::<Vec<_>>()
                             .join(" | ");
@@ -269,7 +294,8 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
                     // For output without timestamp: "[LEVEL] message | extra"
                     let mut result = format!("[{}] {}", level_str.to_uppercase(), msg);
                     if !filtered_pairs.is_empty() {
-                        let extra_str = filtered_pairs.iter()
+                        let extra_str = filtered_pairs
+                            .iter()
                             .map(|(k, v)| format!("{}={}", k, v))
                             .collect::<Vec<_>>()
                             .join(" | ");

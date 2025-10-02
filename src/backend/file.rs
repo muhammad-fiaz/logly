@@ -371,7 +371,10 @@ mod tests {
         let base = Path::new("test.log");
 
         // Test never rotation
-        assert_eq!(SimpleRollingWriter::path_for_period(base, "", "before_ext"), Path::new("test.log"));
+        assert_eq!(
+            SimpleRollingWriter::path_for_period(base, "", "before_ext"),
+            Path::new("test.log")
+        );
 
         // Test before_ext style
         let daily_path = SimpleRollingWriter::path_for_period(base, "2023-01-01", "before_ext");
@@ -379,7 +382,8 @@ mod tests {
 
         // Test file without extension
         let base_no_ext = Path::new("test");
-        let daily_path_no_ext = SimpleRollingWriter::path_for_period(base_no_ext, "2023-01-01", "before_ext");
+        let daily_path_no_ext =
+            SimpleRollingWriter::path_for_period(base_no_ext, "2023-01-01", "before_ext");
         assert_eq!(daily_path_no_ext, Path::new("test.2023-01-01"));
 
         // Test prefix style
@@ -388,7 +392,8 @@ mod tests {
 
         // Test hidden file with prefix
         let hidden_base = Path::new(".hidden.log");
-        let hidden_prefix = SimpleRollingWriter::path_for_period(hidden_base, "2023-01-01", "prefix");
+        let hidden_prefix =
+            SimpleRollingWriter::path_for_period(hidden_base, "2023-01-01", "prefix");
         assert_eq!(hidden_prefix, Path::new("2023-01-01.hidden.log"));
     }
 
@@ -436,7 +441,8 @@ mod tests {
         let file_path = temp_dir.path().join("test.log");
 
         // Set size limit to 10 bytes
-        let mut writer = SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, Some(10))?;
+        let mut writer =
+            SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, Some(10))?;
 
         // Write data that exceeds the limit
         writer.write(b"Hello, ")?; // 7 bytes
@@ -459,20 +465,31 @@ mod tests {
     #[test]
     fn test_make_file_appender() {
         let temp_dir = TempDir::new().unwrap();
-        let file_path = temp_dir.path().join("test.log").to_str().unwrap().to_string();
+        let file_path = temp_dir
+            .path()
+            .join("test.log")
+            .to_str()
+            .unwrap()
+            .to_string();
 
         let appender = make_file_appender(&file_path, None, None, true, None, None);
         assert!(appender.try_lock().is_some()); // Should be able to lock
 
         // Test with rotation
-        let appender_rotated = make_file_appender(&file_path, Some("daily"), None, true, Some(5), Some("1MB"));
+        let appender_rotated =
+            make_file_appender(&file_path, Some("daily"), None, true, Some(5), Some("1MB"));
         assert!(appender_rotated.try_lock().is_some());
     }
 
     #[test]
     fn test_make_file_appender_no_date() {
         let temp_dir = TempDir::new().unwrap();
-        let file_path = temp_dir.path().join("test.log").to_str().unwrap().to_string();
+        let file_path = temp_dir
+            .path()
+            .join("test.log")
+            .to_str()
+            .unwrap()
+            .to_string();
 
         let appender = make_file_appender(&file_path, Some("daily"), None, false, None, None);
         // Should still work but with NEVER rotation since date_enabled is false
