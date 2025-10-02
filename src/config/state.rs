@@ -1,9 +1,3 @@
-//! Logger state management with high-performance data structures.
-//!
-//! This module provides the core state management for the logly logger,
-//! including compression, rotation policies, sink configuration, metrics,
-//! and thread-safe state tracking using parking_lot and ahash for optimal performance.
-
 use ahash::AHashMap;
 use crossbeam_channel::Sender;
 use once_cell::sync::Lazy;
@@ -120,6 +114,10 @@ pub struct SinkConfig {
     pub date_enabled: bool,
     /// Number of rotated files to keep (older files deleted)
     pub retention: Option<usize>,
+    /// Custom format string for this sink (e.g., "{time} | {level} | {message}")
+    pub format: Option<String>,
+    /// Format this sink's output as JSON
+    pub json: bool,
 }
 
 /// Statistics for monitoring logger performance.
@@ -309,4 +307,170 @@ pub fn reset_state() {
 
         *s = LoggerState::default();
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compression_from_str() {
+        assert_eq!(Compression::from_str("none"), Compression::None);
+        assert_eq!(Compression::from_str("gzip"), Compression::Gzip);
+        assert_eq!(Compression::from_str("gz"), Compression::Gzip);
+        assert_eq!(Compression::from_str("zstd"), Compression::Zstd);
+        assert_eq!(Compression::from_str("zst"), Compression::Zstd);
+        assert_eq!(Compression::from_str("GZIP"), Compression::Gzip);
+        assert_eq!(Compression::from_str("ZSTD"), Compression::Zstd);
+        assert_eq!(Compression::from_str("invalid"), Compression::None);
+        assert_eq!(Compression::from_str(""), Compression::None);
+    }
+
+    #[test]
+    fn test_logger_metrics_default() {
+        let metrics = LoggerMetrics::default();
+        assert_eq!(metrics.total_logs, 0);
+        assert_eq!(metrics.bytes_written, 0);
+        assert_eq!(metrics.errors_count, 0);
+        assert_eq!(metrics.dropped_logs, 0);
+    }
+
+    #[test]
+    fn test_logger_state_default() {
+        let state = LoggerState::default();
+
+        assert_eq!(state.inited, false);
+        assert_eq!(state.console_enabled, true);
+        assert_eq!(state.level_filter, LevelFilter::INFO);
+        assert_eq!(state.color, true);
+        assert_eq!(state.show_time, true);
+        assert_eq!(state.show_module, true);
+        assert_eq!(state.show_function, true);
+        assert_eq!(state.format_json, false);
+        assert_eq!(state.pretty_json, false);
+        assert_eq!(state.fast_path_enabled, true);
+        assert_eq!(state.next_handler_id, 1);
+        assert_eq!(state.sample_rate, None);
+        assert_eq!(state.capture_caller, false);
+
+        // Check level colors are set
+        assert!(state.level_colors.contains_key("INFO"));
+        assert!(state.level_colors.contains_key("ERROR"));
+        assert!(state.level_colors.contains_key("DEBUG"));
+
+        // Check collections are empty
+        assert!(state.sinks.is_empty());
+        assert!(state.file_writers.is_empty());
+        assert!(state.async_senders.is_empty());
+        assert!(state.async_handles.is_empty());
+        assert!(state.global_context.is_empty());
+        assert!(state.callbacks.is_empty());
+
+        // Check backward compatibility fields
+        assert_eq!(state.file_path, None);
+        assert_eq!(state.async_write, true);
+        assert_eq!(state.buffer_size, 8192);
+        assert_eq!(state.flush_interval, 1000);
+        assert_eq!(state.max_buffered_lines, 1000);
+    }
+
+    #[test]
+    fn test_with_state() {
+        // Reset to clean state
+        reset_state();
+
+        // Test modifying state
+        let result = with_state(|state| {
+            state.inited = true;
+            state.console_enabled = false;
+            42
+        });
+        assert_eq!(result, 42);
+
+        // Verify state was modified
+        with_state_read(|state| {
+            assert_eq!(state.inited, true);
+            assert_eq!(state.console_enabled, false);
+        });
+    }
+
+    #[test]
+    fn test_with_state_read() {
+        // Reset to clean state
+        reset_state();
+
+        // Test reading state
+        let result = with_state_read(|state| {
+            (state.inited, state.console_enabled)
+        });
+        assert_eq!(result, (false, true));
+    }
+
+    #[test]
+    fn test_reset_state() {
+        // Modify state first
+        with_state(|state| {
+            state.inited = true;
+            state.console_enabled = false;
+            state.next_handler_id = 100;
+            state.global_context.insert("test".to_string(), "value".to_string());
+        });
+
+        // Verify state was modified
+        with_state_read(|state| {
+            assert_eq!(state.inited, true);
+            assert_eq!(state.console_enabled, false);
+            assert_eq!(state.next_handler_id, 100);
+            assert!(state.global_context.contains_key("test"));
+        });
+
+        // Reset state
+        reset_state();
+
+        // Verify state was reset to defaults
+        with_state_read(|state| {
+            assert_eq!(state.inited, false);
+            assert_eq!(state.console_enabled, true);
+            assert_eq!(state.next_handler_id, 1);
+            assert!(state.global_context.is_empty());
+        });
+    }
+
+    #[test]
+    fn test_sink_config_creation() {
+        let config = SinkConfig {
+            id: 1,
+            path: Some("test.log".to_string()),
+            rotation: RotationPolicy::Daily,
+            compression: Compression::Gzip,
+            min_level: Some(LevelFilter::DEBUG),
+            module_filter: Some("test_module".to_string()),
+            function_filter: Some("test_function".to_string()),
+            async_write: true,
+            buffer_size: 4096,
+            flush_interval: 500,
+            max_buffered_lines: 500,
+            date_style: "rfc3339".to_string(),
+            date_enabled: true,
+            retention: Some(10),
+            format: Some("{time} | {level} | {message}".to_string()),
+            json: false,
+        };
+
+        assert_eq!(config.id, 1);
+        assert_eq!(config.path, Some("test.log".to_string()));
+        assert_eq!(config.rotation, RotationPolicy::Daily);
+        assert_eq!(config.compression, Compression::Gzip);
+        assert_eq!(config.min_level, Some(LevelFilter::DEBUG));
+        assert_eq!(config.module_filter, Some("test_module".to_string()));
+        assert_eq!(config.function_filter, Some("test_function".to_string()));
+        assert_eq!(config.async_write, true);
+        assert_eq!(config.buffer_size, 4096);
+        assert_eq!(config.flush_interval, 500);
+        assert_eq!(config.max_buffered_lines, 500);
+        assert_eq!(config.date_style, "rfc3339");
+        assert_eq!(config.date_enabled, true);
+        assert_eq!(config.retention, Some(10));
+        assert_eq!(config.format, Some("{time} | {level} | {message}".to_string()));
+    }
 }

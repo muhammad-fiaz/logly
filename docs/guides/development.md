@@ -59,7 +59,6 @@ Tests are organized in the `tests/` directory:
 
 - `test_logly.py` - Basic functionality tests
 - `test_logger_features.py` - Core logging features
-- `test_callbacks_and_templates.py` - Callbacks and template strings
 - `test_performance_features.py` - Performance and edge cases
 
 ### Writing Tests
@@ -121,14 +120,65 @@ pre-commit install
 ### Building the Rust Extension
 
 ```bash
-# Debug build
+# Debug build (fast compilation, unoptimized)
 cargo build
 
-# Release build
+# Release build (optimized for performance)
 cargo build --release
 
-# Build Python wheel
+# Build Python wheel (debug mode)
 uv run maturin develop
+
+# Build Python wheel (release mode with optimizations)
+uv run maturin develop --release
+```
+
+### Rust Performance Optimizations
+
+Logly uses aggressive Rust compiler optimizations for maximum performance:
+
+**Release Profile Configuration** (`Cargo.toml`):
+
+```toml
+[profile.release]
+opt-level = 3              # Maximum optimization
+lto = "fat"                # Link-time optimization (smaller, faster)
+codegen-units = 1          # Single codegen unit (better optimization)
+strip = true               # Strip symbols (smaller binary)
+panic = "abort"            # Smaller binary, faster panic handling
+```
+
+**Performance Impact:**
+- **Binary Size**: ~40% smaller with LTO and stripping
+- **Execution Speed**: ~15-20% faster with LTO
+- **Compile Time**: Slower (expected for release builds)
+
+**Development vs Release:**
+
+| Profile | Optimization | Binary Size | Compile Time | Use Case |
+|---------|-------------|-------------|--------------|----------|
+| Debug | None (opt-level=0) | Large | Fast | Development, testing |
+| Release | Maximum (opt-level=3) | Small | Slow | Production, benchmarks |
+
+**Building for Production:**
+
+```bash
+# Build optimized wheel for production
+uv run maturin build --release
+
+# Install optimized wheel
+pip install target/wheels/*.whl
+```
+
+**Profiling Performance:**
+
+```bash
+# Profile Rust code with flamegraph
+cargo install flamegraph
+cargo flamegraph --bench your_benchmark
+
+# Profile Python code with cProfile
+python -m cProfile -o profile.stats your_script.py
 ```
 
 ### Building Documentation
@@ -218,7 +268,6 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 - **Rust Backend**: Provides memory safety and performance
 - **Async by Default**: Non-blocking logging operations
 - **Callback System**: Extensible logging pipeline
-- **Template Strings**: Efficient string formatting
 - **Context Binding**: Structured logging support
 
 ## Troubleshooting

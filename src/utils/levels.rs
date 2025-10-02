@@ -1,14 +1,3 @@
-//! # Logging Utilities Module
-//!
-//! This module provides utility functions and types for log level handling,
-//! rotation policies, and level conversions.
-//!
-//! ## Features
-//!
-//! - Log level parsing and conversion
-//! - Rotation policy definitions
-//! - Level filtering utilities
-
 use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
@@ -84,5 +73,59 @@ pub fn level_to_str(level: Level) -> &'static str {
         Level::INFO => "INFO",
         Level::WARN => "WARN",
         Level::ERROR => "ERROR",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tracing::Level;
+
+    #[test]
+    fn test_to_level_valid_names() {
+        assert_eq!(to_level("trace"), Some(Level::TRACE));
+        assert_eq!(to_level("TRACE"), Some(Level::TRACE));
+        assert_eq!(to_level("debug"), Some(Level::DEBUG));
+        assert_eq!(to_level("DEBUG"), Some(Level::DEBUG));
+        assert_eq!(to_level("info"), Some(Level::INFO));
+        assert_eq!(to_level("INFO"), Some(Level::INFO));
+        assert_eq!(to_level("success"), Some(Level::INFO));
+        assert_eq!(to_level("SUCCESS"), Some(Level::INFO));
+        assert_eq!(to_level("warn"), Some(Level::WARN));
+        assert_eq!(to_level("warning"), Some(Level::WARN));
+        assert_eq!(to_level("WARN"), Some(Level::WARN));
+        assert_eq!(to_level("WARNING"), Some(Level::WARN));
+        assert_eq!(to_level("error"), Some(Level::ERROR));
+        assert_eq!(to_level("critical"), Some(Level::ERROR));
+        assert_eq!(to_level("fatal"), Some(Level::ERROR));
+        assert_eq!(to_level("ERROR"), Some(Level::ERROR));
+        assert_eq!(to_level("CRITICAL"), Some(Level::ERROR));
+        assert_eq!(to_level("FATAL"), Some(Level::ERROR));
+    }
+
+    #[test]
+    fn test_to_level_invalid_names() {
+        assert_eq!(to_level(""), None);
+        assert_eq!(to_level("invalid"), None);
+        assert_eq!(to_level("log"), None);
+        assert_eq!(to_level("verbose"), None);
+    }
+
+    #[test]
+    fn test_to_filter() {
+        assert_eq!(to_filter(Level::TRACE), LevelFilter::TRACE);
+        assert_eq!(to_filter(Level::DEBUG), LevelFilter::DEBUG);
+        assert_eq!(to_filter(Level::INFO), LevelFilter::INFO);
+        assert_eq!(to_filter(Level::WARN), LevelFilter::WARN);
+        assert_eq!(to_filter(Level::ERROR), LevelFilter::ERROR);
+    }
+
+    #[test]
+    fn test_level_to_str() {
+        assert_eq!(level_to_str(Level::TRACE), "TRACE");
+        assert_eq!(level_to_str(Level::DEBUG), "DEBUG");
+        assert_eq!(level_to_str(Level::INFO), "INFO");
+        assert_eq!(level_to_str(Level::WARN), "WARN");
+        assert_eq!(level_to_str(Level::ERROR), "ERROR");
     }
 }

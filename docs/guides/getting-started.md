@@ -88,16 +88,6 @@ logger.error("Error messages")
 logger.critical("Critical errors")
 ```
 
-### Template Strings
-
-Use `{variable}` syntax for dynamic content:
-
-```python
-user_id = 12345
-logger.info("User {user_id} logged in", user_id=user_id)
-# Output: User 12345 logged in
-```
-
 ### Extra Data
 
 Add extra fields to your logs:

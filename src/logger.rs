@@ -1,8 +1,3 @@
-//! Python bindings for the logly logger.
-//!
-//! Provides the `PyLogger` class exposed to Python, with methods for
-//! configuration, sink management, and logging at various levels.
-
 use crate::backend;
 use crate::config::state::with_state;
 use crate::utils::levels::to_level;
@@ -122,26 +117,29 @@ impl PyLogger {
     /// * `date_style` - Date format: "rfc3339", "local", "utc"
     /// * `date_enabled` - Include timestamp in log output
     /// * `retention` - Number of rotated files to keep
+    /// * `format` - Custom format string for this sink (e.g., "{time} | {level} | {message}")
+    /// * `json` - Format logs as JSON for this sink
     ///
     /// # Returns
     /// Handler ID that can be used to remove the sink later
-    #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (sink, *, rotation=None, size_limit=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, buffer_size=8192, flush_interval=1000, max_buffered_lines=1000, date_style=None, date_enabled=false, retention=None))]
+    #[pyo3(signature = (sink, *, rotation=None, size_limit=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, buffer_size=8192, flush_interval=1000, max_buffered_lines=1000, date_style=None, date_enabled=false, retention=None, format=None, json=false))]
     pub fn add(
         &self,
         sink: &str,
         rotation: Option<&str>,
         size_limit: Option<&str>,
-        filter_min_level: Option<&str>,
-        filter_module: Option<&str>,
-        filter_function: Option<&str>,
+        filter_min_level: Option<String>,
+        filter_module: Option<String>,
+        filter_function: Option<String>,
         async_write: bool,
         buffer_size: usize,
         flush_interval: u64,
         max_buffered_lines: usize,
-        date_style: Option<&str>,
+        date_style: Option<String>,
         date_enabled: bool,
         retention: Option<usize>,
+        format: Option<String>,
+        json: bool,
     ) -> PyResult<usize> {
         use crate::config::state::{RotationPolicy, SinkConfig};
 
@@ -174,47 +172,81 @@ impl PyLogger {
                 rotation: rotation_policy,
                 compression: crate::config::state::Compression::None, // Default for now
                 min_level: filter_min_level
+                    .as_ref()
                     .and_then(|l| crate::utils::levels::to_level(l))
                     .map(crate::utils::levels::to_filter),
-                module_filter: filter_module.map(|s| s.to_string()),
-                function_filter: filter_function.map(|s| s.to_string()),
+                module_filter: filter_module.clone(),
+                function_filter: filter_function.clone(),
                 async_write,
                 buffer_size,
                 flush_interval,
                 max_buffered_lines,
-                date_style: date_style.unwrap_or("rfc3339").to_string(),
+                date_style: date_style.as_deref().unwrap_or("rfc3339").to_string(),
                 date_enabled,
                 retention,
+                format: if json && format.is_none() {
+                    // Use default JSON format when json=True and no custom format provided
+                    Some(r#"{"timestamp": "{time}", "level": "{level}", "message": "{message}", "extra": {extra}}"#.to_string())
+                } else {
+                    format
+                },
+                json,
             };
 
             s.sinks.insert(id, sink_config);
             id
         });
 
+        // Create file writer for this sink if it's not console
+        if sink != "console" {
+            let file_writer = backend::make_file_appender(
+                sink,
+                rotation,
+                date_style.as_deref(),
+                date_enabled,
+                retention,
+                size_limit,
+            );
+            with_state(|s| {
+                s.file_writers.insert(handler_id, file_writer.clone());
+            });
+
+            // Set up async writing if requested
+            if async_write {
+                backend::start_async_writer_for_sink(
+                    handler_id,
+                    file_writer,
+                    buffer_size,
+                    flush_interval,
+                    max_buffered_lines,
+                );
+            }
+        }
+
         // For backward compatibility, also set the old fields
         if sink != "console" {
             with_state(|s| {
                 s.file_path = Some(sink.to_string());
                 s.file_rotation = rotation.map(|r| r.to_string());
-                s.file_date_style = date_style.map(|d| d.to_string());
+                s.file_date_style = date_style.clone().map(|d| d.to_string());
                 s.file_date_enabled = date_enabled;
                 s.retention_count = retention;
                 s.file_writer = Some(backend::make_file_appender(
                     sink,
                     rotation,
-                    date_style,
+                    date_style.as_deref(),
                     date_enabled,
                     retention,
                     size_limit,
                 ));
                 // filters
-                if let Some(min) = filter_min_level
-                    && let Some(level) = crate::utils::levels::to_level(min)
-                {
-                    s.filter_min_level = Some(crate::utils::levels::to_filter(level));
+                if let Some(min) = filter_min_level.as_ref() {
+                    if let Some(level) = crate::utils::levels::to_level(min) {
+                        s.filter_min_level = Some(crate::utils::levels::to_filter(level));
+                    }
                 }
-                s.filter_module = filter_module.map(|m| m.to_string());
-                s.filter_function = filter_function.map(|f| f.to_string());
+                s.filter_module = filter_module;
+                s.filter_function = filter_function;
                 // async
                 s.async_write = async_write;
                 s.buffer_size = buffer_size;
@@ -231,12 +263,25 @@ impl PyLogger {
     /// Remove a logging sink by handler ID.
     ///
     /// # Arguments
-    /// * `_handler_id` - Handler ID returned by add()
+    /// * `handler_id` - Handler ID returned by add()
     ///
     /// # Returns
-    /// True if sink was removed (currently always returns true)
-    pub fn remove(&self, _handler_id: usize) -> PyResult<bool> {
-        Ok(true)
+    /// True if sink was removed or handler ID was not found (no-op)
+    pub fn remove(&self, handler_id: usize) -> PyResult<bool> {
+        let removed = crate::config::state::with_state(|s| {
+            if s.sinks.contains_key(&handler_id) {
+                s.sinks.remove(&handler_id);
+                // Also remove associated file writer if it exists
+                s.file_writers.remove(&handler_id);
+                // Remove async sender if it exists (this will signal the thread to stop)
+                s.async_senders.remove(&handler_id);
+                true
+            } else {
+                // Return true for non-existent handlers (no-op)
+                true
+            }
+        });
+        Ok(removed)
     }
 
     /// Add a callback function that executes asynchronously on each log event.

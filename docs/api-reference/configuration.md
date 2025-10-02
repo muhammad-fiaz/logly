@@ -308,7 +308,7 @@ Add a logging sink (output destination) with optional rotation, filtering, and a
 
 ```python
 logger.add(
-    sink: str,
+    sink: str | None = None,
     *,
     rotation: str | None = None,
     size_limit: str | None = None,
@@ -317,8 +317,13 @@ logger.add(
     filter_module: str | None = None,
     filter_function: str | None = None,
     async_write: bool = True,
+    buffer_size: int = 8192,
+    flush_interval: int = 100,
+    max_buffered_lines: int = 1000,
     date_style: str | None = None,
-    date_enabled: bool = False
+    date_enabled: bool = False,
+    format: str | None = None,
+    json: bool = False
 ) -> int
 ```
 
@@ -326,20 +331,75 @@ logger.add(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sink` | `str` | Required | `"console"` for stdout or file path for file output |
+| `sink` | `str \| None` | `None` | `"console"` for stdout or file path for file output. Defaults to console. |
 | `rotation` | `str \| None` | `None` | Time-based rotation: `"daily"`, `"hourly"`, `"minutely"`, `"never"` |
 | `size_limit` | `str \| None` | `None` | Maximum file size: `"500B"`, `"5KB"`, `"10MB"`, `"1GB"` |
 | `retention` | `int \| None` | `None` | Number of rotated files to keep (older files auto-deleted) |
-| `filter_min_level` | `str \| None` | `None` | Minimum level for this sink: `"INFO"`, `"ERROR"`, etc. |
+| `filter_min_level` | `str \| None` | `None` | Exact log level for this sink: `"INFO"`, `"ERROR"`, etc. Only messages with this exact level will be logged to this sink |
 | `filter_module` | `str \| None` | `None` | Only log from this module |
 | `filter_function` | `str \| None` | `None` | Only log from this function |
 | `async_write` | `bool` | `True` | Enable background async writing |
-| `date_style` | `str \| None` | `None` | Date format: `"rfc3339"`, `"local"`, `"utc"`, `"before_ext"`, `"prefix"` |
-| `date_enabled` | `bool` | `False` | Include timestamp in filenames |
+| `buffer_size` | `int` | `8192` | Buffer size in bytes for async writing |
+| `flush_interval` | `int` | `100` | Flush interval in milliseconds for async writing |
+| `max_buffered_lines` | `int` | `1000` | Maximum number of buffered lines before blocking |
+| `date_style` | `str \| None` | `None` | Timestamp format: `"rfc3339"`, `"local"`, `"utc"` |
+| `date_enabled` | `bool` | `False` | Include timestamp in log output |
+| `format` | `str \| None` | `None` | Custom format string with placeholders like `"{level}"`, `"{message}"`, `"{time}"`, `"{extra}"`, or any extra field key |
+| `json` | `bool` | `False` | Format logs as JSON for this sink |
 
 ### Returns
 
 `int` - Handler ID for removing the sink later with `remove()`
+
+### Format Placeholders
+
+The `format` parameter supports template strings with placeholders that are replaced with actual log data. Placeholders are case-insensitive and enclosed in curly braces `{}`.
+
+#### Built-in Placeholders
+
+| Placeholder | Description | Example Output |
+|-------------|-------------|----------------|
+| `{time}` | Timestamp in ISO 8601 format | `2023-01-01T12:00:00Z` |
+| `{level}` | Log level | `INFO`, `ERROR`, `DEBUG` |
+| `{message}` | Log message text | `User logged in` |
+
+#### Extra Fields Placeholders
+
+| Placeholder | Description | Example Output |
+|-------------|-------------|----------------|
+| `{extra}` | All extra fields formatted as `key=value` pairs joined by ` \| ` | `user=alice \| session_id=12345` |
+| `{module}` | Module name (if provided in extra fields) | `myapp.auth` |
+| `{function}` | Function name (if provided in extra fields) | `login_user` |
+| `{any_key}` | Any extra field key from the log record | Custom value |
+
+#### Placeholder Behavior
+
+- **Case-insensitive**: `{TIME}`, `{time}`, and `{Time}` all work the same
+- **Extra fields**: Any key-value pair passed to the log call becomes available as a placeholder
+- **Automatic appending**: If `{extra}` is not used in the format string, unused extra fields are automatically appended at the end of the log message
+- **Missing placeholders**: Unmatched placeholders (e.g., `{unknown}`) are left as-is in the output
+
+#### Examples
+
+```python
+import logly
+
+# Basic placeholders
+logger.add("console", format="{time} [{level}] {message}")
+
+# Include specific extra fields
+logger.add("console", format="{time} [{level}] {message} | user={user}")
+
+# Use {extra} for all remaining fields
+logger.add("console", format="{time} [{level}] {message} | {extra}")
+
+# JSON format with {extra}
+logger.add("logs/structured.log", 
+           format='{{"timestamp": "{time}", "level": "{level}", "message": "{message}", "extra": {extra}}}')
+
+logger.info("User action", user="alice", action="login", session_id="12345")
+# Output: {"timestamp": "2023-01-01T12:00:00Z", "level": "INFO", "message": "User action", "extra": user=alice | action=login | session_id=12345}
+```
 
 ### Examples
 
@@ -418,32 +478,47 @@ logger.add(
     )
     ```
 
-=== "Production Setup"
+=== "JSON Logging"
 
     ```python
-    # Console for monitoring
-    logger.add("console")
+    # JSON console output
+    logger.add("console", json=True)
     
-    # All logs with daily rotation
+    # JSON file output
+    logger.add("logs/app.jsonl", json=True)
+    
+    # JSON with rotation
+    logger.add("logs/events.jsonl", json=True, rotation="daily", retention=30)
+    ```
+    
+    JSON logging automatically formats all log data as structured JSON objects, including:
+    - Timestamp in ISO 8601 format
+    - Log level
+    - Message text
+    - All extra fields passed to the log call
+    - Context from `.bind()` and `.contextualize()`
+
+=== "Custom Format"
+
+    ```python
+    # Custom format with timestamp and level
     logger.add(
-        "logs/app.log",
-        rotation="daily",
-        retention=30,
-        async_write=True
+        "console",
+        format="{time} [{level}] {message}"
     )
     
-    # Errors to separate file
+    # JSON format for structured logging
     logger.add(
-        "logs/errors.log",
-        filter_min_level="ERROR",
-        retention=90
+        "logs/structured.log",
+        format='{{"timestamp": "{time}", "level": "{level}", "message": "{message}", "extra": {extra}}}',
+        date_enabled=True
     )
     
-    # Critical alerts
+    # Simple format for debugging
     logger.add(
-        "logs/critical.log",
-        filter_min_level="CRITICAL",
-        retention=365
+        "logs/debug.log",
+        format="{level}: {message} {extra}",
+        filter_min_level="DEBUG"
     )
     ```
 

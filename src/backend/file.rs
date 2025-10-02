@@ -1,15 +1,3 @@
-//! # File Backend Module
-//!
-//! This module handles file operations for logging, including file rotation,
-//! size-based limits, and retention policies.
-//!
-//! ## Features
-//!
-//! - Time-based and size-based file rotation
-//! - Configurable retention policies
-//! - Thread-safe file writing with parking_lot
-//! - Automatic file creation and management
-
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -56,6 +44,7 @@ pub fn parse_size_limit(size_str: Option<&str>) -> Option<u64> {
                 num_end = i;
                 break;
             }
+            num_end = i + 1; // Include this digit
         }
 
         if num_end == 0 {
@@ -322,5 +311,171 @@ pub fn make_file_appender(
                 });
             Arc::new(Mutex::new(Box::new(f)))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::io::Read;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_rotation_from_str() {
+        assert_eq!(rotation_from_str(Some("daily")), Rotation::DAILY);
+        assert_eq!(rotation_from_str(Some("hourly")), Rotation::HOURLY);
+        assert_eq!(rotation_from_str(Some("minutely")), Rotation::MINUTELY);
+        assert_eq!(rotation_from_str(Some("never")), Rotation::NEVER);
+        assert_eq!(rotation_from_str(Some("invalid")), Rotation::NEVER);
+        assert_eq!(rotation_from_str(None), Rotation::NEVER);
+    }
+
+    #[test]
+    fn test_parse_size_limit() {
+        assert_eq!(parse_size_limit(Some("1024")), Some(1024));
+        assert_eq!(parse_size_limit(Some("1KB")), Some(1024));
+        assert_eq!(parse_size_limit(Some("1MB")), Some(1024 * 1024));
+        assert_eq!(parse_size_limit(Some("1GB")), Some(1024 * 1024 * 1024));
+        assert_eq!(parse_size_limit(Some("2K")), Some(2048));
+        assert_eq!(parse_size_limit(Some("3M")), Some(3 * 1024 * 1024));
+        assert_eq!(parse_size_limit(Some("4G")), Some(4 * 1024 * 1024 * 1024));
+        assert_eq!(parse_size_limit(Some("5B")), Some(5));
+        assert_eq!(parse_size_limit(Some("")), None);
+        assert_eq!(parse_size_limit(Some("invalid")), None);
+        assert_eq!(parse_size_limit(Some("KB")), None);
+        assert_eq!(parse_size_limit(None), None);
+    }
+
+    #[test]
+    fn test_period_string() {
+        // Test that period strings are generated correctly
+        let daily = SimpleRollingWriter::period_string(&Rotation::DAILY);
+        assert!(daily.len() == 10); // YYYY-MM-DD format
+        assert!(daily.contains('-'));
+
+        let hourly = SimpleRollingWriter::period_string(&Rotation::HOURLY);
+        assert!(hourly.contains('_'));
+        assert!(hourly.contains('-'));
+
+        let minutely = SimpleRollingWriter::period_string(&Rotation::MINUTELY);
+        assert!(minutely.contains('_'));
+        assert!(minutely.contains('-'));
+
+        let never = SimpleRollingWriter::period_string(&Rotation::NEVER);
+        assert_eq!(never, "");
+    }
+
+    #[test]
+    fn test_path_for_period() {
+        let base = Path::new("test.log");
+
+        // Test never rotation
+        assert_eq!(SimpleRollingWriter::path_for_period(base, "", "before_ext"), Path::new("test.log"));
+
+        // Test before_ext style
+        let daily_path = SimpleRollingWriter::path_for_period(base, "2023-01-01", "before_ext");
+        assert_eq!(daily_path, Path::new("test.2023-01-01.log"));
+
+        // Test file without extension
+        let base_no_ext = Path::new("test");
+        let daily_path_no_ext = SimpleRollingWriter::path_for_period(base_no_ext, "2023-01-01", "before_ext");
+        assert_eq!(daily_path_no_ext, Path::new("test.2023-01-01"));
+
+        // Test prefix style
+        let prefix_path = SimpleRollingWriter::path_for_period(base, "2023-01-01", "prefix");
+        assert_eq!(prefix_path, Path::new("2023-01-01.test.log"));
+
+        // Test hidden file with prefix
+        let hidden_base = Path::new(".hidden.log");
+        let hidden_prefix = SimpleRollingWriter::path_for_period(hidden_base, "2023-01-01", "prefix");
+        assert_eq!(hidden_prefix, Path::new("2023-01-01.hidden.log"));
+    }
+
+    #[test]
+    fn test_simple_rolling_writer_creation() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.log");
+
+        let writer = SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, None);
+        assert!(writer.is_ok());
+
+        let writer = writer.unwrap();
+        assert_eq!(writer.base_path, file_path);
+        assert_eq!(writer.rotation, Rotation::NEVER);
+        assert_eq!(writer.date_style, "before_ext");
+        assert_eq!(writer.retention_count, None);
+        assert_eq!(writer.size_limit, None);
+    }
+
+    #[test]
+    fn test_simple_rolling_writer_write() -> io::Result<()> {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.log");
+
+        let mut writer = SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, None)?;
+
+        // Write some data
+        let data = b"Hello, World!";
+        let written = writer.write(data)?;
+        assert_eq!(written, data.len());
+        writer.flush()?;
+
+        // Verify the data was written
+        let mut file = File::open(&file_path)?;
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents)?;
+        assert_eq!(contents, data);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_rolling_writer_size_rotation() -> io::Result<()> {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.log");
+
+        // Set size limit to 10 bytes
+        let mut writer = SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, Some(10))?;
+
+        // Write data that exceeds the limit
+        writer.write(b"Hello, ")?; // 7 bytes
+        writer.write(b"World! Extra text")?; // This should trigger rotation
+        writer.flush()?;
+
+        // Check that files were created
+        let mut files: Vec<_> = fs::read_dir(&temp_dir)?
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .collect();
+        files.sort();
+
+        // Should have at least 2 files (original + rotated)
+        assert!(files.len() >= 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_make_file_appender() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.log").to_str().unwrap().to_string();
+
+        let appender = make_file_appender(&file_path, None, None, true, None, None);
+        assert!(appender.try_lock().is_some()); // Should be able to lock
+
+        // Test with rotation
+        let appender_rotated = make_file_appender(&file_path, Some("daily"), None, true, Some(5), Some("1MB"));
+        assert!(appender_rotated.try_lock().is_some());
+    }
+
+    #[test]
+    fn test_make_file_appender_no_date() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.log").to_str().unwrap().to_string();
+
+        let appender = make_file_appender(&file_path, Some("daily"), None, false, None, None);
+        // Should still work but with NEVER rotation since date_enabled is false
+        assert!(appender.try_lock().is_some());
     }
 }

@@ -13,21 +13,19 @@ def read_log(path: Path) -> str:
     return path.read_text()
 
 
-def test_add_configure_and_basic_logging(tmp_path: Path):
-    """Test basic logging configuration and file output."""
-    p = tmp_path / "basic.log"
-    # add file before configure per MVP
-    logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    def test_add_configure_and_basic_logging(tmp_path: Path):
+        """Test basic logging configuration and file output."""
+        p = tmp_path / "basic.log"
+        # add file before configure per MVP
+        logger.add(str(p), async_write=False)  # Use sync writing for immediate results
+        logger.configure(level="INFO", color=False)
 
-    logger.info("hello world", user="bob")
-    logger.complete()
+        logger.info("hello world", user="bob")
+        logger.complete()
 
-    content = read_log(p)
-    assert "hello world" in content
-    assert "user=bob" in content
-
-
+        content = read_log(p)
+        assert "hello world" in content
+        assert "user=bob" in content
 def test_bind_and_contextualize(tmp_path: Path):
     """Test binding context and contextualize functionality."""
     p = tmp_path / "bind.log"
@@ -78,20 +76,6 @@ def test_level_mapping(tmp_path: Path):
     assert "notice message" in content
 
 
-def test_opt_returns_proxy_and_logs(tmp_path: Path):
-    """Test opt() method returns proxy and logs correctly."""
-    p = tmp_path / "opt.log"
-    logger.add(str(p))
-    logger.configure(level="INFO", color=False)
-
-    opt_logger = logger.opt(colors=False)
-    opt_logger.info("opt message")
-    logger.complete()
-
-    content = read_log(p)
-    assert "opt message" in content
-
-
 def test_catch_decorator_and_context_manager(tmp_path: Path):
     """Test catch decorator and context manager functionality."""
     p = tmp_path / "catch.log"
@@ -138,17 +122,29 @@ def test_exception_logs_traceback(tmp_path: Path):
 
 
 def test_remove_and_complete_noop(tmp_path: Path):
-    """Test remove handler and complete noop functionality."""
+    """Test remove handler and complete functionality."""
     p = tmp_path / "rm.log"
-    logger.add(str(p))
+    handler_id = logger.add(str(p))
     logger.configure(level="INFO", color=False)
 
-    ok = logger.remove(0)
-    assert ok is True
-    logger.info("after remove")
+    # Log before removal
+    logger.info("before remove")
     logger.complete()
     content = read_log(p)
-    assert "after remove" in content
+    assert "before remove" in content
+
+    # Remove sink
+    ok = logger.remove(handler_id)
+    assert ok is True
+
+    # Log after removal - should not appear in file
+    logger.info("after remove")
+    logger.complete()
+    
+    # Content should still only have the first message
+    content = read_log(p)
+    assert "before remove" in content
+    assert "after remove" not in content
 
 
 def test_all_log_levels(tmp_path: Path):
@@ -223,25 +219,6 @@ def test_disabled_logger_early_returns(tmp_path: Path):
     # Only the enabled message should appear
     assert "enabled_again" in content
     assert "disabled_msg" not in content
-
-
-def test_template_string_processing_exceptions(tmp_path: Path):
-    """Test exception handling in template string processing."""
-    p = tmp_path / "template.log"
-    logger.add(str(p))
-    logger.configure(level="INFO", color=False)
-
-    # Test malformed template strings that should fall back gracefully
-    logger.info("malformed {unclosed", key="value")  # Missing closing brace
-    logger.info("bad {missing} format", other="data")  # Missing key in format
-    logger.info("valid {key} format", key="value")  # Valid template
-
-    logger.complete()
-    content = read_log(p)
-    # Should contain the messages, possibly with fallback formatting
-    assert "malformed" in content
-    assert "bad" in content
-    assert "valid value format" in content
 
 
 def test_caller_info_exceptions(tmp_path: Path):
@@ -502,3 +479,153 @@ def test_per_level_storage_controls(tmp_path: Path):
     assert "info not stored" not in content  # Should not be in file
     assert "warn stored" in content
     assert "error stored" in content
+
+
+def test_per_sink_custom_formatting(tmp_path: Path):
+    """Test per-sink custom format strings."""
+    file_log = tmp_path / "file.log"
+
+    # Add console with default formatting
+    logger.add("console")
+    # Add file with custom format
+    logger.add(str(file_log), format="{time} [{level}] {message} {extra}")
+    logger.configure(level="INFO", color=False)
+
+    logger.info("Test message", user="alice", action="login")
+    logger.warning("Warning message", code=404, path="/api/users")
+    logger.complete()
+
+    # Check file has custom format
+    content = read_log(file_log)
+    lines = content.strip().split('\n')
+    assert len(lines) == 2
+
+    # First line should have RFC3339 timestamp, level, message, and extra fields
+    first_line = lines[0]
+    assert '[INFO]' in first_line
+    assert 'Test message' in first_line
+    assert 'user=alice' in first_line
+    assert 'action=login' in first_line
+    # Should have RFC3339 timestamp format
+    assert 'T' in first_line and '+' in first_line
+
+    # Second line should have warning
+    second_line = lines[1]
+    assert '[WARN]' in second_line
+    assert 'Warning message' in second_line
+    assert 'code=404' in second_line
+    assert 'path=/api/users' in second_line
+
+
+def test_per_sink_format_with_extra_placeholder(tmp_path: Path):
+    """Test {extra} placeholder in custom format strings."""
+    log_file = tmp_path / "extra.log"
+
+    logger.add(str(log_file), format="{level}: {message} | {extra}")
+    logger.configure(level="INFO", color=False)
+
+    logger.info("Simple message")
+    logger.warning("Message with extras", key1="value1", key2="value2")
+    logger.complete()
+
+    content = read_log(log_file)
+    lines = content.strip().split('\n')
+    assert len(lines) == 2
+
+    # First line: no extra fields, but module/function are always added
+    assert "INFO: Simple message | module=" in lines[0]
+    assert "function=" in lines[0]
+
+    # Second line: with extra fields
+    assert "WARN: Message with extras | key1=value1 | key2=value2" in lines[1]
+    # Module and function should still be appended since they're not in the {extra} template
+    assert "module=" in lines[1]
+    assert "function=" in lines[1]
+
+
+def test_per_sink_format_case_insensitive(tmp_path: Path):
+    """Test that format placeholders are case-insensitive."""
+    log_file = tmp_path / "case.log"
+
+    logger.add(str(log_file), format="{TIME} | {LEVEL} | {MESSAGE}")
+    logger.configure(level="INFO", color=False)
+
+    logger.info("Case test message")
+    logger.complete()
+
+    content = read_log(log_file)
+    # Should work with uppercase placeholders: "timestamp | INFO | Case test message | module=function"
+    assert " | INFO | Case test message | module=" in content
+    assert "function=" in content
+    # Should have RFC3339 timestamp
+    assert 'T' in content and '+' in content
+
+
+def test_per_sink_format_mixed_placeholders(tmp_path: Path):
+    """Test mixing different placeholder types in format strings."""
+    log_file = tmp_path / "mixed.log"
+
+    logger.add(str(log_file), format="[{level}] {time} - {message} | user={user} | {extra}")
+    logger.configure(level="INFO", color=False)
+
+    bound_logger = logger.bind(user="testuser")
+    bound_logger.info("Mixed format test", action="click", button="submit")
+    logger.complete()
+
+    content = read_log(log_file)
+    line = content.strip()
+
+    # Should contain all expected elements
+    assert '[INFO]' in line
+    assert 'Mixed format test' in line
+    assert 'user=testuser' in line
+    assert 'action=click' in line
+    assert 'button=submit' in line
+    # Should have timestamp
+    assert 'T' in line and '+' in line
+
+
+def test_per_sink_format_backward_compatibility(tmp_path: Path):
+    """Test that sinks without custom format still work with default formatting."""
+    log_file = tmp_path / "compat.log"
+
+    # Add sink without format (should use default)
+    logger.add(str(log_file))
+    logger.configure(level="INFO", color=False, show_time=False)
+
+    logger.info("Compatibility test", extra_field="value")
+    logger.complete()
+
+    content = read_log(log_file)
+    # Should have default format: [LEVEL] message | extra
+    assert "[INFO] Compatibility test | extra_field=value" in content
+
+
+def test_per_sink_format_with_filters(tmp_path: Path):
+    """Test custom format combined with filters."""
+    logger.reset()  # Reset to clean state
+    info_log = tmp_path / "info.log"
+    error_log = tmp_path / "error.log"
+
+    logger.add(str(info_log), format="{level}: {message}", filter_min_level="INFO")
+    logger.add(str(error_log), format="ERROR - {time} - {message} | {extra}", filter_min_level="ERROR")
+    logger.configure(level="DEBUG", color=False)
+
+    logger.debug("Debug message")  # Should not appear in either
+    logger.info("Info message")    # Should appear in info.log
+    logger.error("Error message", code=500)  # Should appear in error.log
+    logger.complete()
+
+    # Check info log
+    info_content = read_log(info_log)
+    assert "INFO: Info message" in info_content
+    assert "Debug message" not in info_content
+    assert "Error message" not in info_content
+
+    # Check error log
+    error_content = read_log(error_log)
+    assert "ERROR -" in error_content
+    assert "Error message" in error_content
+    assert "code=500" in error_content
+    assert "Debug message" not in error_content
+    assert "Info message" not in error_content

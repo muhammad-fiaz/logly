@@ -13,70 +13,88 @@ This example demonstrates how to configure Logly to send logs to multiple destin
 ```python
 from logly import logger
 
-# Configure global settings with console enabled
-logger.configure(level="DEBUG", console=True)
+# Configure global settings
+logger.configure(level="DEBUG")
 
-# Add file sink - detailed logging to file
+# Sink 1: Console - only INFO and above
+logger.add("console", filter_min_level="INFO")
+
+# Sink 2: Text file - all logs with rotation
 logger.add(
     "app.log",
-    filter_min_level="DEBUG",  # All levels to file
+    filter_min_level="DEBUG",
     rotation="daily",
     retention=7
 )
 
-# Add JSON file sink - for log aggregation
+# Sink 3: JSON file - only warnings and errors
 logger.add(
-    "app.jsonl",
-    filter_min_level="WARNING",  # Only warnings and errors
-    date_enabled=True
+    "errors.json",
+    filter_min_level="WARNING",
+    pretty_json=True
 )
 
 # Test logging at different levels
-logger.debug("This debug message goes to console and file")
-logger.info("This info message goes to console and file")
-logger.warning("This warning goes to console, file, and JSON")
-logger.error("This error goes to console, file, and JSON")
+logger.debug("Debug message - only in app.log")
+logger.info("Info message - console and app.log")
+logger.warning("Warning - all three sinks")
+logger.error("Error - all three sinks", error_code="E500")
 
-# Add context that will appear in all logs
-logger.bind(user_id=12345, request_id="req-abc")
-
-logger.info("User action performed")
-logger.warning("Suspicious activity detected", ip="192.168.1.100")
-logger.error("Critical system error", component="database", error_code="CONN_FAIL")
+logger.complete()
 ```
 
-## Output Examples
+## Expected Output
 
-### Console Output (Human Readable)
+### Console Output (INFO and above)
 ```
-[DEBUG] This debug message goes to console and file | module=__main__ | function=<module>
-[INFO] This info message goes to console and file | module=__main__ | function=<module>
-[WARN] This warning goes to console, file, and JSON | module=__main__ | function=<module>
-[ERROR] This error goes to console, file, and JSON | module=__main__ | function=<module>
-[INFO] User action performed | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
-[WARN] Suspicious activity detected | ip=192.168.1.100 | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
-[ERROR] Critical system error | component=database | error_code=CONN_FAIL | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+2025-01-15T14:32:10.123456+00:00 [INFO] Info message - console and app.log
+2025-01-15T14:32:10.124567+00:00 [WARN] Warning - all three sinks
+2025-01-15T14:32:10.125678+00:00 [ERROR] Error - all three sinks | error_code=E500
 ```
 
-### File Output (app.log - Text Format)
+### File `app.log` (All DEBUG and above)
 ```
-[DEBUG] This debug message goes to console and file | module=__main__ | function=<module>
-[INFO] This info message goes to console and file | module=__main__ | function=<module>
-[WARN] This warning goes to console, file, and JSON | module=__main__ | function=<module>
-[ERROR] This error goes to console, file, and JSON | module=__main__ | function=<module>
-[INFO] User action performed | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
-[WARN] Suspicious activity detected | ip=192.168.1.100 | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
-[ERROR] Critical system error | component=database | error_code=CONN_FAIL | user_id=12345 | request_id=req-abc | module=__main__ | function=<module>
+2025-01-15T14:32:10.122345+00:00 [DEBUG] Debug message - only in app.log
+2025-01-15T14:32:10.123456+00:00 [INFO] Info message - console and app.log
+2025-01-15T14:32:10.124567+00:00 [WARN] Warning - all three sinks
+2025-01-15T14:32:10.125678+00:00 [ERROR] Error - all three sinks | error_code=E500
 ```
 
-### JSON Output (app.jsonl - Structured)
+### File `errors.json` (WARNING and above, pretty JSON)
 ```json
-{"level": "WARNING", "message": "This warning goes to console, file, and JSON", "module": "__main__", "function": "<module>"}
-{"level": "ERROR", "message": "This error goes to console, file, and JSON", "module": "__main__", "function": "<module>"}
-{"level": "INFO", "message": "User action performed", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
-{"level": "WARNING", "message": "Suspicious activity detected", "ip": "192.168.1.100", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
-{"level": "ERROR", "message": "Critical system error", "component": "database", "error_code": "CONN_FAIL", "user_id": 12345, "request_id": "req-abc", "module": "__main__", "function": "<module>"}
+{
+  "timestamp": "2025-01-15T14:32:10.124567+00:00",
+  "level": "WARNING",
+  "message": "Warning - all three sinks"
+}
+{
+  "timestamp": "2025-01-15T14:32:10.125678+00:00",
+  "level": "ERROR",
+  "message": "Error - all three sinks",
+  "error_code": "E500"
+}
 ```
+
+### What Happens
+
+1. **Each sink has independent filtering**:
+   - Console: Shows INFO, WARN, ERROR (no DEBUG)
+   - app.log: Shows everything (DEBUG and above)
+   - errors.json: Only WARNING and ERROR
+
+2. **Same log event goes to multiple destinations**:
+   - The WARNING and ERROR messages appear in all three sinks
+   - The INFO message appears in console and app.log (not errors.json)
+   - The DEBUG message only appears in app.log
+
+3. **Different formats per sink**:
+   - Console and app.log use default text format
+   - errors.json uses pretty-printed JSON format
+
+4. **File rotation on app.log**:
+   - Rotates daily (creates new file at midnight)
+   - Keeps last 7 days of logs
+   - Old logs are automatically deleted
 
 ## Advanced Multi-Sink Patterns
 
@@ -89,15 +107,15 @@ from logly import logger
 def configure_logging():
     # Always log to console
     logger.configure(level="DEBUG")
-    logger.add("console", level="INFO", format="{level} | {message}")
+    logger.add("console", filter_min_level="INFO")
 
     # Add file logging in production
     if os.getenv("ENVIRONMENT") == "production":
-        logger.add("/var/log/app.log", level="WARNING", rotation="100 MB", retention=30)
+        logger.add("/var/log/app.log", filter_min_level="WARNING", rotation="100 MB", retention=30)
 
     # Add JSON logging for log aggregation
     if os.getenv("LOG_AGGREGATION_URL"):
-        logger.add(callback=send_to_log_aggregator, level="ERROR")
+        logger.add(callback=send_to_log_aggregator, filter_min_level="ERROR")
 
 def send_to_log_aggregator(record):
     """Send log record to external log aggregation service"""
@@ -114,16 +132,16 @@ from logly import logger
 logger.configure(level="DEBUG")
 
 # General application logs
-logger.add("app.log", level="INFO")
+logger.add("app.log", filter_min_level="INFO")
 
 # Security events only
-logger.add("security.log", level="WARNING")  # Note: filtering would need custom implementation
+logger.add("security.log", filter_min_level="WARNING")
 
 # Performance metrics
-logger.add("performance.log", level="INFO")  # Note: filtering would need custom implementation
+logger.add("performance.log", filter_min_level="INFO")
 
 # Audit trail
-logger.add("audit.log", format="AUDIT | {time} | {user} | {action} | {resource}")  # Note: filtering would need custom implementation
+logger.add("audit.log")
 
 # Usage
 logger.info("User login", tags=["security"], user="john", ip="192.168.1.1")
@@ -138,26 +156,17 @@ logger.info("File accessed", audit=True, user="john", action="read", resource="/
 logger.configure(level="INFO")
 logger.add(
     "logs/app.log",
-    level="INFO",
-    format="{time} | {level} | {message}",
+    filter_min_level="INFO",
     rotation="10 MB",      # Size-based rotation
     retention=7,           # Number of files to keep
-    encoding="utf-8",      # File encoding
-    async_=True,           # Async writing
-    buffer_size=8192       # Buffer size for async
+    async_write=True       # Async writing
 )
 ```
 
 ### Console Sink Options
 ```python
 logger.configure(level="INFO")
-logger.add(
-    "console",
-    level="INFO",
-    format="{time} | {level} | {message}",
-    colorize=True,        # Enable/disable colors
-    stderr=False          # Use stderr instead of stdout
-)
+logger.add("console", filter_min_level="INFO")
 ```
 
 ### Callback Sink Options
@@ -165,8 +174,7 @@ logger.add(
 logger.configure(level="ERROR")
 logger.add(
     callback=my_callback_function,
-    level="ERROR",
-    async_=True            # Async callback execution
+    filter_min_level="ERROR"
 )
 ```
 

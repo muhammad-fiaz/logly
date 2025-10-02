@@ -14,50 +14,55 @@ This example demonstrates how to use Logly's context binding features to add per
 from logly import logger
 
 # Configure logging
-logger.configure(
-    level="INFO",
-    format="{time} | {level} | {context} | {message}"
-)
+logger.configure(level="INFO")
+logger.add("console")
 
-# Bind persistent context (applies to all subsequent logs)
-logger.bind(user_id=12345, session_id="abc-123", service="auth-service")
+# Create a bound logger with persistent context
+request_logger = logger.bind(user_id=12345, session_id="abc-123", service="auth")
 
-logger.info("User authentication started")
-logger.info("Validating credentials")
+# All logs from this logger include the bound context
+request_logger.info("User authentication started")
+request_logger.info("Validating credentials")
+request_logger.info("Password verification successful")
 
-# Temporary context (only for this log)
-logger.info("Password verification successful", extra={"attempts": 1})
-
-# Nested context
+# Nested context with contextualize
 with logger.contextualize(request_id="req-456", endpoint="/login"):
     logger.info("Processing login request")
-
-    # This log inherits the context
+    
+    # This log inherits the contextualize context
     logger.info("User lookup completed")
-
-    # More specific context for this operation
+    
+    # You can nest contextualize blocks
     with logger.contextualize(operation="password_check"):
         logger.info("Checking password hash")
         logger.info("Hash verification passed")
-
+    
     logger.info("Login successful")
 
+# Context from contextualize is cleared after the block
 logger.info("Authentication flow completed")
 ```
 
-## Output
+## Expected Output
 
 ```
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service | User authentication started
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service | Validating credentials
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service | Password verification successful
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service request_id=req-456 endpoint=/login | Processing login request
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service request_id=req-456 endpoint=/login | User lookup completed
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service request_id=req-456 endpoint=/login operation=password_check | Checking password hash
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service request_id=req-456 endpoint=/login operation=password_check | Hash verification passed
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service request_id=req-456 endpoint=/login | Login successful
-2025-01-15 10:30:45 | INFO  | user_id=12345 session_id=abc-123 service=auth-service | Authentication flow completed
+[INFO] User authentication started | user_id=12345 | session_id=abc-123 | service=auth
+[INFO] Validating credentials | user_id=12345 | session_id=abc-123 | service=auth
+[INFO] Password verification successful | user_id=12345 | session_id=abc-123 | service=auth
+[INFO] Processing login request | request_id=req-456 | endpoint=/login
+[INFO] User lookup completed | request_id=req-456 | endpoint=/login
+[INFO] Checking password hash | request_id=req-456 | endpoint=/login | operation=password_check
+[INFO] Hash verification passed | request_id=req-456 | endpoint=/login | operation=password_check
+[INFO] Login successful | request_id=req-456 | endpoint=/login
+[INFO] Authentication flow completed
 ```
+
+**What happens:**
+- **`logger.bind()`** creates a new logger instance with persistent context (user_id, session_id, service)
+- **`logger.contextualize()`** adds temporary context for the duration of the `with` block
+- Context can be nested - inner blocks inherit outer context
+- After exiting a `contextualize` block, that context is removed
+- The bound logger keeps its context throughout its lifetime
 
 ## Advanced Context Examples
 

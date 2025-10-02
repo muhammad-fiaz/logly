@@ -13,8 +13,8 @@ This example demonstrates the simplest way to get started with Logly for console
 ```python
 from logly import logger
 
-# Configure for console output with colors (console=True by default)
-logger.configure(level="INFO", color=True, console=True)
+# Configure for console output with colors
+logger.configure(level="INFO", color=True)
 
 # Log some messages
 logger.info("Application started")
@@ -23,24 +23,44 @@ logger.error("This is an error message")
 logger.debug("This debug message won't show (level is INFO)")
 
 # Log with extra data
-logger.info("User {user_id} logged in", user_id=12345)
-logger.info("Processing {count} items", count=1000)
+logger.info("User logged in", user_id=12345)
+logger.info("Processing items", count=1000, status="active")
+
+logger.complete()
 ```
 
-## Output
+## Expected Output
 
 ```
-[INFO] Application started | module=__main__ | function=<module>
-[WARN] This is a warning message | module=__main__ | function=<module>
-[ERROR] This is an error message | module=__main__ | function=<module>
-[INFO] User 12345 logged in | module=__main__ | function=<module>
-[INFO] Processing 1000 items | module=__main__ | function=<module>
+2025-01-15T14:30:00.123456+00:00 [INFO] Application started
+2025-01-15T14:30:00.124567+00:00 [WARN] This is a warning message
+2025-01-15T14:30:00.125678+00:00 [ERROR] This is an error message
+2025-01-15T14:30:00.126789+00:00 [INFO] User logged in | user_id=12345
+2025-01-15T14:30:00.127890+00:00 [INFO] Processing items | count=1000 | status=active
 ```
+
+### What Happens
+
+1. **`logger.configure(level="INFO", color=True)`**:
+   - Sets minimum log level to INFO (debug messages are filtered out)
+   - Enables colored output for terminal (INFO=cyan, WARN=yellow, ERROR=red)
+   - Console sink is added automatically
+
+2. **The debug message doesn't appear**:
+   - Because level is set to INFO, DEBUG logs are filtered
+   - Only INFO, WARN, ERROR, and CRITICAL messages show
+
+3. **Extra fields are appended**:
+   - Fields like `user_id=12345` are automatically formatted
+   - Multiple fields are separated by `|` characters
+
+4. **Timestamps are included**:
+   - ISO 8601 format with microsecond precision
+   - Timezone aware (UTC by default)
 
 ## Key Features Demonstrated
 
 - **Simple setup**: Just import and configure
 - **Colored output**: Automatic color coding by log level
-- **Template strings**: Use `{variable}` syntax for formatting
 - **Level filtering**: Only show messages at or above configured level
 - **Console control**: Enable/disable console output with `console` parameter

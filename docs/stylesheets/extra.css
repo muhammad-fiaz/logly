@@ -47,6 +47,52 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Edit and View buttons with text - Fixed bottom right corner */
+.md-content__button.md-icon {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.7rem 1.2rem;
+  min-width: 160px;
+  border-radius: 0.5rem;
+  background-color: var(--md-primary-fg-color);
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  z-index: 90;
+  font-weight: 500;
+  text-align: left;
+}
+
+.md-content__button.md-icon:first-of-type {
+  bottom: 6.5rem;
+}
+
+.md-content__button.md-icon:hover {
+  background-color: var(--md-accent-fg-color);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.md-content__button.md-icon span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.md-content__button.md-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  fill: white;
+}
+
 /* Code inline */
 code {
   padding: 0.1em 0.4em;

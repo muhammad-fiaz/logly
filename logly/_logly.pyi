@@ -1,13 +1,8 @@
-"""Type stubs for the logly Rust extension module.
-
-This module provides the core logging functionality implemented in Rust,
-offering high-performance asynchronous logging with a Loguru-like API.
-"""
-
 from __future__ import annotations
 
 __version__: str
 """The version string of the logly library."""
+
 
 class PyLogger:
     """High-performance logger implemented in Rust with asynchronous writing.
@@ -40,6 +35,7 @@ class PyLogger:
         date_style: str | None = ...,
         date_enabled: bool = ...,
         retention: int | None = ...,
+        format: str | None = ...,  # pylint: disable=redefined-builtin
     ) -> int:
         """Add a logging sink (output destination).
 
@@ -47,7 +43,7 @@ class PyLogger:
             sink: Path to log file or "console" for stdout.
             rotation: Time-based rotation policy ("daily", "hourly", "minutely").
             size_limit: Maximum file size before rotation (e.g., "5KB", "10MB", "1GB").
-            filter_min_level: Minimum log level for this sink (e.g., "INFO", "ERROR").
+            filter_min_level: Exact log level for this sink. Only messages with this exact level will be logged.
             filter_module: Only log messages from this module.
             filter_function: Only log messages from this function.
             async_write: Enable background async writing (default: True).
@@ -57,6 +53,7 @@ class PyLogger:
             date_style: Date format ("rfc3339", "local", "utc").
             date_enabled: Include timestamp in log output (default: False).
             retention: Number of rotated files to keep (older files auto-deleted).
+            format: Custom format string with placeholders like "{level}", "{message}", "{time}", "{extra}", or any extra field key. Placeholders are case-insensitive and extra fields not used in the template are automatically appended.
 
         Returns:
             Handler ID that can be used to remove this sink later.
@@ -67,8 +64,17 @@ class PyLogger:
         self,
         level: str = ...,
         color: bool = ...,
+        level_colors: dict[str, str] | None = ...,
         json: bool = ...,
         pretty_json: bool = ...,
+        console: bool = ...,
+        show_time: bool = ...,
+        show_module: bool = ...,
+        show_function: bool = ...,
+        console_levels: dict[str, bool] | None = ...,
+        time_levels: dict[str, bool] | None = ...,
+        color_levels: dict[str, bool] | None = ...,
+        storage_levels: dict[str, bool] | None = ...,
     ) -> None:
         """Configure global logger settings.
 
@@ -76,8 +82,25 @@ class PyLogger:
             level: Default minimum log level ("TRACE", "DEBUG", "INFO", "SUCCESS",
                   "WARNING", "ERROR", "CRITICAL").
             color: Enable colored output for console logs.
+            level_colors: Dictionary mapping log levels to ANSI color codes or color names.
             json: Output logs in JSON format.
             pretty_json: Format logs as pretty-printed JSON (more readable, higher cost).
+            console: Enable console output.
+            show_time: Show timestamps in console output.
+            show_module: Show module information in console output.
+            show_function: Show function information in console output.
+            console_levels: Dictionary mapping log levels to console output enable/disable.
+            time_levels: Dictionary mapping log levels to time display enable/disable.
+            color_levels: Dictionary mapping log levels to color enable/disable.
+            storage_levels: Dictionary mapping log levels to file storage enable/disable.
+        """
+        ...
+
+    def reset(self) -> None:
+        """Reset logger configuration to default settings.
+
+        Resets all logger settings to their default values, clearing any
+        per-level controls and custom configurations.
         """
         ...
 
@@ -92,75 +115,83 @@ class PyLogger:
         """
         ...
 
-    def trace(self, message: str, /, **kwargs) -> None:
+    def trace(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at TRACE level (most verbose).
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def debug(self, message: str, /, **kwargs) -> None:
+    def debug(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at DEBUG level.
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def info(self, message: str, /, **kwargs) -> None:
+    def info(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at INFO level (general information).
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def success(self, message: str, /, **kwargs) -> None:
+    def success(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at SUCCESS level (successful operations).
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def warning(self, message: str, /, **kwargs) -> None:
+    def warning(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at WARNING level.
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def error(self, message: str, /, **kwargs) -> None:
+    def error(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at ERROR level.
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def critical(self, message: str, /, **kwargs) -> None:
+    def critical(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at CRITICAL level (most severe).
 
         Args:
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
 
-    def log(self, level: str, message: str, /, **kwargs) -> None:
+    def log(self, level: str, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at a custom or aliased level.
 
         Args:
             level: Log level name (e.g., "INFO", "ERROR", or a custom alias).
-            message: The log message.
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
             **kwargs: Additional context fields to attach to the log record.
         """
         ...
@@ -203,8 +234,6 @@ class PyLogger:
         """
         ...
 
-logger: PyLogger
-"""The global PyLogger instance used by the logly library.
 
-This is the main logger instance that provides the core logging functionality.
-Use this instance directly or wrap it with _LoggerProxy for additional features."""
+logger: PyLogger
+

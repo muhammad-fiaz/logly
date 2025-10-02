@@ -1,13 +1,12 @@
 ---
 title: Logly - High-Performance Python Logging Library
-description: Rust-powered logging for Python with async I/O, beautiful output, and 3x faster performance than standard logging. Features template strings, callbacks, and smart rotation.
+description: Rust-powered logging for Python with async I/O, beautiful output, and 3x faster performance than standard logging. Features callbacks, and smart rotation.
 keywords: python, logging, rust, async, performance, loguru, pyo3, high-performance
 ---
 
 <div align="center">
-<h1>Logly</h1>
 
-  <img src="../assets/logly-logo.png" alt="Logly Logo" width="400" />
+  <img src="assets/logly-logo.png" alt="Logly Logo" width="400" />
   <p><em>Rust-powered, Loguru-like logging for Python</em></p>
 
   <a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly.svg" alt="PyPI"></a>
@@ -20,99 +19,36 @@ keywords: python, logging, rust, async, performance, loguru, pyo3, high-performa
 
 ## Overview
 
-**Logly** is a high-performance, enterprise-grade logging library for Python, powered by Rust. It combines the familiar Loguru-like API with blazing-fast performance, structured JSON logging, and production-ready features like async buffering, file rotation, and multi-sink architecture.
+**Logly** is a high-performance logging library for Python, powered by Rust. It combines the familiar Loguru-like API with the performance and safety guarantees of Rust.
 
-Built with a modular Rust backend using PyO3/Maturin, Logly delivers exceptional performance while maintaining memory safety and thread safety. The codebase is organized into focused modules (backend, config, format, utils) for maintainability and extensibility.
+Built with a modular Rust backend using PyO3/Maturin, Logly provides fast logging while maintaining memory safety and thread safety through Rust's ownership system.
 
-!!! note "Active Development"
-    Logly is actively developed and optimized. Performance continues to improve with each release. For the best experience, use the latest version.
+!!! warning "Active Development"
+    Logly is actively developed. Performance continues to improve with each release.
 
-### Key Features
+### 🎯 Why Logly?
 
-- 🚀 **High Performance**: Rust-powered backend with async buffering and optimized data structures
-- 📦 **Modular Architecture**: Clean separation of concerns with backend, config, format, and utils modules
-- 🔄 **Async Logging**: Background thread writing with configurable buffers and flush intervals
-- 📋 **Structured JSON**: Full JSON logging support with custom fields and pretty printing
-- 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and file storage per log level
-- 🔧 **Granular Configuration**: Per-level console, time, color, and storage controls for maximum flexibility
-- � **File Rotation**: Time-based and size-based rotation with retention policies
-- �️ **Compression**: Built-in support for gzip and zstd compression
-- 🎯 **Multi-Sink**: Multiple output destinations with per-sink filtering
-- � **Rich Filtering**: Filter by log level, module, function, or custom criteria
-- 📞 **Callbacks**: Custom processing functions with async execution
-- � **Template Strings**: Dynamic log formatting with variable interpolation
-- 🛡️ **Memory Safe**: Zero-cost abstractions and proper error handling
-- 🧵 **Thread Safe**: Lock-free operations where possible, parking_lot for performance
+Logly combines the simplicity of Python with the performance and safety of Rust, providing:
 
----
+- **High Performance**: Rust-powered backend with optimized data structures
+- **Memory Safety**: No data races, guaranteed thread safety
+- **Comprehensive Solution**: Full-featured logging with async, rotation, filtering, and callbacks
+- **Developer Friendly**: Intuitive API inspired by Loguru
 
-## Architecture
+### ✨ Key Features
 
-Logly's architecture is designed for high performance, maintainability, and extensibility:
-
-### 🏗️ **Modular Rust Backend**
-```
-src/
-├── backend/          # Core logging functionality
-│   ├── logging.rs    # Main logging logic with JSON/text formatting
-│   ├── async.rs      # Asynchronous buffered writing
-│   └── file.rs       # File appenders with rotation
-├── config/           # Configuration and state management
-│   └── state.rs      # Global state with thread-safe structures
-├── format/           # Output formatting utilities
-│   └── json.rs       # JSON record serialization
-└── utils/            # Shared utilities and types
-    └── levels.rs     # Log levels and rotation policies
-```
-
-### 🔧 **Key Components**
-
-- **Backend Module**: Handles core logging operations, message formatting, and output dispatching
-- **Config Module**: Manages global logger state, sink configurations, and thread-safe data structures
-- **Format Module**: Provides JSON serialization and record formatting utilities
-- **Utils Module**: Contains shared types, log levels, and rotation policies
-
-### 🚀 **Performance Optimizations**
-
-- **Async Buffering**: Background thread writing with configurable flush intervals
-- **Memory Safety**: Zero-cost abstractions with proper error handling
-- **Thread Safety**: Lock-free operations where possible, parking_lot Mutex for performance
-- **Fast Hashing**: ahash for high-performance hash operations
-- **Efficient Data Structures**: Crossbeam channels, Arc pointers, and optimized collections
-
----
-
-## Why Logly?
-
-### Performance
-
-Logly outperforms traditional Python logging libraries by leveraging Rust's performance:
-
-```python
-# 50,000 log messages
-Standard Logging: ~2.5s
-Logly:           ~0.8s  (3x faster)
-
-# Concurrent logging (4 threads × 25,000 messages)
-Standard Logging: ~5.2s
-Logly:           ~1.6s  (3.2x faster)
-```
-
-### Developer Experience
-
-```python
-from logly import logger
-
-# Simple and intuitive
-logger.info("User {user} logged in", user="alice", ip="192.168.1.1")
-
-# Powerful context management
-request_logger = logger.bind(request_id="r-123")
-request_logger.info("Processing request")
-
-# Async callbacks for real-time monitoring
-logger.add_callback(lambda rec: send_alert(rec) if rec['level'] == 'ERROR' else None)
-```
+- 🚀 **Rust-Powered Backend**: High-performance logging with async buffering
+- 📦 **Modular Architecture**: Clean separation (backend, config, format, utils)
+- 🔄 **Async Logging**: Background thread writing with configurable buffering
+- 📋 **Structured JSON**: Native JSON support with custom fields and pretty printing
+- 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
+- 🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
+- 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
+- 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
+- 🔍 **Rich Filtering**: Filter by level, module, or function name
+- 📞 **Callbacks**: Custom log processing with async execution
+- 🛡️ **Memory Safe**: Rust's ownership system prevents data races
+- 🧵 **Thread Safe**: Lock-free operations with optimized synchronization
 
 ---
 
@@ -208,20 +144,6 @@ callback_id = logger.add_callback(alert_on_critical)
 logger.critical("System out of memory")  # Alert sent asynchronously
 ```
 
-### 5. Template Strings
-
-Deferred evaluation for better performance:
-
-```python
-# Variables only evaluated if log level passes filter
-logger.debug("Processing {item} with {config}", item=data, config=settings)
-
-# Works with all string formats
-user = "bob"
-logger.info(f"User {user} action", action="login")  # f-string
-logger.info("Item %d of %d", current, total)        # % format
-```
-
 ---
 
 ## Architecture
@@ -229,20 +151,18 @@ logger.info("Item %d of %d", current, total)        # % format
 ```mermaid
 graph TB
     A[Python Application] --> B[_LoggerProxy]
-    B --> C[Template Processing]
-    B --> D[Context Binding]
-    C --> E[PyLogger Rust]
-    D --> E
-    E --> F[Async Writer Thread]
-    E --> G[Callback Threads]
-    F --> H[File Sinks]
-    F --> I[Console Sink]
-    G --> J[User Callbacks]
+    B --> C[Context Binding]
+    C --> D[PyLogger Rust]
+    D --> E[Async Writer Thread]
+    D --> F[Callback Threads]
+    E --> G[File Sinks]
+    E --> H[Console Sink]
+    F --> I[User Callbacks]
 ```
 
 ### Components
 
-- **_LoggerProxy** - Python wrapper with context and template support
+- **_LoggerProxy** - Python wrapper with context binding support
 - **PyLogger** - Rust core with tracing backend
 - **Async Writer** - Background thread for non-blocking file I/O
 - **Callback System** - Thread pool for async event handlers
@@ -316,21 +236,7 @@ logger.error("Database connection lost", retry_count=3)
 logger.critical("Service unresponsive")
 ```
 
----
 
-## Comparison
-
-| Feature | Logly | Standard Logging | Loguru |
-|---------|-------|------------------|--------|
-| Performance | ⚡ Rust-powered | 🐌 Pure Python | 🐌 Pure Python |
-| Async I/O | ✅ | ❌ | ❌ |
-| Callbacks | ✅ Async | ❌ | ❌ |
-| Template Strings | ✅ | ❌ | ❌ |
-| Context Binding | ✅ | ⚠️ Limited | ✅ |
-| JSON Output | ✅ | ⚠️ Manual | ✅ |
-| Type Stubs | ✅ | ✅ | ⚠️ Partial |
-| Rotation | ✅ Time + Size | ⚠️ Time only | ✅ Time + Size |
-| Installation | 📦 Single wheel | 🐍 Built-in | 📦 Pure Python |
 
 ---
 

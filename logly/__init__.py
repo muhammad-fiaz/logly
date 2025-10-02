@@ -1,28 +1,28 @@
-"""Logly: A stupidly simple, yet blazingly fast logging utility for Python.
+"""Logly: A high-performance, structured logging library for Python.
 
-Powered by Rust for optimal performance with asynchronous background writing.
-Provides a Loguru-like API with high-performance logging capabilities.
+Logly provides a simple and efficient logging API with a Rust backend for optimal performance.
+It supports structured logging, file output, asynchronous processing, and flexible configuration
+to meet the needs of modern Python applications.
+
 
 Example:
     >>> from logly import logger
-    >>> logger.info("Hello, World!")
-    >>> logger.add("app.log", rotation="daily")
+    >>> logger.configure(level="INFO")
+    >>> logger.info("Application started", version="1.0.0")
+    >>> logger.error("Database connection failed", error_code=500)
 """
 
-import re
 from contextlib import contextmanager
 
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
 
-# Cached regex pattern for template string processing
-_TEMPLATE_PATTERN = re.compile(r"\{(\w+)\}")
-
 
 class _LoggerProxy:  # pylint: disable=too-many-public-methods
-    """Thin Python proxy to keep surface close to Loguru while delegating to Rust.
+    """Python proxy class that provides a Loguru-compatible API while delegating to the Rust backend.
 
-    For MVP we forward methods; advanced features will be added incrementally.
+    This class maintains API compatibility with popular logging libraries while leveraging
+    the high-performance Rust implementation for optimal logging performance.
     """
 
     def __init__(self, inner: PyLogger) -> None:
@@ -31,8 +31,6 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._bound: dict[str, object] = {}
         # enabled/disabled switch
         self._enabled: bool = True
-        # local options stored by opt()
-        self._options: dict[str, object] = {}
         # custom level name mappings
         self._levels: dict[str, str] = {}
 
@@ -53,6 +51,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         max_buffered_lines: int = 1000,
         date_style: str | None = None,
         date_enabled: bool = False,
+        format: str | None = None,
+        json: bool = False,
     ) -> int:
         """Add a logging sink (output destination).
 
@@ -71,6 +71,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format style. Options: "rfc3339", "local", "utc".
             date_enabled: Enable timestamp in log output (default: False for console).
+            format: Custom format string for this sink (e.g., "{time} | {level} | {message}").
+            json: Format logs as JSON for this sink (default: False).
 
         Returns:
             Handler ID that can be used to remove this sink later.
@@ -85,6 +87,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> logger.add("app.log", size_limit="10MB", retention=5)
             >>> # Add filtered sink for errors only
             >>> logger.add("errors.log", filter_min_level="ERROR")
+            >>> # Add sink with custom format
+            >>> logger.add("console", format="{time} [{level}] {message}")
         """
         if not sink or sink == "console":
             return self._inner.add("console")
@@ -102,6 +106,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             max_buffered_lines=max_buffered_lines,
             date_style=date_style,
             date_enabled=date_enabled,
+            format=format,
+            json=json,
         )
 
     def configure(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -244,7 +250,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._enabled = False
 
     # logging methods with kwargs as context key-values
-    def _augment_with_callsite(self, kwargs: dict) -> dict:
+    def _augment_with_callsite(self, kwargs: dict[str, object]) -> dict[str, object]:
         try:
             import inspect  # pylint: disable=import-outside-toplevel
 
@@ -263,44 +269,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             pass
         return kwargs
 
-    def _process_template_string(self, message: str, kwargs: dict) -> tuple[str, dict]:
-        """Process template strings with {variable} syntax for deferred interpolation.
-
-        Enables efficient logging with template strings similar to PEP 750 proposal.
-        Supports all Python string formats: f-strings, % formatting, and template strings.
-
-        Args:
-            message: Log message that may contain {variable} placeholders
-            kwargs: Context fields, some may match template variables
-
-        Returns:
-            Tuple of (formatted_message, remaining_kwargs)
-        """
-        # Find all {variable} placeholders using cached pattern
-        placeholders = set(_TEMPLATE_PATTERN.findall(message))
-
-        if not placeholders:
-            return message, kwargs
-
-        # Separate template values from remaining context
-        template_values = {}
-        remaining_kwargs = {}
-
-        for key, value in kwargs.items():
-            if key in placeholders:
-                template_values[key] = value
-            else:
-                remaining_kwargs[key] = value
-
-        # Format message with template values
-        try:
-            formatted_message = message.format(**template_values)
-        except (KeyError, ValueError, IndexError):
-            return message, kwargs
-
-        return formatted_message, remaining_kwargs
-
-    def trace(self, message: str, /, *args, **kwargs):
+    def trace(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at TRACE level (most verbose).
 
         Args:
@@ -317,10 +286,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.trace(msg, **merged)
 
-    def debug(self, message: str, /, *args, **kwargs):
+    def debug(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at DEBUG level.
 
         Args:
@@ -337,10 +305,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.debug(msg, **merged)
 
-    def info(self, message: str, /, *args, **kwargs):
+    def info(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at INFO level (general information).
 
         Args:
@@ -357,10 +324,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.info(msg, **merged)
 
-    def success(self, message: str, /, *args, **kwargs):
+    def success(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at SUCCESS level (successful operations).
 
         Args:
@@ -377,10 +343,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.success(msg, **merged)
 
-    def warning(self, message: str, /, *args, **kwargs):
+    def warning(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at WARNING level.
 
         Args:
@@ -397,10 +362,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.warning(msg, **merged)
 
-    def error(self, message: str, /, *args, **kwargs):
+    def error(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at ERROR level.
 
         Args:
@@ -417,10 +381,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.error(msg, **merged)
 
-    def critical(self, message: str, /, *args, **kwargs):
+    def critical(self, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at CRITICAL level (most severe).
 
         Args:
@@ -437,10 +400,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.critical(msg, **merged)
 
-    def log(self, level: str, message: str, /, *args, **kwargs):
+    def log(self, level: str, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at a custom or aliased level.
 
         Args:
@@ -461,7 +423,6 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         merged = {**self._bound, **kwargs}
         merged = self._augment_with_callsite(merged)
         msg = message % args if args else message
-        msg, merged = self._process_template_string(msg, merged)
         self._inner.log(lvl, msg, **merged)
 
     def complete(self) -> None:
@@ -478,7 +439,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._inner.complete()
 
     # context binding similar to loguru: returns a new proxy with additional bound context
-    def bind(self, **kwargs) -> "_LoggerProxy":
+    def bind(self, **kwargs: object) -> "_LoggerProxy":
         """Create a new logger instance with additional context fields bound.
 
         Bound context fields are automatically attached to all log messages
@@ -501,7 +462,6 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         new = _LoggerProxy(self._inner)
         new._bound = {**self._bound, **kwargs}
         new._enabled = self._enabled
-        new._options = dict(self._options)
         new._levels = dict(self._levels)
         return new
 
@@ -535,7 +495,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             self._bound = old
 
     # exception logging convenience
-    def exception(self, message: str = "", /, **kwargs) -> None:
+    def exception(self, message: str = "", /, **kwargs: object) -> None:
         """Log an exception with traceback at ERROR level.
 
         Automatically captures the current exception traceback and logs it.
@@ -560,7 +520,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._inner.error(full, **merged)
 
     # catch decorator/context manager: logs exceptions; if reraise=True, re-raises
-    def catch(self, *, reraise: bool = False):
+    def catch(self, *, reraise: bool = False) -> object:
         """Decorator or context manager to automatically log exceptions.
 
         Can be used as a decorator on functions or as a context manager.
@@ -602,31 +562,6 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
 
         return _Catch()
 
-    # options / opt stub (store options locally)
-    def opt(self, **options) -> "_LoggerProxy":
-        """Create a new logger instance with additional options.
-
-        Options modify logger behavior for the returned instance.
-        Currently stores options for future use.
-
-        Args:
-            **options: Key-value pairs of options to set.
-
-        Returns:
-            A new _LoggerProxy instance with the options applied.
-
-        Example:
-            >>> from logly import logger
-            >>> # Future use: configure output format, depth, etc.
-            >>> custom_logger = logger.opt(depth=2, colors=False)
-        """
-        new = _LoggerProxy(self._inner)
-        new._bound = dict(self._bound)
-        new._options = {**self._options, **options}
-        new._enabled = self._enabled
-        new._levels = dict(self._levels)
-        return new
-
     # register alias or custom level mapping to an existing level name
     def level(self, name: str, mapped_to: str) -> None:
         """Register a custom level name as an alias to an existing level.
@@ -651,7 +586,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._levels[name] = mapped_to
 
     # callback functionality for async log processing
-    def add_callback(self, callback) -> int:
+    def add_callback(self, callback: object) -> int:
         """Register a callback function to be invoked for every log message.
 
         The callback executes asynchronously in a background thread, allowing

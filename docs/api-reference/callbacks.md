@@ -1,18 +1,18 @@
 ---
 title: Callbacks API - Logly Python Logging
-description: Logly callbacks API reference. Learn how to register asynchronous callback functions for real-time log processing and monitoring.
-keywords: python, logging, callbacks, api, asynchronous, handlers, real-time, processing, logly
+description: Logly callbacks API reference. Learn how to register callback functions for real-time log processing and monitoring.
+keywords: python, logging, callbacks, api, handlers, real-time, processing, logly
 ---
 
 # Callbacks
 
-Methods for managing asynchronous log event handlers.
+Methods for managing log event handlers.
 
 ---
 
 ## Overview
 
-Logly supports **async callbacks** that are invoked for each log event. Callbacks enable:
+Logly supports **callbacks** that are invoked for each log event. Callbacks enable:
 
 - ✅ **Custom Backends**: Send logs to external services (Slack, PagerDuty, Sentry)
 - ✅ **Metrics**: Track log counts, error rates
@@ -21,7 +21,7 @@ Logly supports **async callbacks** that are invoked for each log event. Callback
 - ✅ **Aggregation**: Collect logs for batch processing
 
 **Callback Execution:**
-- Callbacks are **async** (run in background)
+- Callbacks are **regular functions** (run in background threads)
 - Callbacks **do not block** log operations
 - Callbacks receive **log record dictionary**
 - Callbacks can be **added** or **removed** dynamically
@@ -30,23 +30,22 @@ Logly supports **async callbacks** that are invoked for each log event. Callback
 
 ## logger.add_callback()
 
-Register an async callback function to be invoked for each log event.
+Register a callback function to be invoked for each log event.
 
 ### Signature
 
 ```python
-logger.add_callback(callback: Callable[[dict], Coroutine], name: str | None = None) -> str
+logger.add_callback(callback: Callable[[dict], None]) -> int
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `callback` | `Callable[[dict], Coroutine]` | *required* | Async function that receives log record |
-| `name` | `str \| None` | `None` | Optional callback name (auto-generated if omitted) |
+| `callback` | `Callable[[dict], None]` | *required* | Function that receives log record dictionary |
 
 ### Returns
-- `str`: Callback ID (use with `remove_callback()`)
+- `int`: Callback ID (use with `remove_callback()`)
 
 ### Log Record Structure
 
@@ -56,17 +55,10 @@ The callback receives a dictionary with this structure:
 {
     "timestamp": "2025-01-15T10:30:45.123Z",  # ISO 8601 timestamp
     "level": "INFO",                           # Log level name
-    "message": "User logged in",               # Formatted message
-    "fields": {                                # Additional context
-        "user_id": "alice",
-        "request_id": "abc-123"
-    },
-    "file": "app.py",                          # Source file
-    "line": 42,                                # Source line
-    "function": "handle_login",                # Source function
-    "module": "myapp.auth",                    # Source module
-    "process": 12345,                          # Process ID
-    "thread": 67890                            # Thread ID
+    "message": "User logged in",               # Log message text
+    # Additional fields from bind(), contextualize(), or kwargs
+    "user_id": 12345,
+    "action": "login"
 }
 ```
 
@@ -75,28 +67,28 @@ The callback receives a dictionary with this structure:
 === "Slack Notifications"
     ```python
     from logly import logger
-    import aiohttp
+    import requests
     
-    async def slack_callback(record: dict):
+    def slack_callback(record: dict):
         """Send ERROR/CRITICAL logs to Slack"""
         if record["level"] in ["ERROR", "CRITICAL"]:
-            async with aiohttp.ClientSession() as session:
-                await session.post(
-                    "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
-                    json={
-                        "text": f"🚨 {record['level']}: {record['message']}",
-                        "attachments": [{
-                            "color": "danger",
-                            "fields": [
-                                {"title": k, "value": str(v), "short": True}
-                                for k, v in record.get("fields", {}).items()
-                            ]
-                        }]
-                    }
-                )
+            requests.post(
+                "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+                json={
+                    "text": f"🚨 {record['level']}: {record['message']}",
+                    "attachments": [{
+                        "color": "danger",
+                        "fields": [
+                            {"title": k, "value": str(v), "short": True}
+                            for k, v in record.items() 
+                            if k not in ["timestamp", "level", "message"]
+                        ]
+                    }]
+                }
+            )
     
     # Register callback
-    callback_id = logger.add_callback(slack_callback, name="slack_alerts")
+    callback_id = logger.add_callback(slack_callback)
     
     # This will trigger Slack notification
     logger.error("Payment failed", order_id=1234, amount=99.99)
@@ -109,7 +101,7 @@ The callback receives a dictionary with this structure:
     
     log_counts = Counter()
     
-    async def metrics_callback(record: dict):
+    def metrics_callback(record: dict):
         """Count logs by level"""
         log_counts[record["level"]] += 1
         
@@ -129,12 +121,11 @@ The callback receives a dictionary with this structure:
 === "Error Alerting"
     ```python
     from logly import logger
-    import asyncio
     
     error_count = 0
     error_threshold = 10
     
-    async def alert_callback(record: dict):
+    def alert_callback(record: dict):
         """Alert if too many errors"""
         global error_count
         
@@ -142,10 +133,10 @@ The callback receives a dictionary with this structure:
             error_count += 1
             
             if error_count >= error_threshold:
-                await send_alert(f"High error rate: {error_count} errors")
+                send_alert(f"High error rate: {error_count} errors")
                 error_count = 0  # Reset counter
     
-    async def send_alert(message: str):
+    def send_alert(message: str):
         print(f"🚨 ALERT: {message}")
         # Send to PagerDuty, email, etc.
     
@@ -161,11 +152,9 @@ The callback receives a dictionary with this structure:
     ```python
     from logly import logger
     
-    async def filter_callback(record: dict):
+    def filter_callback(record: dict):
         """Log only errors from specific module"""
-        if (record["level"] == "ERROR" and 
-            record.get("module", "").startswith("myapp.critical")):
-            
+        if record["level"] == "ERROR":
             # Re-log to separate file
             with open("critical_errors.log", "a") as f:
                 f.write(f"{record['timestamp']} | {record['message']}\n")
@@ -176,20 +165,19 @@ The callback receives a dictionary with this structure:
 === "Batch Processing"
     ```python
     from logly import logger
-    import asyncio
     
     log_buffer = []
     
-    async def batch_callback(record: dict):
+    def batch_callback(record: dict):
         """Collect logs and process in batches"""
         log_buffer.append(record)
         
         # Process every 50 logs
         if len(log_buffer) >= 50:
-            await process_batch(log_buffer.copy())
+            process_batch(log_buffer.copy())
             log_buffer.clear()
     
-    async def process_batch(records: list):
+    def process_batch(records: list):
         print(f"Processing batch of {len(records)} logs")
         # Send to database, analytics service, etc.
     
@@ -205,25 +193,25 @@ The callback receives a dictionary with this structure:
     - **Custom Storage**: Write to databases, cloud storage
     - **Real-time Processing**: Stream logs to analytics
 
-!!! warning "Async Required"
-    Callbacks **must** be async functions:
+!!! info "Regular Functions"
+    Callbacks can be regular functions (not async):
     ```python
-    # ❌ WRONG: Sync function
-    def sync_callback(record: dict):
-        print(record)
+    # ✅ Regular function works fine
+    def my_callback(record: dict):
+        print(f"Log: {record['level']} - {record['message']}")
     
-    # ✅ CORRECT: Async function
-    async def async_callback(record: dict):
-        print(record)
-    
-    logger.add_callback(async_callback)
+    logger.add_callback(my_callback)
     ```
+    
+    Callbacks run in background threads, so they don't block the main application even if they perform synchronous I/O.
 
 !!! info "Non-Blocking"
     Callbacks run in the background and **do not block** logging:
     ```python
-    async def slow_callback(record: dict):
-        await asyncio.sleep(5)  # 5 second delay
+    import time
+    
+    def slow_callback(record: dict):
+        time.sleep(5)  # 5 second delay
     
     logger.add_callback(slow_callback)
     
@@ -234,7 +222,7 @@ The callback receives a dictionary with this structure:
 !!! warning "Exception Handling"
     Exceptions in callbacks are caught and logged:
     ```python
-    async def broken_callback(record: dict):
+    def broken_callback(record: dict):
         raise ValueError("Oops!")
     
     logger.add_callback(broken_callback)
@@ -333,18 +321,15 @@ logger.add("console")
 logger.add("logs/app.log")
 
 # Callback 1: Slack notifications for errors
-async def slack_callback(record: dict):
+def slack_callback(record: dict):
     if record["level"] in ["ERROR", "CRITICAL"]:
-        async with aiohttp.ClientSession() as session:
-            await session.post(
-                "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
-                json={"text": f"🚨 {record['level']}: {record['message']}"}
-            )
+        # Note: In real code, use requests or similar for HTTP calls
+        print(f"Would send to Slack: 🚨 {record['level']}: {record['message']}")
 
 # Callback 2: Metrics collection
 log_counts = {"INFO": 0, "ERROR": 0}
 
-async def metrics_callback(record: dict):
+def metrics_callback(record: dict):
     level = record["level"]
     if level in log_counts:
         log_counts[level] += 1
@@ -352,24 +337,23 @@ async def metrics_callback(record: dict):
 # Callback 3: Custom alerting
 error_threshold = 5
 
-async def alert_callback(record: dict):
+def alert_callback(record: dict):
     if record["level"] == "ERROR":
         if log_counts["ERROR"] >= error_threshold:
             print(f"🚨 ALERT: {error_threshold} errors detected!")
 
 # Register callbacks
-slack_id = logger.add_callback(slack_callback, name="slack")
-metrics_id = logger.add_callback(metrics_callback, name="metrics")
+slack_id = logger.add_callback(slack_callback)
+metrics_id = logger.add_callback(metrics_callback)
 alert_id = logger.add_callback(alert_callback, name="alerting")
 
 # Application code
-async def main():
+def main():
     logger.info("Application started")
     
     # Simulate errors
     for i in range(10):
         logger.error(f"Error {i}", error_code=i)
-        await asyncio.sleep(0.1)
     
     # Print metrics
     print(f"Final counts: {log_counts}")
@@ -381,7 +365,7 @@ async def main():
     logger.complete()
 
 # Run
-asyncio.run(main())
+main()
 ```
 
 **Output:**
@@ -402,16 +386,16 @@ Final counts: {'INFO': 1, 'ERROR': 10}
 ### ✅ DO
 
 ```python
-# 1. Use async callbacks
-async def good_callback(record: dict):
-    await process_async(record)
+# 1. Keep callbacks simple and fast
+def good_callback(record: dict):
+    process_sync(record)
 
 logger.add_callback(good_callback)
 
 # 2. Handle exceptions in callbacks
-async def safe_callback(record: dict):
+def safe_callback(record: dict):
     try:
-        await risky_operation(record)
+        risky_operation(record)
     except Exception as e:
         print(f"Callback error: {e}")
 
@@ -428,23 +412,20 @@ logger.add_callback(metrics_callback, name="metrics_collector")
 ### ❌ DON'T
 
 ```python
-# 1. Don't use sync functions
-def sync_callback(record: dict):  # ❌ Not async
-    print(record)
-
-logger.add_callback(sync_callback)  # ❌ Won't work
-
-# 2. Don't perform blocking I/O
-async def blocking_callback(record: dict):
+# 1. Don't perform blocking I/O
+def blocking_callback(record: dict):
     with open("file.log", "a") as f:  # ❌ Blocking I/O
         f.write(str(record))
 
-# Use async I/o instead:
+# Use async I/O instead:
+import asyncio
+import aiofiles
+
 async def async_callback(record: dict):
     async with aiofiles.open("file.log", "a") as f:  # ✅ Async I/O
         await f.write(str(record))
 
-# 3. Don't forget to remove callbacks
+# 2. Don't forget to remove callbacks
 logger.add_callback(temp_callback)
 # ... use logger ...
 # ❌ Callback still active (memory leak)
@@ -454,8 +435,8 @@ callback_id = logger.add_callback(temp_callback)
 # ... use logger ...
 logger.remove_callback(callback_id)
 
-# 4. Don't log inside callbacks (infinite loop)
-async def bad_callback(record: dict):
+# 3. Don't log inside callbacks (infinite loop)
+def bad_callback(record: dict):
     logger.info("Processing log")  # ❌ Triggers callback again!
 ```
 
@@ -475,21 +456,23 @@ async def bad_callback(record: dict):
 # 1. Use batch processing
 log_buffer = []
 
-async def batch_callback(record: dict):
+def batch_callback(record: dict):
     log_buffer.append(record)
     if len(log_buffer) >= 100:
-        await process_batch(log_buffer.copy())
+        process_batch(log_buffer.copy())
         log_buffer.clear()
 
 # 2. Filter early
-async def filtered_callback(record: dict):
+def filtered_callback(record: dict):
     if record["level"] != "ERROR":
         return  # Skip non-errors
-    await process_error(record)
+    process_error(record)
 
-# 3. Use connection pooling
-session = aiohttp.ClientSession()  # Reuse session
+# 3. Use async I/O when needed
+import asyncio
+import aiohttp
 
 async def http_callback(record: dict):
-    await session.post(url, json=record)
+    async with aiohttp.ClientSession() as session:
+        await session.post(url, json=record)
 ```
