@@ -11,7 +11,7 @@ keywords: python, logging, rust, async, performance, loguru, pyo3, high-performa
 
   <a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly.svg" alt="PyPI"></a>
   <a href="https://pypistats.org/packages/logly"><img src="https://img.shields.io/pypi/dm/logly.svg" alt="Downloads"></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg" alt="Python"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.10-brightgreen.svg" alt="Python"></a>
   <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly.svg" alt="License"></a>
 </div>
 

@@ -4,7 +4,7 @@
 <a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly" alt="PyPI"></a>
 <a href="https://pypistats.org/packages/logly"><img src="https://img.shields.io/pypi/dm/logly" alt="PyPI - Downloads"></a>
 <a href="https://muhammad-fiaz.github.io/logly/"><img src="https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue" alt="Documentation"></a>
-<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-brightgreen.svg" alt="Supported Python"></a>
+<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.10-brightgreen.svg" alt="Supported Python"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/stars/muhammad-fiaz/logly" alt="GitHub stars"></a>
 <a href="https://github.com/muhammad-fiaz/logly/releases"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly" alt="GitHub release"></a>
 <a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://img.shields.io/codecov/c/gh/muhammad-fiaz/logly" alt="Codecov"></a>
@@ -62,7 +62,7 @@ pip install logly
 
 ### From Source (Development)
 
-Requires: Python 3.9+, Rust 1.70+, Maturin
+Requires: Python 3.10+, Rust 1.70+, Maturin
 
 ```bash
 git clone https://github.com/muhammad-fiaz/logly.git

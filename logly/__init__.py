@@ -12,6 +12,8 @@ Example:
     >>> logger.error("Database connection failed", error_code=500)
 """
 
+from __future__ import annotations
+
 from contextlib import contextmanager
 
 from logly._logly import PyLogger, __version__
@@ -439,7 +441,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._inner.complete()
 
     # context binding similar to loguru: returns a new proxy with additional bound context
-    def bind(self, **kwargs: object) -> "_LoggerProxy":
+    def bind(self, **kwargs: object) -> _LoggerProxy:
         """Create a new logger instance with additional context fields bound.
 
         Bound context fields are automatically attached to all log messages

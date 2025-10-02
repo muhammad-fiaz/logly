@@ -6,7 +6,7 @@ This guide covers development setup, testing, code quality, and contribution gui
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - Rust toolchain (for building the Rust backend)
 - [uv](https://github.com/astral-sh/uv) package manager
 

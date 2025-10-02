@@ -47,6 +47,7 @@ impl PyLogger {
     ///
     /// # Returns
     /// PyResult indicating success or error
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, console_levels=None, time_levels=None, color_levels=None, storage_levels=None))]
     pub fn configure(
         &self,
@@ -122,6 +123,7 @@ impl PyLogger {
     ///
     /// # Returns
     /// Handler ID that can be used to remove the sink later
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (sink, *, rotation=None, size_limit=None, filter_min_level=None, filter_module=None, filter_function=None, async_write=true, buffer_size=8192, flush_interval=1000, max_buffered_lines=1000, date_style=None, date_enabled=false, retention=None, format=None, json=false))]
     pub fn add(
         &self,
