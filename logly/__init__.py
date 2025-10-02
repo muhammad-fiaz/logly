@@ -14,7 +14,7 @@ Example:
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import ContextDecorator, contextmanager
 
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
@@ -522,7 +522,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._inner.error(full, **merged)
 
     # catch decorator/context manager: logs exceptions; if reraise=True, re-raises
-    def catch(self, *, reraise: bool = False) -> object:
+    def catch(self, *, reraise: bool = False) -> ContextDecorator:
         """Decorator or context manager to automatically log exceptions.
 
         Can be used as a decorator on functions or as a context manager.
@@ -545,8 +545,6 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             ... def my_function():
             ...     potentially_failing_code()
         """
-        from contextlib import ContextDecorator  # pylint: disable=import-outside-toplevel
-
         proxy = self
 
         class _Catch(ContextDecorator):

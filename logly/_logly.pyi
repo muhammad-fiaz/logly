@@ -35,6 +35,7 @@ class PyLogger:
         date_enabled: bool = ...,
         retention: int | None = ...,
         format: str | None = ...,  # pylint: disable=redefined-builtin
+        json: bool = ...,
     ) -> int:
         """Add a logging sink (output destination).
 
@@ -53,6 +54,7 @@ class PyLogger:
             date_enabled: Include timestamp in log output (default: False).
             retention: Number of rotated files to keep (older files auto-deleted).
             format: Custom format string with placeholders like "{level}", "{message}", "{time}", "{extra}", or any extra field key. Placeholders are case-insensitive and extra fields not used in the template are automatically appended.
+            json: Enable JSON output format (default: False).
 
         Returns:
             Handler ID that can be used to remove this sink later.

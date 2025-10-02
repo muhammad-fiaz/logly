@@ -62,6 +62,7 @@ features = ["pyo3/extension-module"]
 [tool.mypy]
 check_untyped_defs = true
 disallow_untyped_defs = true
+exclude = ["examples"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -74,6 +75,11 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = ["bench.*"]
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = ["examples.*"]
+disallow_untyped_defs = false
+ignore_errors = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -96,8 +102,9 @@ output-format = "colorized"
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 fix = true
+extend-exclude = ["examples"]
 
 [tool.ruff.lint]
 select = [

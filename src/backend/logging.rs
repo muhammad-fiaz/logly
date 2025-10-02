@@ -319,10 +319,10 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
                 println!("{}", final_msg);
             } else {
                 // File output - use async writing if available, otherwise synchronous
-                if let Some(async_sender) = s.async_senders.get(&sink_id) {
+                if let Some(async_sender) = s.async_senders.get(sink_id) {
                     // Async writing
                     let _ = async_sender.send(final_msg);
-                } else if let Some(writer) = s.file_writers.get(&sink_id) {
+                } else if let Some(writer) = s.file_writers.get(sink_id) {
                     // Synchronous fallback
                     let mut w = writer.lock();
                     let _ = writeln!(&mut **w, "{}", final_msg);
@@ -332,6 +332,7 @@ pub fn log_message(level: Level, msg: &str, extra: Option<&Bound<'_, PyDict>>) {
     });
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn configure_with_colors(
     level: &str,
     color: bool,
@@ -406,7 +407,7 @@ mod tests {
     use super::*;
     use crate::config::state::{reset_state, with_state};
     use ahash::AHashMap;
-    use pyo3::{prelude::*, types::PyDictMethods};
+    use pyo3::types::PyDictMethods;
     use tracing::Level;
 
     #[test]
@@ -569,7 +570,6 @@ mod tests {
         });
 
         // Initialize Python for PyO3 operations
-        pyo3::prepare_freethreaded_python();
         Python::initialize();
 
         // This test would require capturing stdout, which is complex in Rust
@@ -600,7 +600,6 @@ mod tests {
         });
 
         // Initialize Python for PyO3 operations
-        pyo3::prepare_freethreaded_python();
         Python::initialize();
 
         // Test with extra fields

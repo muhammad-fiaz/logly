@@ -445,8 +445,8 @@ mod tests {
             SimpleRollingWriter::new(&file_path, Rotation::NEVER, None, None, Some(10))?;
 
         // Write data that exceeds the limit
-        writer.write(b"Hello, ")?; // 7 bytes
-        writer.write(b"World! Extra text")?; // This should trigger rotation
+        writer.write_all(b"Hello, ")?; // 7 bytes
+        writer.write_all(b"World! Extra text")?; // This should trigger rotation
         writer.flush()?;
 
         // Check that files were created

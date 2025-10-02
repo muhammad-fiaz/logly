@@ -1,10 +1,7 @@
 """Test callback functionality and template strings."""
 
-import time
 import threading
-from pathlib import Path
-
-import pytest
+import time
 
 from logly import logger
 
@@ -100,9 +97,9 @@ def test_callback_exception_handling():
         raise ValueError("Callback failed")
 
     def working_callback(record):
-        working_callback.called = True
+        working_callback.called = True  # type: ignore[attr-defined]
 
-    working_callback.called = False
+    working_callback.called = False  # type: ignore[attr-defined]
 
     # Add both callbacks
     fail_id = logger.add_callback(failing_callback)
@@ -114,7 +111,7 @@ def test_callback_exception_handling():
     time.sleep(0.1)
 
     # Working callback should still have been called
-    assert working_callback.called
+    assert working_callback.called  # type: ignore[attr-defined]
 
     # Clean up
     logger.remove_callback(fail_id)

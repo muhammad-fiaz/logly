@@ -238,6 +238,7 @@ mod tests {
             }
         }
 
+        #[allow(dead_code)]
         fn get_write_count(&self) -> usize {
             *self.write_count.lock()
         }

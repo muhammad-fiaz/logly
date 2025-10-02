@@ -339,19 +339,19 @@ mod tests {
     fn test_logger_state_default() {
         let state = LoggerState::default();
 
-        assert_eq!(state.inited, false);
-        assert_eq!(state.console_enabled, true);
+        assert!(!state.inited);
+        assert!(state.console_enabled);
         assert_eq!(state.level_filter, LevelFilter::INFO);
-        assert_eq!(state.color, true);
-        assert_eq!(state.show_time, true);
-        assert_eq!(state.show_module, true);
-        assert_eq!(state.show_function, true);
-        assert_eq!(state.format_json, false);
-        assert_eq!(state.pretty_json, false);
-        assert_eq!(state.fast_path_enabled, true);
+        assert!(state.color);
+        assert!(state.show_time);
+        assert!(state.show_module);
+        assert!(state.show_function);
+        assert!(!state.format_json);
+        assert!(!state.pretty_json);
+        assert!(state.fast_path_enabled);
         assert_eq!(state.next_handler_id, 1);
         assert_eq!(state.sample_rate, None);
-        assert_eq!(state.capture_caller, false);
+        assert!(!state.capture_caller);
 
         // Check level colors are set
         assert!(state.level_colors.contains_key("INFO"));
@@ -368,7 +368,7 @@ mod tests {
 
         // Check backward compatibility fields
         assert_eq!(state.file_path, None);
-        assert_eq!(state.async_write, true);
+        assert!(state.async_write);
         assert_eq!(state.buffer_size, 8192);
         assert_eq!(state.flush_interval, 1000);
         assert_eq!(state.max_buffered_lines, 1000);
@@ -389,8 +389,8 @@ mod tests {
 
         // Verify state was modified
         with_state_read(|state| {
-            assert_eq!(state.inited, true);
-            assert_eq!(state.console_enabled, false);
+            assert!(state.inited);
+            assert!(!state.console_enabled);
         });
     }
 
@@ -418,8 +418,8 @@ mod tests {
 
         // Verify state was modified
         with_state_read(|state| {
-            assert_eq!(state.inited, true);
-            assert_eq!(state.console_enabled, false);
+            assert!(state.inited);
+            assert!(!state.console_enabled);
             assert_eq!(state.next_handler_id, 100);
             assert!(state.global_context.contains_key("test"));
         });
@@ -429,8 +429,8 @@ mod tests {
 
         // Verify state was reset to defaults
         with_state_read(|state| {
-            assert_eq!(state.inited, false);
-            assert_eq!(state.console_enabled, true);
+            assert!(!state.inited);
+            assert!(state.console_enabled);
             assert_eq!(state.next_handler_id, 1);
             assert!(state.global_context.is_empty());
         });
@@ -464,12 +464,12 @@ mod tests {
         assert_eq!(config.min_level, Some(LevelFilter::DEBUG));
         assert_eq!(config.module_filter, Some("test_module".to_string()));
         assert_eq!(config.function_filter, Some("test_function".to_string()));
-        assert_eq!(config.async_write, true);
+        assert!(config.async_write);
         assert_eq!(config.buffer_size, 4096);
         assert_eq!(config.flush_interval, 500);
         assert_eq!(config.max_buffered_lines, 500);
         assert_eq!(config.date_style, "rfc3339");
-        assert_eq!(config.date_enabled, true);
+        assert!(config.date_enabled);
         assert_eq!(config.retention, Some(10));
         assert_eq!(
             config.format,

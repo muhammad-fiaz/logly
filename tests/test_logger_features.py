@@ -91,12 +91,12 @@ def test_catch_decorator_and_context_manager(tmp_path: Path):
     will_raise()
 
     # context manager: reraise=False suppresses
-    with logger.catch(reraise=False):
+    with logger.catch(reraise=False):  # type: ignore[attr-defined]
         raise ValueError("bad")
 
     # context manager: reraise=True should re-raise
     with pytest.raises(ZeroDivisionError):
-        with logger.catch(reraise=True):
+        with logger.catch(reraise=True):  # type: ignore[attr-defined]
             _ = 1 / 0
 
     logger.complete()

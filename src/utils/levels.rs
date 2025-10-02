@@ -6,6 +6,7 @@ use tracing_subscriber::filter::LevelFilter;
 /// Defines when log files should be rotated based on time intervals.
 /// Used by the file backend for automatic log rotation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Rotation {
     /// Rotate daily (at midnight)
     DAILY,
