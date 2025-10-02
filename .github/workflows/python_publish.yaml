@@ -93,6 +93,13 @@ jobs:
         with:
           path: dist/
 
+      - name: Flatten artifacts
+        run: |
+          find dist/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} mv {} dist/
+
+      - name: List dist contents
+        run: ls -la dist/
+
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
