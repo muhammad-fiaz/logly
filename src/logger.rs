@@ -258,10 +258,10 @@ impl PyLogger {
                     size_limit,
                 ));
                 // filters
-                if let Some(min) = filter_min_level.as_ref() {
-                    if let Some(level) = crate::utils::levels::to_level(min) {
-                        s.filter_min_level = Some(crate::utils::levels::to_filter(level));
-                    }
+                if let Some(min) = filter_min_level.as_ref()
+                    && let Some(level) = crate::utils::levels::to_level(min)
+                {
+                    s.filter_min_level = Some(crate::utils::levels::to_filter(level));
                 }
                 s.filter_module = filter_module;
                 s.filter_function = filter_function;

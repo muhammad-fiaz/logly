@@ -201,10 +201,10 @@ pub fn log_message(
                 }
             } else {
                 // Check per-level storage control for file sinks
-                if let Some(&enabled) = s.storage_levels.get(&level_str) {
-                    if !enabled {
-                        allow_sink = false;
-                    }
+                if let Some(&enabled) = s.storage_levels.get(&level_str)
+                    && !enabled
+                {
+                    allow_sink = false;
                 }
             }
 
@@ -537,9 +537,7 @@ mod tests {
 
         Python::attach(|py| {
             // Create a mock callback that adds brackets around the message
-            use std::ffi::CStr;
-            let code =
-                CStr::from_bytes_with_nul(b"lambda level, text: f'[{level}] {text}'\0").unwrap();
+            let code = c"lambda level, text: f'[{level}] {text}'";
             let callback = py.eval(code, None, None).unwrap();
             let callback_py: Py<PyAny> = callback.into();
 
@@ -565,11 +563,7 @@ mod tests {
 
         Python::attach(|py| {
             // Create a callback that raises an exception
-            use std::ffi::CStr;
-            let code = CStr::from_bytes_with_nul(
-                b"lambda level, text: (_ for _ in ()).throw(ValueError('test error'))\0",
-            )
-            .unwrap();
+            let code = c"lambda level, text: (_ for _ in ()).throw(ValueError('test error'))";
             let callback = py.eval(code, None, None).unwrap();
             let callback_py: Py<PyAny> = callback.into();
 
@@ -730,9 +724,7 @@ mod tests {
 
         Python::attach(|py| {
             // Create a test callback using PyCStr
-            use std::ffi::CStr;
-            let code =
-                CStr::from_bytes_with_nul(b"lambda level, text: f'[{level}] {text}'\0").unwrap();
+            let code = c"lambda level, text: f'[{level}] {text}'";
             let callback = py.eval(code, None, None).unwrap();
             let callback_py: Py<PyAny> = callback.into();
 

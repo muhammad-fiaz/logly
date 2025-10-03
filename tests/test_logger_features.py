@@ -12,20 +12,6 @@ def read_log(path: Path) -> str:
     assert path.exists()
     return path.read_text()
 
-    def test_add_configure_and_basic_logging(tmp_path: Path):
-        """Test basic logging configuration and file output."""
-        p = tmp_path / "basic.log"
-        # add file before configure per MVP
-        logger.add(str(p), async_write=False)  # Use sync writing for immediate results
-        logger.configure(level="INFO", color=False)
-
-        logger.info("hello world", user="bob")
-        logger.complete()
-
-        content = read_log(p)
-        assert "hello world" in content
-        assert "user=bob" in content
-
 
 def test_bind_and_contextualize(tmp_path: Path):
     """Test binding context and contextualize functionality."""

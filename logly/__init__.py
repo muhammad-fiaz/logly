@@ -14,6 +14,7 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import ContextDecorator, contextmanager
 
 from logly._logly import PyLogger, __version__
@@ -145,7 +146,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         time_levels: dict[str, bool] | None = None,
         color_levels: dict[str, bool] | None = None,
         storage_levels: dict[str, bool] | None = None,
-        color_callback: callable | None = None,
+        color_callback: Callable | None = None,
     ) -> None:
         """Configure global logger settings.
 

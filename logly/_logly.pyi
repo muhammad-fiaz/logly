@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 __version__: str
 """The version string of the logly library."""
 
@@ -78,7 +80,7 @@ class PyLogger:
         time_levels: dict[str, bool] | None = ...,
         color_levels: dict[str, bool] | None = ...,
         storage_levels: dict[str, bool] | None = ...,
-        color_callback: callable | None = ...,
+        color_callback: Callable | None = ...,
     ) -> None:
         """Configure global logger settings.
 
@@ -211,6 +213,20 @@ class PyLogger:
 
         This method should be called before application shutdown to ensure
         all buffered logs (especially from async sinks) are persisted.
+        """
+        ...
+
+    def _log_with_stdout(self, level: str, msg: str, stdout: object, **kwargs: object) -> None:
+        """Log a message directly to a specific stdout object (for testing).
+
+        This is an internal method used for testing color callbacks and other
+        output formatting functionality.
+
+        Args:
+            level: Log level string
+            msg: Log message
+            stdout: Python stdout object to write to
+            **kwargs: Additional context fields
         """
         ...
 
