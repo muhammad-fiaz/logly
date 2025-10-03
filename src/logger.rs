@@ -44,11 +44,12 @@ impl PyLogger {
     /// * `time_levels` - Optional dictionary mapping level names to time display enable/disable
     /// * `color_levels` - Optional dictionary mapping level names to color enable/disable
     /// * `storage_levels` - Optional dictionary mapping level names to file storage enable/disable
+    /// * `color_callback` - Optional Python callable for custom color formatting with signature (level, text) -> colored_text
     ///
     /// # Returns
     /// PyResult indicating success or error
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, console_levels=None, time_levels=None, color_levels=None, storage_levels=None))]
+    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, show_filename=false, show_lineno=false, console_levels=None, time_levels=None, color_levels=None, storage_levels=None, color_callback=None))]
     pub fn configure(
         &self,
         level: &str,
@@ -60,10 +61,13 @@ impl PyLogger {
         show_time: bool,
         show_module: bool,
         show_function: bool,
+        show_filename: bool,
+        show_lineno: bool,
         console_levels: Option<HashMap<String, bool>>,
         time_levels: Option<HashMap<String, bool>>,
         color_levels: Option<HashMap<String, bool>>,
         storage_levels: Option<HashMap<String, bool>>,
+        color_callback: Option<Py<PyAny>>,
     ) -> PyResult<()> {
         let colors = level_colors.map(|hm| hm.into_iter().collect());
         let console_lvls = console_levels.map(|hm| hm.into_iter().collect());
@@ -79,11 +83,14 @@ impl PyLogger {
             show_time,
             show_module,
             show_function,
+            show_filename,
+            show_lineno,
             console_lvls,
             time_lvls,
             color_lvls,
             storage_lvls,
             colors,
+            color_callback,
         )
     }
 
@@ -95,8 +102,17 @@ impl PyLogger {
     /// # Returns
     /// PyResult indicating success or error
     pub fn reset(&self) -> PyResult<()> {
+        // Clear all sinks and related state
+        with_state(|s| {
+            s.sinks.clear();
+            s.file_writers.clear();
+            s.async_senders.clear();
+            s.callbacks.clear();
+        });
+
         self.configure(
-            "INFO", true, None, false, false, true, true, true, true, None, None, None, None,
+            "INFO", false, None, false, false, true, true, true, false, false, false, None, None,
+            None, None, None,
         )
     }
 
@@ -331,7 +347,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn trace(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::TRACE, msg, kwargs);
+        backend::log_message(Level::TRACE, msg, kwargs, None);
     }
 
     /// Log a message at DEBUG level.
@@ -341,7 +357,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn debug(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::DEBUG, msg, kwargs);
+        backend::log_message(Level::DEBUG, msg, kwargs, None);
     }
 
     /// Log a message at INFO level.
@@ -351,7 +367,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn info(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::INFO, msg, kwargs);
+        backend::log_message(Level::INFO, msg, kwargs, None);
     }
 
     /// Log a message at SUCCESS level (mapped to INFO in tracing).
@@ -361,7 +377,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn success(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::INFO, msg, kwargs);
+        backend::log_message(Level::INFO, msg, kwargs, None);
     }
 
     /// Log a message at WARNING level.
@@ -371,7 +387,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn warning(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::WARN, msg, kwargs);
+        backend::log_message(Level::WARN, msg, kwargs, None);
     }
 
     /// Log a message at ERROR level.
@@ -381,7 +397,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn error(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::ERROR, msg, kwargs);
+        backend::log_message(Level::ERROR, msg, kwargs, None);
     }
 
     /// Log a message at CRITICAL level (mapped to ERROR in tracing).
@@ -391,7 +407,7 @@ impl PyLogger {
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::ERROR, msg, kwargs);
+        backend::log_message(Level::ERROR, msg, kwargs, None);
     }
 
     /// Log a message at a custom or aliased level.
@@ -406,7 +422,7 @@ impl PyLogger {
     #[pyo3(signature = (level, msg, **kwargs))]
     pub fn log(&self, level: &str, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<()> {
         let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
-        backend::log_message(lvl, msg, kwargs);
+        backend::log_message(lvl, msg, kwargs, None);
         Ok(())
     }
 
@@ -416,6 +432,26 @@ impl PyLogger {
     /// (especially from async sinks) are persisted to disk.
     pub fn complete(&self) {
         crate::backend::complete();
+    }
+
+    /// Log a message with custom stdout for testing (internal use only).
+    ///
+    /// # Arguments
+    /// * `level` - Level name
+    /// * `msg` - Log message
+    /// * `kwargs` - Optional key-value context fields
+    /// * `stdout` - Python stdout object for testing
+    #[pyo3(signature = (level, msg, stdout, **kwargs))]
+    pub fn _log_with_stdout(
+        &self,
+        level: &str,
+        msg: &str,
+        stdout: &Bound<'_, PyAny>,
+        kwargs: Option<&Bound<'_, PyDict>>,
+    ) -> PyResult<()> {
+        let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
+        backend::log_message(lvl, msg, kwargs, Some(stdout));
+        Ok(())
     }
 
     // Extra conveniences for tests and control

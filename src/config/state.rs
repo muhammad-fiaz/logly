@@ -152,6 +152,8 @@ pub struct LoggerState {
     pub level_filter: LevelFilter,
     /// Enable colored output
     pub color: bool,
+    /// Custom color callback function (level, text) -> colored_text
+    pub color_callback: Option<Py<PyAny>>,
     /// Custom color mapping for log levels (ANSI color codes or color names)
     pub level_colors: AHashMap<String, String>,
     /// Show timestamps in console output
@@ -160,6 +162,10 @@ pub struct LoggerState {
     pub show_module: bool,
     /// Show function information in console output
     pub show_function: bool,
+    /// Show filename information in console output
+    pub show_filename: bool,
+    /// Show line number information in console output
+    pub show_lineno: bool,
     /// Per-level console output control (None = use global console_enabled)
     pub console_levels: AHashMap<String, bool>,
     /// Per-level time display control (None = use global show_time)
@@ -233,6 +239,7 @@ impl Default for LoggerState {
             console_enabled: true,
             level_filter: LevelFilter::INFO,
             color: true,
+            color_callback: None,
             level_colors: {
                 let mut colors = AHashMap::new();
                 colors.insert("TRACE".to_string(), "36".to_string()); // Cyan
@@ -247,6 +254,8 @@ impl Default for LoggerState {
             show_time: true,
             show_module: true,
             show_function: true,
+            show_filename: false,
+            show_lineno: false,
             console_levels: AHashMap::new(),
             time_levels: AHashMap::new(),
             color_levels: AHashMap::new(),

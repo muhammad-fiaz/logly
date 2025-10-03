@@ -119,6 +119,7 @@ nav:
   - Quick Start: quickstart.md
   - Examples:
     - Basic Console Logging: examples/basic-console.md
+    - Color Callback Styling: examples/color-callback.md
     - Per-Level Controls: examples/per-level-controls.md
     - Template String Formatting: examples/template-strings.md
     - File Logging with Rotation: examples/file-rotation.md

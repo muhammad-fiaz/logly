@@ -21,12 +21,15 @@ Configure global logger settings.
 | `level` | `str` | `"INFO"` | Minimum log level: `"TRACE"`, `"DEBUG"`, `"INFO"`, `"SUCCESS"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"` |
 | `color` | `bool` | `True` | Enable ANSI colored console output |
 | `level_colors` | `dict[str, str] \| None` | `None` | Custom colors for each log level (ANSI codes or color names) |
+| `color_callback` | `callable \| None` | `None` | Custom color callback function with signature `(level: str, text: str) -> str` |
 | `json` | `bool` | `False` | Output logs in JSON format |
 | `pretty_json` | `bool` | `False` | Pretty-print JSON output (indented) |
 | `console` | `bool` | `True` | Enable console output |
 | `show_time` | `bool` | `True` | Show timestamps in console output |
 | `show_module` | `bool` | `True` | Show module name in console output |
 | `show_function` | `bool` | `True` | Show function name in console output |
+| `show_filename` | `bool` | `False` | Show filename in console output |
+| `show_lineno` | `bool` | `False` | Show line number in console output |
 | `console_levels` | `dict[str, bool] \| None` | `None` | Per-level console output control |
 | `time_levels` | `dict[str, bool] \| None` | `None` | Per-level timestamp display control |
 | `color_levels` | `dict[str, bool] \| None` | `None` | Per-level color control |
@@ -273,15 +276,14 @@ Custom format strings support these placeholders:
 | `{extra}` | All extra fields | `user=alice \| session=abc123` |
 | `{module}` | Module name | `myapp.auth` |
 | `{function}` | Function name | `login_user` |
-| `{file}` | File name | `app.py` |
-| `{line}` | Line number | `42` |
+| `{filename}` | Source filename | `app.py` |
+| `{lineno}` | Line number | `42` |
 | `{any_key}` | Any custom field | Value of that field |
 
 **Placeholder Rules:**
 - Case-insensitive: `{TIME}` = `{time}` = `{Time}`
-- Width specification: `{level:8}` pads to 8 characters
 - Missing placeholders: Unknown placeholders left as-is
-- Auto-append: Extra fields not in format are appended automatically
+- Extra fields: Only fields included in the template or `{extra}` are displayed
 
 ---
 

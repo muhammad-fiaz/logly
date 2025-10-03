@@ -58,26 +58,6 @@ pub fn format_with_template(
         })
         .to_string();
 
-    // If no extra fields were included in the template and {extra} is not used, append them at the end
-    // (for backward compatibility with the old format)
-    if !template.to_lowercase().contains("{extra}") {
-        let mut extra_parts = Vec::new();
-        for (key, value) in extra_fields {
-            let key_lower = key.to_lowercase();
-            if !template
-                .to_lowercase()
-                .contains(&format!("{{{}}}", key_lower))
-            {
-                extra_parts.push(format!("{}={}", key, value));
-            }
-        }
-
-        if !extra_parts.is_empty() {
-            result.push_str(" | ");
-            result.push_str(&extra_parts.join(" | "));
-        }
-    }
-
     result
 }
 
@@ -129,11 +109,11 @@ mod tests {
     }
 
     #[test]
-    fn test_extra_placeholder() {
-        let template = "{time} [{level}] {message} | {extra}";
+    fn test_filename_lineno_in_template() {
+        let template = "{time} [{level}] {message} | {filename}:{lineno}";
         let extra = vec![
-            ("user".to_string(), "alice".to_string()),
-            ("session_id".to_string(), "12345".to_string()),
+            ("filename".to_string(), "/path/to/file.py".to_string()),
+            ("lineno".to_string(), "42".to_string()),
         ];
         let result = format_with_template(
             template,
@@ -144,7 +124,7 @@ mod tests {
         );
         assert_eq!(
             result,
-            "2023-01-01T12:00:00Z [INFO] Test message | user=alice | session_id=12345"
+            "2023-01-01T12:00:00Z [INFO] Test message | /path/to/file.py:42"
         );
     }
 }

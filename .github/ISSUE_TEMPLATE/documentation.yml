@@ -1,0 +1,77 @@
+---
+name: Documentation Issue
+description: Report issues with documentation, examples, or guides
+title: "[DOCS] "
+labels: ["documentation", "triage"]
+assignees: []
+body:
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - API Reference
+        - Quick Start Guide
+        - User Guide
+        - Examples
+        - README
+        - Code Comments
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: doc-location
+    attributes:
+      label: Location
+      description: Where is the documentation located?
+      placeholder: e.g., docs/api-reference/logging.md, README.md, examples/basic-console.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the documentation issue.
+      placeholder: |
+        - What is unclear, incorrect, or missing?
+        - What should be improved?
+        - Is there incorrect information?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested Fix
+      description: How should this be fixed or improved?
+      placeholder: |
+        - What changes should be made?
+        - Provide corrected text if applicable
+        - Suggest additional content or examples
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any additional context about the documentation issue.
+      placeholder: |
+        - Why is this documentation important?
+        - How does this affect users?
+        - Screenshots of confusing sections
+        - Links to related documentation
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have checked that this documentation issue hasn't been reported before
+          required: true
+        - label: The issue is with the documentation itself, not the underlying code
+          required: true

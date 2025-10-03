@@ -72,10 +72,13 @@ class PyLogger:
         show_time: bool = ...,
         show_module: bool = ...,
         show_function: bool = ...,
+        show_filename: bool = ...,
+        show_lineno: bool = ...,
         console_levels: dict[str, bool] | None = ...,
         time_levels: dict[str, bool] | None = ...,
         color_levels: dict[str, bool] | None = ...,
         storage_levels: dict[str, bool] | None = ...,
+        color_callback: callable | None = ...,
     ) -> None:
         """Configure global logger settings.
 
@@ -90,10 +93,16 @@ class PyLogger:
             show_time: Show timestamps in console output.
             show_module: Show module information in console output.
             show_function: Show function information in console output.
+            show_filename: Show filename information in console output.
+            show_lineno: Show line number information in console output.
             console_levels: Dictionary mapping log levels to console output enable/disable.
             time_levels: Dictionary mapping log levels to time display enable/disable.
             color_levels: Dictionary mapping log levels to color enable/disable.
             storage_levels: Dictionary mapping log levels to file storage enable/disable.
+            color_callback: Custom color formatting function with signature (level: str, text: str) -> str.
+                           If provided, this function is used instead of built-in ANSI coloring.
+                           Allows integration with external color libraries like Rich, colorama, etc.
+                           When provided, level_colors parameter is ignored.
         """
         ...
 
