@@ -244,4 +244,87 @@ class PyLogger:
         """
         ...
 
+
+    def enable(self) -> None:
+        """Enable logging for this logger instance.
+
+        When disabled, all log messages are silently ignored.
+        """
+        ...
+
+    def disable(self) -> None:
+        """Disable logging for this logger instance.
+
+        When disabled, all log messages are silently ignored without
+        any performance overhead from formatting or serialization.
+        """
+        ...
+
+    def level(self, name: str, mapped_to: str) -> None:
+        """Register a custom level name as an alias to an existing level.
+
+        Allows creating custom level names that map to built-in levels.
+        Use with the log() method to log at custom levels.
+
+        Args:
+            name: The custom level name/alias to create.
+            mapped_to: The existing level to map to ("TRACE", "DEBUG", "INFO",
+                      "SUCCESS", "WARNING", "ERROR", "CRITICAL").
+        """
+        ...
+
+    def bind(self, **kwargs: object) -> PyLogger:
+        """Create a new logger instance with additional context fields bound.
+
+        Bound context fields are automatically attached to all log messages
+        from this logger instance, providing a thread-safe way to add context.
+
+        Args:
+            **kwargs: Key-value pairs to bind as context fields.
+
+        Returns:
+            A new logger instance with the additional context bound.
+        """
+        ...
+
+    def contextualize(self, **kwargs: object):
+        """Context manager to temporarily attach context fields.
+
+        Unlike bind(), contextualize() modifies the current logger instance
+        within a context block, automatically restoring original state on exit.
+
+        Args:
+            **kwargs: Key-value pairs to temporarily attach as context fields.
+
+        Yields:
+            None
+        """
+        ...
+
+    def exception(self, message: str = "", /, **kwargs: object) -> None:
+        """Log an exception with traceback at ERROR level.
+
+        Automatically captures the current exception traceback and logs it.
+        Must be called from within an exception handler.
+
+        Args:
+            message: Optional message prefix before the traceback.
+            **kwargs: Additional context fields to attach to the log record.
+        """
+        ...
+
+    def catch(self, *, reraise: bool = False):
+        """Decorator or context manager to automatically log exceptions.
+
+        Can be used as a decorator on functions or as a context manager.
+        By default, catches and logs exceptions without re-raising them.
+
+        Args:
+            reraise: If True, re-raise the exception after logging (default: False).
+
+        Returns:
+            A context manager/decorator that catches and logs exceptions.
+        """
+        ...
+
 logger: PyLogger

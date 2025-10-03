@@ -253,6 +253,27 @@ Disable all logging temporarily.
 
 ---
 
+### logger.level()
+
+Register custom log level alias.
+
+**Parameters:**
+- `name` (str): Custom level name
+- `mapped_to` (str): Existing level to map to
+
+**Returns:** `None`
+
+---
+
+### logger.reset()
+
+Reset logger configuration to default settings.
+
+**Parameters:** None  
+**Returns:** `None`
+
+---
+
 ### logger.complete()
 
 Flush all buffers and close all sinks gracefully.

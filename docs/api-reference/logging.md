@@ -189,9 +189,11 @@ logger.log(level: str, message: str, **kwargs) -> None
 log_level = "DEBUG" if dev_mode else "INFO"
 logger.log(log_level, "Processing data", records=1000)
 
-# Custom levels (after registering with logger.level())
-logger.level("NOTICE", mapped_to="INFO")
+# Custom level aliases (mapped to existing levels)
+logger.level("NOTICE", "INFO")
+logger.level("AUDIT", "INFO")
 logger.log("NOTICE", "Important notice")
+logger.log("AUDIT", "User action logged", user="alice")
 ```
 
 ---

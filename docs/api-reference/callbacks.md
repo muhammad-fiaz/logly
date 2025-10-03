@@ -56,11 +56,17 @@ The callback receives a dictionary with this structure:
     "timestamp": "2025-01-15T10:30:45.123Z",  # ISO 8601 timestamp
     "level": "INFO",                           # Log level name
     "message": "User logged in",               # Log message text
+    "filename": "/path/to/file.py",            # Source file path
+    "lineno": "42",                            # Line number (as string)
+    "function": "login_handler",               # Function name
     # Additional fields from bind(), contextualize(), or kwargs
-    "user_id": 12345,
+    "user_id": "12345",
     "action": "login"
 }
 ```
+
+!!! note "Location Information"
+    Every log record includes `filename`, `lineno`, and `function` fields that indicate where the log was called from. This is useful for debugging and tracing log origins.
 
 ### Examples
 
