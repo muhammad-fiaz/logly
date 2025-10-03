@@ -80,7 +80,7 @@ ignore_errors = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
+addopts = "--cov=logly --cov-report term-missing --cov-report xml --no-cov-on-fail"
 
 [tool.coverage.report]
 exclude_lines = ["if __name__ == .__main__.:", "pragma: no cover"]

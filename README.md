@@ -9,6 +9,12 @@
 <a href="https://github.com/muhammad-fiaz/logly/releases"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly" alt="GitHub release"></a>
 <a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://img.shields.io/codecov/c/gh/muhammad-fiaz/logly" alt="Codecov"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs.yml/badge.svg" alt="Deploy Documentation"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml/badge.svg" alt="Publish Python distributions"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/dependabot/dependabot-updates"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/dependabot/dependabot-updates/badge.svg" alt="Dependabot Updates"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yaml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/python-package.yaml/badge.svg" alt="Run Tests"></a>
 
 <p><em>Rust-powered, Loguru-like logging for Python.</em></p>
 

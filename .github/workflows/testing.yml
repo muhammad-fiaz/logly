@@ -83,4 +83,12 @@ jobs:
         uv sync --frozen
         uv run maturin build
     - name: Test with pytest
-      run: uv run pytest
+      run: uv run pytest --cov=logly --cov-report term-missing --cov-report xml
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
