@@ -256,10 +256,10 @@ def test_callback_filename_line_different_levels():
     callback_id = logger.add_callback(level_callback)
 
     # Log at different levels from different lines
-    logger.debug("debug message")    # Line ~250
-    logger.info("info message")      # Line ~251
+    logger.debug("debug message")  # Line ~250
+    logger.info("info message")  # Line ~251
     logger.warning("warning message")  # Line ~252
-    logger.error("error message")    # Line ~253
+    logger.error("error message")  # Line ~253
     logger.critical("critical message")  # Line ~254
 
     logger.complete()
@@ -291,10 +291,9 @@ def test_callback_filename_line_with_custom_fields():
     callback_id = logger.add_callback(custom_callback)
 
     # Log with custom fields
-    logger.info("Custom fields test",
-                user_id=12345,
-                action="login",
-                ip_address="192.168.1.1")  # Line ~280
+    logger.info(
+        "Custom fields test", user_id=12345, action="login", ip_address="192.168.1.1"
+    )  # Line ~280
 
     logger.complete()
     time.sleep(0.1)
@@ -327,18 +326,20 @@ def test_callback_filename_line_multiple_calls():
     callback_calls = []
 
     def multi_callback(record):
-        callback_calls.append({
-            'message': record['message'],
-            'lineno': record['lineno'],
-            'filename': record['filename']
-        })
+        callback_calls.append(
+            {
+                "message": record["message"],
+                "lineno": record["lineno"],
+                "filename": record["filename"],
+            }
+        )
 
     callback_id = logger.add_callback(multi_callback)
 
     # Multiple log calls from different lines
-    logger.info("First message")   # Line ~310
+    logger.info("First message")  # Line ~310
     logger.info("Second message")  # Line ~311
-    logger.info("Third message")   # Line ~312
+    logger.info("Third message")  # Line ~312
 
     logger.complete()
     time.sleep(0.1)
@@ -351,13 +352,13 @@ def test_callback_filename_line_multiple_calls():
         assert "lineno" in call
         assert "message" in call
         assert "test_callbacks_and_templates.py" in call["filename"]
-        
-        line_number = int(call['lineno'])
+
+        line_number = int(call["lineno"])
         assert line_number > 0
         assert 330 <= line_number <= 350  # Reasonable range around the test lines
 
     # Verify the messages are present (order might vary due to async processing)
-    messages = [call['message'] for call in callback_calls]
+    messages = [call["message"] for call in callback_calls]
     assert "First message" in messages
     assert "Second message" in messages
     assert "Third message" in messages

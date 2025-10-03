@@ -244,7 +244,6 @@ class PyLogger:
         """
         ...
 
-
     def enable(self) -> None:
         """Enable logging for this logger instance.
 
