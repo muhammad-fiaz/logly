@@ -1,5 +1,28 @@
+#!/usr/bin/env python3
+"""
+JSON Logging Examples
+
+This comprehensive guide shows you how to use Logly for structured JSON logging,
+perfect for production applications that need machine-readable logs for monitoring,
+analytics, and debugging.
+
+JSON logging provides several key benefits:
+- Structured data that's easy for machines to parse and analyze
+- Consistent log format across different environments
+- Rich context with key-value pairs
+- Easy integration with log aggregation tools like ELK stack, Splunk, or Datadog
+- Better searchability and filtering capabilities
+
+Features demonstrated:
+- Basic JSON logging with structured data
+- Persistent context binding across log entries
+- Level-based filtering and separate log files
+- Pretty-printed JSON for development
+- Custom fields and nested data structures
+"""
+
 import os
-import time
+
 from logly import logger
 
 
@@ -176,7 +199,7 @@ def main():
         print("   jq . app.jsonl")
         print("   jq 'select(.level == \"ERROR\")' errors_only.jsonl")
 
-    except Exception as e:
+    except (OSError, ValueError, RuntimeError) as e:
         print(f"\n❌ Demo failed: {e}")
         logger.exception("Demo failed", exc_info=e)
 

@@ -27,10 +27,13 @@ logger.configure(
     show_time: bool = True,
     show_module: bool = True,
     show_function: bool = True,
+    show_filename: bool = False,
+    show_lineno: bool = False,
     console_levels: dict[str, bool] | None = None,
     time_levels: dict[str, bool] | None = None,
     color_levels: dict[str, bool] | None = None,
-    storage_levels: dict[str, bool] | None = None
+    storage_levels: dict[str, bool] | None = None,
+    color_callback: callable | None = None
 ) -> None
 ```
 
@@ -39,7 +42,7 @@ logger.configure(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `level` | `str` | `"INFO"` | Minimum log level: `"TRACE"`, `"DEBUG"`, `"INFO"`, `"SUCCESS"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"` |
-| `color` | `bool` | `True` | Enable colored console output (ANSI colors) |
+| `color` | `bool` | `True` | Enable colored console output. When True, uses ANSI escape codes for coloring unless color_callback is provided. When False, disables all coloring regardless of other settings |
 | `level_colors` | `dict[str, str] \| None` | `None` | Custom colors for each log level. Supports both ANSI color codes and color names. If `None`, uses default colors |
 | `json` | `bool` | `False` | Output logs in JSON format instead of text |
 | `pretty_json` | `bool` | `False` | Pretty-print JSON output (higher cost, more readable) |
@@ -47,10 +50,13 @@ logger.configure(
 | `show_time` | `bool` | `True` | Show timestamps in console output |
 | `show_module` | `bool` | `True` | Show module information in console output |
 | `show_function` | `bool` | `True` | Show function information in console output |
+| `show_filename` | `bool` | `False` | Show filename information in console output |
+| `show_lineno` | `bool` | `False` | Show line number information in console output |
 | `console_levels` | `dict[str, bool] \| None` | `None` | Per-level console output control. Maps level names to enable/disable console output |
 | `time_levels` | `dict[str, bool] \| None` | `None` | Per-level time display control. Maps level names to enable/disable timestamps |
 | `color_levels` | `dict[str, bool] \| None` | `None` | Per-level color control. Maps level names to enable/disable colors |
 | `storage_levels` | `dict[str, bool] \| None` | `None` | Per-level storage control. Maps level names to enable/disable file logging |
+| `color_callback` | `callable \| None` | `None` | Custom color callback function with signature `(level: str, text: str) -> str`. When provided, overrides built-in ANSI coloring. Allows integration with external libraries like Rich, colorama, or termcolor for advanced coloring and styling |
 
 ### Color Configuration
 
@@ -91,10 +97,42 @@ You can also use color names directly:
 | `"BRIGHT_MAGENTA"` | `"95"` |
 | `"BRIGHT_CYAN"` | `"96"` |
 | `"BRIGHT_WHITE"` | `"97"` |
-| Blue | `"34"` | Bright Blue | `"94"` |
-| Magenta | `"35"` | Bright Magenta | `"95"` |
-| Cyan | `"36"` | Bright Cyan | `"96"` |
-| White | `"37"` | Bright White | `"97"` |
+
+### Custom Color Callbacks
+
+The `color_callback` parameter provides universal support for external color libraries and custom styling. When provided, it completely overrides logly's built-in ANSI coloring system.
+
+#### Callback Signature
+
+```python
+def color_callback(level: str, text: str) -> str:
+    """
+    Custom color callback function.
+
+    Args:
+        level: Log level as string ("DEBUG", "INFO", "WARN", "ERROR", etc.)
+        text: The fully formatted log message text
+
+    Returns:
+        The text with custom coloring/styling applied
+    """
+    # Your custom coloring logic here
+    return styled_text
+```
+
+#### How It Works
+
+1. **Precedence**: When `color_callback` is provided, it takes complete precedence over built-in ANSI coloring
+2. **Integration**: Works with any color library (Rich, colorama, termcolor, etc.) - install libraries separately as needed
+3. **Performance**: Callback is called for each log message that would be colored
+4. **Flexibility**: Return any string - ANSI codes, Unicode styling, or plain text
+
+#### Use Cases
+
+- **External Libraries**: Integrate with Rich, colorama, or other coloring libraries (install separately)
+- **Custom Styling**: Implement company-specific color schemes
+- **Conditional Coloring**: Apply colors based on message content or context
+- **Advanced Formatting**: Use Unicode box drawing, emojis, or special characters
 
 ### Returns
 
@@ -206,6 +244,101 @@ You can also use color names directly:
     logger.critical("This is bright magenta")
     ```
 
+=== "Custom Color Callback with Rich"
+
+    **Note**: This example requires installing Rich separately: `pip install rich`
+
+    ```python
+    from rich.console import Console
+    from logly import logger
+
+    # Create a Rich console for coloring
+    console = Console()
+
+    def rich_color_callback(level, text):
+        """Custom color callback using Rich library."""
+        # Apply Rich markup based on level
+        if level == "DEBUG":
+            markup = f"[blue]{text}[/blue]"
+        elif level == "INFO":
+            markup = f"[green]{text}[/green]"
+        elif level in ("WARN", "WARNING"):
+            markup = f"[yellow]{text}[/yellow]"
+        elif level == "ERROR":
+            markup = f"[red]{text}[/red]"
+        else:
+            markup = text
+
+        # Convert Rich markup to ANSI codes
+        with console.capture() as capture:
+            console.print(markup, end="")
+
+        return capture.get()
+
+    logger.configure(
+        level="DEBUG",
+        color_callback=rich_color_callback
+    )
+    logger.add("console")
+
+    logger.debug("This is styled with Rich (blue)")
+    logger.info("This is styled with Rich (green)")
+    logger.warning("This is styled with Rich (yellow)")
+    logger.error("This is styled with Rich (red)")
+    ```
+
+    **Explanation**: The `color_callback` parameter accepts a Python callable with signature `(level: str, text: str) -> str`. When provided, it completely overrides logly's built-in ANSI coloring. This example uses the Rich library to create advanced styling and converts Rich markup to ANSI escape codes for terminal display.
+
+    **Expected Output** (with Rich styling converted to ANSI):
+    ```
+    [DEBUG] This is styled with Rich (blue)
+    [INFO] This is styled with Rich (green)
+    [WARN] This is styled with Rich (yellow)
+    [ERROR] This is styled with Rich (red)
+    ```
+
+=== "Custom Color Callback with ANSI"
+
+    ```python
+    from logly import logger
+
+    def ansi_color_callback(level, text):
+        """Custom color callback using direct ANSI codes."""
+        colors = {
+            "DEBUG": "\033[34m",    # Blue
+            "INFO": "\033[32m",     # Green
+            "WARN": "\033[33m",     # Yellow
+            "WARNING": "\033[33m",  # Yellow (alias)
+            "ERROR": "\033[31m",    # Red
+        }
+        reset = "\033[0m"
+        color_code = colors.get(level, "")
+        return f"{color_code}{text}{reset}"
+
+    logger.configure(
+        level="DEBUG",
+        color_callback=ansi_color_callback
+    )
+    logger.add("console")
+
+    logger.debug("This is blue")
+    logger.info("This is green")
+    logger.warning("This is yellow")
+    logger.error("This is red")
+    ```
+
+    **Explanation**: This example shows how to create a custom color callback using direct ANSI escape codes. The callback receives the log level and formatted text, then returns the text wrapped with appropriate ANSI color codes. This approach gives you complete control over coloring and works with any terminal that supports ANSI colors.
+
+    **Expected Output** (with ANSI color codes):
+    ```
+    [DEBUG] This is blue
+    [INFO] This is green
+    [WARN] This is yellow
+    [ERROR] This is red
+    ```
+
+    **Note**: The actual terminal display will show these messages in blue, green, yellow, and red respectively. The plain text above represents the logical output structure.
+
 === "Console Time Display Control"
 
     ```python
@@ -242,6 +375,69 @@ You can also use color names directly:
     logger.add("console")
     logger.info("Message with module only")
     ```
+
+=== "Filename and Line Number Display Control"
+
+    ```python
+    from logly import logger
+
+    # Show filename and line number info
+    logger.configure(level="INFO", show_filename=True, show_lineno=True)
+    logger.add("console")
+    logger.info("Message with filename and lineno")
+
+    # Hide filename and line number info (default)
+    logger.configure(level="INFO", show_filename=False, show_lineno=False)
+    logger.add("console")
+    logger.info("Message without filename and lineno")
+
+    # Show only filename, hide line number
+    logger.configure(level="INFO", show_filename=True, show_lineno=False)
+    logger.add("console")
+    logger.info("Message with filename only")
+    ```
+
+=== "Rich Console Output with Color Callback"
+
+    ```python
+    from rich.console import Console
+    from logly import logger
+
+    # Create a Rich console for coloring
+    console = Console()
+
+    def rich_color_callback(level, text):
+        """Custom color callback using Rich library for advanced styling."""
+        # Apply Rich markup based on level with advanced styling
+        if level == "DEBUG":
+            markup = f"[dim blue]{text}[/dim blue]"
+        elif level == "INFO":
+            markup = f"[bold green]{text}[/bold green]"
+        elif level in ("WARN", "WARNING"):
+            markup = f"[bold yellow on red]{text}[/bold yellow on red]"
+        elif level == "ERROR":
+            markup = f"[bold red blink]{text}[/bold red blink]"
+        else:
+            markup = text
+
+        # Convert Rich markup to ANSI codes
+        with console.capture() as capture:
+            console.print(markup, end="")
+
+        return capture.get()
+
+    logger.configure(
+        level="INFO",
+        color_callback=rich_color_callback
+    )
+    logger.add("console")
+
+    logger.info("This uses Rich for advanced styling")
+    logger.warning("Rich styling: bold yellow on red background")
+    logger.error("Rich styling: bold red with blinking")
+    ```
+
+    The `color_callback` parameter allows integration with external libraries like Rich for advanced coloring and styling capabilities beyond basic ANSI colors.
 
 === "Production Setup"
 
@@ -370,6 +566,8 @@ The `format` parameter supports template strings with placeholders that are repl
 | `{extra}` | All extra fields formatted as `key=value` pairs joined by ` \| ` | `user=alice \| session_id=12345` |
 | `{module}` | Module name (if provided in extra fields) | `myapp.auth` |
 | `{function}` | Function name (if provided in extra fields) | `login_user` |
+| `{filename}` | Source filename (if provided in extra fields) | `app.py` |
+| `{lineno}` | Line number (if provided in extra fields) | `42` |
 | `{any_key}` | Any extra field key from the log record | Custom value |
 
 #### Placeholder Behavior

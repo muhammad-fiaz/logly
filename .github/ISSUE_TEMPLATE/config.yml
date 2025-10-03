@@ -1,0 +1,19 @@
+# Configuration for GitHub Issue Templates
+# This file controls which issue templates are available
+
+# Disable blank issues - users must use templates
+blank_issues_enabled: false
+
+# Contact links for additional support
+contact_links:
+  - name: Logly Documentation
+    url: https://muhammad-fiaz.github.io/logly/
+    about: Check our documentation for help and guides
+
+  - name: Logly Community Discussions
+    url: https://github.com/muhammad-fiaz/logly/discussions
+    about: Join community discussions for questions and general chat
+
+  - name: Security Issues
+    url: https://github.com/muhammad-fiaz/logly/security/advisories/new
+    about: Report security vulnerabilities privately

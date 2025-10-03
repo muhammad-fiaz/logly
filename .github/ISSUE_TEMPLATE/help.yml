@@ -1,0 +1,91 @@
+---
+name: Help/Support
+description: Request help or support with Logly
+title: "[HELP] "
+labels: ["help", "triage"]
+assignees: []
+body:
+  - type: textarea
+    id: help-request
+    attributes:
+      label: Help Request
+      description: What help do you need with Logly?
+      placeholder: Describe your issue or what you need help with clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide context about your help request.
+      placeholder: |
+        - What are you trying to accomplish?
+        - What have you tried so far?
+        - What documentation have you read?
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-example
+    attributes:
+      label: Code Example
+      description: If applicable, provide a code example that demonstrates your issue.
+      placeholder: |
+        ```python
+        # Your code here
+        ```
+      render: python
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Logly Version
+      description: What version of Logly are you using?
+      placeholder: e.g., 0.1.4
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What Python version are you using?
+      placeholder: e.g., Python 3.12.9
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      placeholder: e.g., Windows 11, macOS 14.0, Ubuntu 22.04
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any additional information that might be helpful.
+      placeholder: |
+        - Error messages
+        - Configuration files
+        - Performance issues
+        - Environment details
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched the documentation and existing issues
+          required: true
+        - label: This is not a bug report (use the bug report template instead)
+          required: true
+        - label: This is not a feature request (use the feature request template instead)
+          required: true

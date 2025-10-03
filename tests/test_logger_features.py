@@ -12,20 +12,6 @@ def read_log(path: Path) -> str:
     assert path.exists()
     return path.read_text()
 
-    def test_add_configure_and_basic_logging(tmp_path: Path):
-        """Test basic logging configuration and file output."""
-        p = tmp_path / "basic.log"
-        # add file before configure per MVP
-        logger.add(str(p), async_write=False)  # Use sync writing for immediate results
-        logger.configure(level="INFO", color=False)
-
-        logger.info("hello world", user="bob")
-        logger.complete()
-
-        content = read_log(p)
-        assert "hello world" in content
-        assert "user=bob" in content
-
 
 def test_bind_and_contextualize(tmp_path: Path):
     """Test binding context and contextualize functionality."""
@@ -375,6 +361,36 @@ def test_show_module_function_configuration(tmp_path: Path):
     assert "message with module but without function" in content
 
 
+def test_show_filename_lineno_configuration(tmp_path: Path):
+    """Test console filename and lineno display control."""
+    p = tmp_path / "filename_lineno_test.log"
+    logger.add(str(p))
+
+    # Configure with filename and lineno info enabled
+    logger.configure(level="INFO", show_filename=True, show_lineno=True)
+    logger.info("message with filename and lineno")
+
+    # Configure with filename and lineno info disabled
+    logger.configure(level="INFO", show_filename=False, show_lineno=False)
+    logger.info("message without filename and lineno")
+
+    # Configure with only filename disabled
+    logger.configure(level="INFO", show_filename=False, show_lineno=True)
+    logger.info("message without filename but with lineno")
+
+    # Configure with only lineno disabled
+    logger.configure(level="INFO", show_filename=True, show_lineno=False)
+    logger.info("message with filename but without lineno")
+
+    logger.complete()
+
+    content = read_log(p)
+    assert "message with filename and lineno" in content
+    assert "message without filename and lineno" in content
+    assert "message without filename but with lineno" in content
+    assert "message with filename but without lineno" in content
+
+
 def test_per_level_console_controls(tmp_path: Path):
     """Test per-level console output controls."""
     p = tmp_path / "console.log"
@@ -555,9 +571,11 @@ def test_per_sink_format_case_insensitive(tmp_path: Path):
     logger.complete()
 
     content = read_log(log_file)
-    # Should work with uppercase placeholders: "timestamp | INFO | Case test message | module=function"
-    assert " | INFO | Case test message | module=" in content
-    assert "function=" in content
+    # Should work with uppercase placeholders: "timestamp | INFO | Case test message"
+    # Extra fields are not automatically appended for custom templates
+    assert " | INFO | Case test message" in content
+    assert "module=" not in content
+    assert "function=" not in content
     # Should have RFC3339 timestamp
     assert "T" in content and "+" in content
 
@@ -632,3 +650,20 @@ def test_per_sink_format_with_filters(tmp_path: Path):
     assert "code=500" in error_content
     assert "Debug message" not in error_content
     assert "Info message" not in error_content
+
+
+def test_per_sink_format_filename_lineno_placeholders(tmp_path: Path):
+    """Test {filename} and {lineno} placeholders in custom format strings."""
+    log_file = tmp_path / "filename_lineno.log"
+
+    logger.add(str(log_file), format="{level}: {filename}:{lineno} - {message}")
+    logger.configure(level="INFO", color=False, show_filename=True, show_lineno=True)
+
+    logger.info("Test message with filename and lineno")
+    logger.complete()
+
+    content = read_log(log_file)
+    # The format should include the actual filename and line number
+    assert "INFO:" in content
+    assert "test_logger_features.py:" in content
+    assert "- Test message with filename and lineno" in content

@@ -98,6 +98,8 @@ Any key-value pair passed to the log call becomes available as a placeholder:
 |-------------|-------------|---------|
 | `{module}` | Python module (if provided) | `main`, `utils.auth` |
 | `{function}` | Function name (if provided) | `login`, `process_data` |
+| `{filename}` | Source filename (if provided) | `app.py`, `utils/auth.py` |
+| `{lineno}` | Line number (if provided) | `42`, `157` |
 | `{user_id}` | Custom field | `12345` |
 | `{request_id}` | Custom field | `req-abc-123` |
 
@@ -112,6 +114,9 @@ format="{time} [{level}] {message} | user={user_id}"
 
 # Use {extra} for all remaining fields
 format="{time} [{level}] {message} | {extra}"
+
+# Include caller information
+format="{time} [{level}] {filename}:{lineno} - {message}"
 
 # JSON format
 import json

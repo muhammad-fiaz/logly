@@ -46,7 +46,7 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 - 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
 - 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
 - 🔍 **Rich Filtering**: Filter by level, module, or function name
-- 📞 **Callbacks**: Custom log processing with async execution
+- 📞 **Callbacks**: Custom log processing with async execution, color styling, and filename/line number tracking
 - 🛡️ **Memory Safe**: Rust's ownership system prevents data races
 - 🧵 **Thread Safe**: Lock-free operations with optimized synchronization
 

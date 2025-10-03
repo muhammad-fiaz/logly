@@ -14,6 +14,7 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import ContextDecorator, contextmanager
 
 from logly._logly import PyLogger, __version__
@@ -73,7 +74,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format style. Options: "rfc3339", "local", "utc".
             date_enabled: Enable timestamp in log output (default: False for console).
-            format: Custom format string for this sink (e.g., "{time} | {level} | {message}").
+            format: Custom format string for this sink with placeholders like {time}, {level}, {message}, {module}, {function}, {filename}, {lineno}, or any extra field key. Placeholders are case-insensitive.
             json: Format logs as JSON for this sink (default: False).
 
         Returns:
@@ -89,11 +90,27 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> logger.add("app.log", size_limit="10MB", retention=5)
             >>> # Add filtered sink for errors only
             >>> logger.add("errors.log", filter_min_level="ERROR")
-            >>> # Add sink with custom format
-            >>> logger.add("console", format="{time} [{level}] {message}")
+            >>> # Add sink with custom format including caller info
+            >>> logger.add("console", format="{time} [{level}] {message} at {filename}:{lineno}")
         """
         if not sink or sink == "console":
-            return self._inner.add("console")
+            return self._inner.add(
+                "console",
+                rotation=rotation,
+                size_limit=size_limit,
+                retention=retention,
+                filter_min_level=filter_min_level,
+                filter_module=filter_module,
+                filter_function=filter_function,
+                async_write=async_write,
+                buffer_size=buffer_size,
+                flush_interval=flush_interval,
+                max_buffered_lines=max_buffered_lines,
+                date_style=date_style,
+                date_enabled=date_enabled,
+                format=format,
+                json=json,
+            )
         return self._inner.add(
             sink,
             rotation=rotation,
@@ -123,17 +140,22 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         show_time: bool = True,
         show_module: bool = True,
         show_function: bool = True,
+        show_filename: bool = False,
+        show_lineno: bool = False,
         console_levels: dict[str, bool] | None = None,
         time_levels: dict[str, bool] | None = None,
         color_levels: dict[str, bool] | None = None,
         storage_levels: dict[str, bool] | None = None,
+        color_callback: Callable | None = None,
     ) -> None:
         """Configure global logger settings.
 
         Args:
             level: Default minimum log level. Options: "TRACE", "DEBUG", "INFO",
                   "SUCCESS", "WARNING", "ERROR", "CRITICAL".
-            color: Enable colored output for console logs (default: True).
+            color: Enable colored output for console logs (default: True). When False,
+                  disables all coloring. When True, uses built-in ANSI colors or custom
+                  color callback if provided.
             level_colors: Dictionary mapping log levels to ANSI color codes or color names.
                          If None, uses default colors. Supports both ANSI codes and color names:
                          ANSI codes: "30" (Black), "31" (Red), "32" (Green), "33" (Yellow),
@@ -146,6 +168,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             show_time: Show timestamps in console output (default: True).
             show_module: Show module information in console output (default: True).
             show_function: Show function information in console output (default: True).
+            show_filename: Show filename information in console output (default: False).
+            show_lineno: Show line number information in console output (default: False).
             console_levels: Dictionary mapping log levels to console output enable/disable.
                            If None, uses global console setting.
             time_levels: Dictionary mapping log levels to time display enable/disable.
@@ -154,6 +178,10 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
                          If None, uses global color setting.
             storage_levels: Dictionary mapping log levels to file storage enable/disable.
                            If None, uses global setting (always enabled).
+            color_callback: Custom color formatting function with signature (level: str, text: str) -> str.
+                           If provided, this function is used instead of built-in ANSI coloring.
+                           Allows integration with external color libraries like Rich, colorama, etc.
+                           When provided, level_colors parameter is ignored.
 
         Example:
             >>> from logly import logger
@@ -176,6 +204,13 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> logger.configure(console_levels={"DEBUG": True, "INFO": False, "WARN": True})
             >>> # Configure per-level time display
             >>> logger.configure(time_levels={"DEBUG": True, "INFO": False})
+            >>> # Configure with custom color callback for external library integration
+            >>> def custom_color(level, text):
+            ...     # Example using ANSI colors
+            ...     colors = {"INFO": "\033[32m", "ERROR": "\033[31m"}
+            ...     reset = "\033[0m"
+            ...     return f"{colors.get(level, '')}{text}{reset}"
+            >>> logger.configure(level="INFO", color_callback=custom_color)
         """
         self._inner.configure(
             level=level,
@@ -187,10 +222,13 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             show_time=show_time,
             show_module=show_module,
             show_function=show_function,
+            show_filename=show_filename,
+            show_lineno=show_lineno,
             console_levels=console_levels,
             time_levels=time_levels,
             color_levels=color_levels,
             storage_levels=storage_levels,
+            color_callback=color_callback,
         )
 
     def reset(self) -> None:
@@ -262,10 +300,16 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
                 caller = frame.f_back.f_back
                 module = caller.f_globals.get("__name__", "?")
                 function = caller.f_code.co_name
+                filename = caller.f_code.co_filename
+                lineno = caller.f_lineno
                 if "module" not in kwargs:
                     kwargs["module"] = module
                 if "function" not in kwargs:
                     kwargs["function"] = function
+                if "filename" not in kwargs:
+                    kwargs["filename"] = filename
+                if "lineno" not in kwargs:
+                    kwargs["lineno"] = lineno
         except Exception:  # pylint: disable=broad-exception-caught
             # Introspection can fail for various reasons, catch all exceptions
             pass

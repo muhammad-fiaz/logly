@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "logly"
-version = "0.1.3"
+version = "0.1.4"
 description = "A stupidly simple, yet blazingly fast and powerful logging utility for Python — powered by Rust."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10, <3.14"
@@ -49,6 +49,7 @@ dev = [
   "pylint>=3.3.8",
   "pytest==8.4.1",
   "pytest-cov==6.2.1",
+  "rich>=14.1.0",
   "ruff==0.12.3",
   "twine>=5.0.0",
 ]
@@ -71,9 +72,6 @@ disallow_untyped_defs = false
 module = ["logly._logly", "logly"]
 disallow_untyped_defs = false
 
-[[tool.mypy.overrides]]
-module = ["bench.*"]
-disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
 module = ["examples.*"]

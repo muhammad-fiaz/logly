@@ -47,11 +47,8 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Edit and View buttons with text - Fixed bottom right corner */
+/* Edit and View buttons - Bottom right of page content */
 .md-content__button.md-icon {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
@@ -63,13 +60,11 @@ a:hover {
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  z-index: 90;
   font-weight: 500;
   text-align: left;
-}
-
-.md-content__button.md-icon:first-of-type {
-  bottom: 6.5rem;
+  margin-top: 2rem;
+  float: right;
+  clear: both;
 }
 
 .md-content__button.md-icon:hover {
@@ -91,6 +86,43 @@ a:hover {
   height: 1.25rem;
   flex-shrink: 0;
   fill: white;
+}
+
+/* Responsive Edit/View buttons */
+@media screen and (max-width: 768px) {
+  .md-content__button.md-icon {
+    padding: 0.6rem 1rem;
+    min-width: 140px;
+    font-size: 0.8rem;
+    margin-top: 1.5rem;
+  }
+
+  .md-content__button.md-icon span {
+    font-size: 0.8rem;
+  }
+
+  .md-content__button.md-icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .md-content__button.md-icon {
+    padding: 0.5rem 0.9rem;
+    min-width: 140px;
+    font-size: 0.8rem;
+    margin-top: 2rem;
+  }
+
+  .md-content__button.md-icon span {
+    font-size: 0.8rem;
+  }
+
+  .md-content__button.md-icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
 }
 
 /* Code inline */

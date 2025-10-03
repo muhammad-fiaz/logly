@@ -13,7 +13,7 @@ This example demonstrates how to use Logly's template string formatting feature 
 Template strings support placeholders that are replaced with actual log data:
 
 - **Built-in placeholders**: `{time}`, `{level}`, `{message}`
-- **Extra field placeholders**: `{module}`, `{function}`, `{any_custom_field}`
+- **Extra field placeholders**: `{module}`, `{function}`, `{filename}`, `{lineno}`, `{any_custom_field}`
 - **Special placeholders**: `{extra}` (all remaining fields as key=value pairs)
 
 All placeholders are case-insensitive.
@@ -23,8 +23,8 @@ All placeholders are case-insensitive.
 ```python
 from logly import logger
 
-# Configure logger
-logger.configure(level="INFO")
+# Configure logger with filename/lineno enabled
+logger.configure(level="INFO", show_filename=True, show_lineno=True)
 
 # Example 1: Simple format
 logger.add("console", format="{time} [{level}] {message}")
@@ -37,29 +37,30 @@ logger.add(
 )
 logger.info("Processing request", user_id=123, endpoint="/api/users")
 
-logger.complete() 
-           user="charlie",
-           module="myapp.api",
-           function="handle_request")
+# Example 3: Format with filename and line number
+logger.add(
+    "logs/debug.log",
+    format="{level}: {filename}:{lineno} - {message}"
+)
+logger.info("Debug message with location info")
 
-# Read and display file content
-with open(log_file, 'r', encoding='utf-8') as f:
-    print(f"\nFile content:\n{f.read()}")
+logger.info("Debug message with location info")
+
+logger.complete()
+
+# Read and display file contents
+print("\nDetailed log content:")
+with open("logs/detailed.log", 'r', encoding='utf-8') as f:
+    print(f.read())
+
+print("\nDebug log content:")
+with open("logs/debug.log", 'r', encoding='utf-8') as f:
+    print(f.read())
 
 # Cleanup
 logger.remove(1)
 logger.remove(2)
-
-# Example 7: Empty format (only message)
-print("\n7. Message Only (no format):")
-logger.add("console", format="{message}")
-logger.info("Just the message, nothing else", extra_field="ignored_in_output")
-
-print("\n" + "=" * 80)
-print("Template formatting complete!")
-print("=" * 80)
-
-logger.complete()
+logger.remove(3)
 ```
 
 ## Expected Output
@@ -67,6 +68,7 @@ logger.complete()
 ```
 2025-01-15T14:32:10.123456+00:00 [INFO] Starting application
 2025-01-15T14:32:10.125789+00:00 | INFO     | __main__:main | Processing request | user_id=123 | endpoint=/api/users
+INFO: template-strings.md:42 - Debug message with location info
 ```
 
 ### What Happens
@@ -79,6 +81,10 @@ logger.complete()
 - Uses `{module}:{function}` to show where the log came from
 - `{level:8}` pads the level name to 8 characters for alignment
 - Extra fields are appended after the message
+
+**Third sink (file with filename:lineno format):**
+- Uses `{filename}:{lineno}` to show the source location
+- Only shows filename and lineno when `show_filename=True` and `show_lineno=True` are configured
 
 ## Key Concepts
 

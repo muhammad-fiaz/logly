@@ -1,5 +1,5 @@
-use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
 use pyo3::Bound;
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
 
 /// Convert a Python dictionary to a vector of key-value string pairs.
 ///
