@@ -2,7 +2,7 @@
 name = "logly"
 version = "0.1.4"
 description = "Blazingly Fast Rust-Powered Python Logging Utility with Advanced Features"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 readme = "README.md"
 
