@@ -52,6 +52,23 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 
 ---
 
+## Quick Navigation
+
+### Core Documentation
+
+- **[Quick Start Guide](quickstart.md)** - Get up and running in 5 minutes with basic setup and examples
+- **[API Reference](api-reference/index.md)** - Complete documentation of all methods and configuration options
+- **[Examples](examples/index.md)** - Practical code examples for common logging scenarios
+- **[Installation Guide](installation.md)** - Install Logly with pip, uv, or poetry
+
+### Advanced Topics
+
+- **[Configuration Guide](guides/configuration.md)** - Advanced configuration patterns and production setups
+- **[Troubleshooting](guides/troubleshooting.md)** - Common issues and solutions for debugging problems
+- **[Changelog](changelog.md)** - See what's new in each version
+
+---
+
 ## Quick Start
 
 ### Installation

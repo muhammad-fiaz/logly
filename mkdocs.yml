@@ -124,24 +124,32 @@ nav:
     - Per-Level Controls: examples/per-level-controls.md
     - Template String Formatting: examples/template-strings.md
     - File Logging with Rotation: examples/file-rotation.md
+    - File Operations: examples/file-operations.md
     - JSON Logging: examples/json-logging.md
     - Async Logging: examples/async-logging.md
     - Context Binding: examples/context-binding.md
     - Exception Handling: examples/exception-handling.md
+    - Managing Multiple Sinks: examples/managing-sinks.md
     - Multi-Sink Setup: examples/multi-sink.md
   - Guides:
     - Getting Started: guides/getting-started.md
     - Configuration: guides/configuration.md
+    - Error Handling: guides/error-handling.md
+    - Version Checking: guides/version-checking.md
+    - Troubleshooting: guides/troubleshooting.md
     - Production Deployment: guides/production-deployment.md
     - Development: guides/development.md
   - API Reference:
     - api-reference/index.md
     - Complete Reference: api-reference/complete-reference.md
     - Configuration: api-reference/configuration.md
+    - Sink Management: api-reference/sink-management.md
     - Logging Methods: api-reference/logging.md
+    - File Operations: api-reference/file-operations.md
     - Context Management: api-reference/context.md
     - Callbacks: api-reference/callbacks.md
     - Exception Handling: api-reference/exceptions.md
+    - Error Types: api-reference/error-types.md
     - Utility Methods: api-reference/utilities.md
   - Changelog: changelog.md
 

@@ -23,8 +23,9 @@ fn flush_buffer(
         buffer.push_str(&line);
     }
 
-    // Write buffer to file
+    // Write buffer to file with trailing newline
     if !buffer.is_empty() {
+        buffer.push('\n'); // Add final newline so each log entry is on its own line
         let mut w = file_writer.lock();
         let _ = write!(&mut **w, "{}", buffer);
         let _ = w.flush();

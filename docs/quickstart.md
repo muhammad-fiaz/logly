@@ -14,14 +14,36 @@ Get started with Logly in 5 minutes!
 
 ### 1. Import and Configure
 
+Logly supports multiple import styles for convenience:
+
 ```python
+# Option 1: Import the logger instance (recommended)
 from logly import logger
+
+# Option 2: Import as logger (convenient alias)
+import logly as logger
+
+# Option 3: Import module and use directly
+import logly
+
+# Option 4: Direct PyLogger import (for custom instances)
+from logly import PyLogger
+logger = PyLogger(auto_update_check=False)
 
 # Configure logging level and output format
 logger.configure(
     level="INFO",      # Minimum log level
     color=True         # Colored output for console
 )
+
+# Or with direct module access:
+logly.configure(
+    level="INFO",
+    color=True
+)
+
+# Or with PyLogger instance:
+# (Already configured in the import)
 ```
 
 ### 2. Add Output Destinations
@@ -35,9 +57,17 @@ logger.add("logs/app.log", rotation="daily", retention=7)
 ### 3. Start Logging
 
 ```python
-# Log messages at different levels
+# All import styles work the same way:
+
+# Using imported logger instance
 logger.info("Application started", version="1.0.0")
 logger.debug("Debug information", step=1)
+
+# Using module as logger
+logly.info("Application started", version="1.0.0")
+logly.debug("Debug information", step=1)
+
+# Log messages at different levels
 logger.warning("Low disk space", available_gb=2.5)
 logger.error("Failed to connect", retry_count=3)
 logger.critical("System out of memory")
@@ -54,7 +84,35 @@ logger.complete()
 2025-01-15T10:30:15.126789+00:00 [CRITICAL] System out of memory
 ```
 
-Note: The DEBUG message doesn't appear because the level is set to INFO.
+**Note:** The DEBUG message doesn't appear because the level is set to INFO.
+
+!!! info "CRITICAL Level Fix in v0.1.5"
+    In v0.1.4, `logger.critical()` incorrectly displayed as `[ERROR]`. This has been fixed in **v0.1.5** - CRITICAL messages now correctly show as `[CRITICAL]`. See [Issue #66](https://github.com/muhammad-fiaz/logly/issues/66) for details.
+
+---
+
+## Advanced Initialization
+
+### Disabling Automatic Version Checks
+
+By default, Logly automatically checks for new versions on startup. You can disable this feature for environments where network access is restricted or unwanted:
+
+```python
+from logly import logger
+
+# Method 1: Using the callable logger (recommended)
+custom_logger = logger(auto_update_check=False)
+custom_logger.configure(level="INFO", color=True)
+
+# Method 2: Using PyLogger directly
+from logly import PyLogger
+direct_logger = PyLogger(auto_update_check=False)
+direct_logger.configure(level="INFO", color=True)
+```
+
+
+!!! tip "Default Behavior"
+    The global `logger` instance (imported as `from logly import logger`) has auto-update checks enabled by default.
 
 ---
 

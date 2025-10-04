@@ -1,6 +1,8 @@
 use crate::backend;
 use crate::config::state::with_state;
+use crate::utils::error::{validate_level, validate_rotation, validate_size_limit};
 use crate::utils::levels::to_level;
+use crate::utils::version_check;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -17,12 +19,19 @@ pub struct PyLogger;
 
 #[pymethods]
 impl PyLogger {
-    /// Create a new PyLogger instance.
+    /// This creates a new PyLogger instance.
+    ///
+    /// # Arguments
+    /// * `auto_update_check` - Enable automatic version checking on startup (default: true)
     ///
     /// # Returns
     /// A new PyLogger with default settings
     #[new]
-    pub fn new() -> Self {
+    #[pyo3(signature = (auto_update_check = true))]
+    pub fn new(auto_update_check: bool) -> Self {
+        if auto_update_check {
+            version_check::check_version_async();
+        }
         PyLogger
     }
 
@@ -69,6 +78,9 @@ impl PyLogger {
         storage_levels: Option<HashMap<String, bool>>,
         color_callback: Option<Py<PyAny>>,
     ) -> PyResult<()> {
+        // Validate log level parameter
+        validate_level(level)?;
+
         let colors = level_colors.map(|hm| hm.into_iter().collect());
         let console_lvls = console_levels.map(|hm| hm.into_iter().collect());
         let time_lvls = time_levels.map(|hm| hm.into_iter().collect());
@@ -160,6 +172,21 @@ impl PyLogger {
         json: bool,
     ) -> PyResult<usize> {
         use crate::config::state::{RotationPolicy, SinkConfig};
+
+        // Validate filter_min_level if provided
+        if let Some(ref level) = filter_min_level {
+            validate_level(level)?;
+        }
+
+        // Validate rotation parameter
+        if let Some(r) = rotation {
+            validate_rotation(r)?;
+        }
+
+        // Validate size_limit parameter
+        if let Some(sl) = size_limit {
+            validate_size_limit(sl)?;
+        }
 
         let handler_id = with_state(|s| {
             let id = s.next_handler_id;
@@ -302,6 +329,233 @@ impl PyLogger {
         Ok(removed)
     }
 
+    /// Remove all logging sinks.
+    ///
+    /// Clears all registered sinks (console and file outputs), their associated
+    /// file writers, and async senders. This is useful for cleanup or reconfiguration.
+    ///
+    /// # Returns
+    /// Number of sinks that were removed
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.add("app.log")
+    /// logger.add("error.log")
+    /// count = logger.remove_all()  # Returns 2
+    /// ```
+    pub fn remove_all(&self) -> PyResult<usize> {
+        let count = crate::config::state::with_state(|s| {
+            let num_sinks = s.sinks.len();
+            s.sinks.clear();
+            s.file_writers.clear();
+            s.async_senders.clear();
+            num_sinks
+        });
+        Ok(count)
+    }
+
+    /// Get the number of active sinks.
+    ///
+    /// Returns the count of all registered sinks (file and console outputs).
+    /// This is useful for monitoring and debugging logging configuration.
+    ///
+    /// # Returns
+    /// Number of active sinks
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.add("app.log")
+    /// logger.add("error.log")
+    /// count = logger.sink_count()  # Returns 2
+    /// ```
+    pub fn sink_count(&self) -> PyResult<usize> {
+        let count = crate::config::state::with_state(|s| s.sinks.len());
+        Ok(count)
+    }
+
+    /// List all active sink handler IDs.
+    ///
+    /// Returns a list of handler IDs for all registered sinks. These IDs can
+    /// be used with remove() to selectively remove sinks.
+    ///
+    /// # Returns
+    /// List of handler IDs (as integers)
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// id1 = logger.add("app.log")
+    /// id2 = logger.add("error.log")
+    /// ids = logger.list_sinks()  # Returns [id1, id2]
+    /// logger.remove(ids[0])  # Remove first sink
+    /// ```
+    pub fn list_sinks(&self) -> PyResult<Vec<usize>> {
+        let ids = crate::config::state::with_state(|s| s.sinks.keys().copied().collect::<Vec<_>>());
+        Ok(ids)
+    }
+
+    /// Get detailed information about a specific sink.
+    ///
+    /// Returns a dictionary with sink configuration details including path,
+    /// rotation policy, compression, async settings, and format options.
+    ///
+    /// # Arguments
+    /// * `handler_id` - Handler ID returned by add()
+    ///
+    /// # Returns
+    /// Dictionary with sink information, or None if handler ID not found
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// id = logger.add("app.log", rotation="daily", async_mode=True)
+    /// info = logger.sink_info(id)
+    /// print(info["path"])  # "app.log"
+    /// print(info["rotation"])  # "daily"
+    /// print(info["async_write"])  # True
+    /// ```
+    pub fn sink_info(&self, handler_id: usize) -> PyResult<Option<HashMap<String, String>>> {
+        let info = crate::config::state::with_state(|s| {
+            s.sinks.get(&handler_id).map(|sink| {
+                let mut map = HashMap::new();
+                map.insert("id".to_string(), handler_id.to_string());
+
+                // Path information
+                if let Some(ref path) = sink.path {
+                    map.insert("path".to_string(), path.clone());
+                    map.insert("type".to_string(), "file".to_string());
+                } else {
+                    map.insert("type".to_string(), "console".to_string());
+                }
+
+                // Rotation policy
+                let rotation = match &sink.rotation {
+                    crate::config::state::RotationPolicy::Never => "never".to_string(),
+                    crate::config::state::RotationPolicy::Daily => "daily".to_string(),
+                    crate::config::state::RotationPolicy::Hourly => "hourly".to_string(),
+                    crate::config::state::RotationPolicy::Minutely => "minutely".to_string(),
+                    crate::config::state::RotationPolicy::Size(bytes) => format!("{}B", bytes),
+                };
+                map.insert("rotation".to_string(), rotation);
+
+                // Compression
+                let compression = match sink.compression {
+                    crate::config::state::Compression::None => "none".to_string(),
+                    crate::config::state::Compression::Gzip => "gzip".to_string(),
+                    crate::config::state::Compression::Zstd => "zstd".to_string(),
+                };
+                map.insert("compression".to_string(), compression);
+
+                // Async settings
+                map.insert("async_write".to_string(), sink.async_write.to_string());
+                map.insert("buffer_size".to_string(), sink.buffer_size.to_string());
+                map.insert(
+                    "flush_interval".to_string(),
+                    sink.flush_interval.to_string(),
+                );
+
+                // Format settings
+                map.insert("json".to_string(), sink.json.to_string());
+                map.insert("date_enabled".to_string(), sink.date_enabled.to_string());
+                map.insert("date_style".to_string(), sink.date_style.clone());
+
+                if let Some(ref format) = sink.format {
+                    map.insert("format".to_string(), format.clone());
+                }
+
+                // Retention
+                if let Some(retention) = sink.retention {
+                    map.insert("retention".to_string(), retention.to_string());
+                }
+
+                map
+            })
+        });
+        Ok(info)
+    }
+
+    /// Get information about all active sinks.
+    ///
+    /// Returns a list of dictionaries containing configuration details for
+    /// all registered sinks. This is useful for debugging and monitoring.
+    ///
+    /// # Returns
+    /// List of sink information dictionaries
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.add("app.log", rotation="daily")
+    /// logger.add("error.log", rotation="1MB")
+    /// sinks = logger.all_sinks_info()
+    /// for sink in sinks:
+    ///     print(f"{sink['path']}: {sink['rotation']}")
+    /// ```
+    pub fn all_sinks_info(&self) -> PyResult<Vec<HashMap<String, String>>> {
+        let all_info = crate::config::state::with_state(|s| {
+            s.sinks
+                .iter()
+                .map(|(id, sink)| {
+                    let mut map = HashMap::new();
+                    map.insert("id".to_string(), id.to_string());
+
+                    // Path information
+                    if let Some(ref path) = sink.path {
+                        map.insert("path".to_string(), path.clone());
+                        map.insert("type".to_string(), "file".to_string());
+                    } else {
+                        map.insert("type".to_string(), "console".to_string());
+                    }
+
+                    // Rotation policy
+                    let rotation = match &sink.rotation {
+                        crate::config::state::RotationPolicy::Never => "never".to_string(),
+                        crate::config::state::RotationPolicy::Daily => "daily".to_string(),
+                        crate::config::state::RotationPolicy::Hourly => "hourly".to_string(),
+                        crate::config::state::RotationPolicy::Minutely => "minutely".to_string(),
+                        crate::config::state::RotationPolicy::Size(bytes) => format!("{}B", bytes),
+                    };
+                    map.insert("rotation".to_string(), rotation);
+
+                    // Compression
+                    let compression = match sink.compression {
+                        crate::config::state::Compression::None => "none".to_string(),
+                        crate::config::state::Compression::Gzip => "gzip".to_string(),
+                        crate::config::state::Compression::Zstd => "zstd".to_string(),
+                    };
+                    map.insert("compression".to_string(), compression);
+
+                    // Async settings
+                    map.insert("async_write".to_string(), sink.async_write.to_string());
+                    map.insert("buffer_size".to_string(), sink.buffer_size.to_string());
+                    map.insert(
+                        "flush_interval".to_string(),
+                        sink.flush_interval.to_string(),
+                    );
+
+                    // Format settings
+                    map.insert("json".to_string(), sink.json.to_string());
+                    map.insert("date_enabled".to_string(), sink.date_enabled.to_string());
+                    map.insert("date_style".to_string(), sink.date_style.clone());
+
+                    if let Some(ref format) = sink.format {
+                        map.insert("format".to_string(), format.clone());
+                    }
+
+                    // Retention
+                    if let Some(retention) = sink.retention {
+                        map.insert("retention".to_string(), retention.to_string());
+                    }
+
+                    map
+                })
+                .collect()
+        });
+        Ok(all_info)
+    }
+
     /// Add a callback function that executes asynchronously on each log event.
     ///
     /// The callback function will be called in the background with a log record
@@ -402,12 +656,15 @@ impl PyLogger {
 
     /// Log a message at CRITICAL level (mapped to ERROR in tracing).
     ///
+    /// Displays as [CRITICAL] while using ERROR level internally for filtering.
+    /// Fixes: https://github.com/muhammad-fiaz/logly/issues/66
+    ///
     /// # Arguments
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
     pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::ERROR, msg, kwargs, None);
+        backend::log_message_with_level_override(Level::ERROR, msg, kwargs, None, Some("CRITICAL"));
     }
 
     /// Log a message at a custom or aliased level.
@@ -452,6 +709,515 @@ impl PyLogger {
         let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
         backend::log_message(lvl, msg, kwargs, Some(stdout));
         Ok(())
+    }
+
+    /// Delete the log file associated with a specific sink.
+    ///
+    /// Removes the physical log file from disk for the given sink ID.
+    /// The sink itself remains active and will create a new file on next write.
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink whose log file should be deleted
+    ///
+    /// # Returns
+    /// `true` if the file was deleted, `false` if sink not found or no file exists
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// sink_id = logger.add("app.log")
+    /// logger.info("Some logs")
+    /// logger.delete(sink_id)  # Deletes app.log
+    /// ```
+    pub fn delete(&self, sink_id: usize) -> PyResult<bool> {
+        let deleted = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(ref path) = sink.path {
+                    std::fs::remove_file(path).is_ok()
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        });
+        Ok(deleted)
+    }
+
+    /// Delete all log files associated with all sinks.
+    ///
+    /// Removes all physical log files from disk. Sinks remain active and will
+    /// create new files on next write.
+    ///
+    /// # Returns
+    /// Number of files successfully deleted
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.add("app.log")
+    /// logger.add("error.log")
+    /// count = logger.delete_all()  # Deletes both files
+    /// ```
+    pub fn delete_all(&self) -> PyResult<usize> {
+        let count = with_state(|s| {
+            let mut deleted = 0;
+            for sink in s.sinks.values() {
+                if let Some(ref path) = sink.path
+                    && std::fs::remove_file(path).is_ok()
+                {
+                    deleted += 1;
+                }
+            }
+            deleted
+        });
+        Ok(count)
+    }
+
+    /// Clear the console display.
+    ///
+    /// Clears the terminal screen, useful for resetting the display.
+    /// Uses ANSI escape sequences on Unix and CMD commands on Windows.
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.info("Some logs")
+    /// logger.clear()  # Clears the screen
+    /// logger.info("Fresh start")
+    /// ```
+    pub fn clear(&self) -> PyResult<()> {
+        #[cfg(target_os = "windows")]
+        {
+            std::process::Command::new("cmd")
+                .args(["/C", "cls"])
+                .status()
+                .map_err(|e| PyValueError::new_err(format!("Failed to clear console: {}", e)))?;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            print!("\x1B[2J\x1B[1;1H");
+            use std::io::Write;
+            std::io::stdout()
+                .flush()
+                .map_err(|e| PyValueError::new_err(format!("Failed to clear console: {}", e)))?;
+        }
+        Ok(())
+    }
+
+    /// Read log contents from a specific sink.
+    ///
+    /// Returns the contents of the log file associated with the given sink ID.
+    /// Only works for file sinks (not console).
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink to read from
+    ///
+    /// # Returns
+    /// String containing the log file contents, or None if sink not found or is console
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// sink_id = logger.add("app.log")
+    /// logger.info("Test message")
+    /// logs = logger.read(sink_id)
+    /// print(logs)
+    /// ```
+    pub fn read(&self, sink_id: usize) -> PyResult<Option<String>> {
+        let content = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(ref path) = sink.path {
+                    std::fs::read_to_string(path).ok()
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
+        Ok(content)
+    }
+
+    /// Read log contents from all file sinks.
+    ///
+    /// Returns a dictionary mapping sink IDs to their log file contents.
+    /// Only includes file sinks (console sinks are skipped).
+    ///
+    /// # Returns
+    /// HashMap where keys are sink IDs and values are log file contents
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// logger.add("app.log")
+    /// logger.add("error.log")
+    /// all_logs = logger.read_all()
+    /// for sink_id, content in all_logs.items():
+    ///     print(f"Sink {sink_id}: {content}")
+    /// ```
+    pub fn read_all(&self) -> PyResult<HashMap<usize, String>> {
+        let all_contents = with_state(|s| {
+            let mut contents = HashMap::new();
+            for (&id, sink) in s.sinks.iter() {
+                if let Some(ref path) = sink.path
+                    && let Ok(content) = std::fs::read_to_string(path)
+                {
+                    contents.insert(id, content);
+                }
+            }
+            contents
+        });
+        Ok(all_contents)
+    }
+
+    /// Get the file size of a specific sink's log file in bytes.
+    ///
+    /// Returns `None` if:
+    /// - The sink doesn't exist
+    /// - The sink is not a file sink (e.g., console sink)
+    /// - The file doesn't exist yet
+    ///
+    /// # Arguments
+    ///
+    /// * `sink_id` - The unique identifier of the sink
+    ///
+    /// # Returns
+    ///
+    /// * `PyResult<Option<u64>>` - File size in bytes, or None if not found
+    ///
+    /// # Example
+    ///
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log")
+    /// logger.info("Hello")
+    ///
+    /// size = logger.file_size(sink_id)
+    /// if size:
+    ///     print(f"Log file is {size} bytes")
+    /// ```
+    #[pyo3(signature = (sink_id))]
+    pub fn file_size(&self, sink_id: usize) -> PyResult<Option<u64>> {
+        let result = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(path) = &sink.path {
+                    match std::fs::metadata(path) {
+                        Ok(metadata) => Some(metadata.len()),
+                        Err(_) => None, // File doesn't exist yet
+                    }
+                } else {
+                    None // Not a file sink
+                }
+            } else {
+                None // Sink doesn't exist
+            }
+        });
+        Ok(result)
+    }
+
+    /// Get file metadata for a specific sink's log file.
+    ///
+    /// Returns a dictionary with:
+    /// - `size`: File size in bytes
+    /// - `created`: Creation timestamp (ISO 8601 format)
+    /// - `modified`: Last modified timestamp (ISO 8601 format)
+    /// - `path`: Full file path
+    ///
+    /// Returns `None` if:
+    /// - The sink doesn't exist
+    /// - The sink is not a file sink
+    /// - The file doesn't exist yet
+    ///
+    /// # Arguments
+    ///
+    /// * `sink_id` - The unique identifier of the sink
+    ///
+    /// # Returns
+    ///
+    /// * `PyResult<Option<HashMap<String, String>>>` - Metadata dictionary or None
+    ///
+    /// # Example
+    ///
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log")
+    /// metadata = logger.file_metadata(sink_id)
+    /// if metadata:
+    ///     print(f"Size: {metadata['size']} bytes")
+    ///     print(f"Created: {metadata['created']}")
+    ///     print(f"Modified: {metadata['modified']}")
+    /// ```
+    #[pyo3(signature = (sink_id))]
+    pub fn file_metadata(&self, sink_id: usize) -> PyResult<Option<HashMap<String, String>>> {
+        use std::time::UNIX_EPOCH;
+
+        let result = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(path) = &sink.path {
+                    match std::fs::metadata(path) {
+                        Ok(metadata) => {
+                            let mut result = HashMap::new();
+
+                            // File size
+                            result.insert("size".to_string(), metadata.len().to_string());
+
+                            // File path
+                            result.insert("path".to_string(), path.clone()); // Created time
+                            if let Ok(created) = metadata.created()
+                                && let Ok(duration) = created.duration_since(UNIX_EPOCH)
+                            {
+                                let datetime =
+                                    chrono::DateTime::from_timestamp(duration.as_secs() as i64, 0)
+                                        .unwrap_or_default();
+                                result.insert("created".to_string(), datetime.to_rfc3339());
+                            }
+
+                            // Modified time
+                            if let Ok(modified) = metadata.modified()
+                                && let Ok(duration) = modified.duration_since(UNIX_EPOCH)
+                            {
+                                let datetime =
+                                    chrono::DateTime::from_timestamp(duration.as_secs() as i64, 0)
+                                        .unwrap_or_default();
+                                result.insert("modified".to_string(), datetime.to_rfc3339());
+                            }
+
+                            Some(result)
+                        }
+                        Err(_) => None, // File doesn't exist yet
+                    }
+                } else {
+                    None // Not a file sink
+                }
+            } else {
+                None // Sink doesn't exist
+            }
+        });
+        Ok(result)
+    }
+
+    /// Read specific lines from a sink's log file.
+    ///
+    /// This allows you to read a specific range of lines rather than the entire file.
+    /// Line numbers are 1-indexed. Use negative indices to count from the end:
+    /// - `start=-10` means "start from 10th line from the end"
+    /// - `end=-1` means "end at last line"
+    ///
+    /// # Arguments
+    ///
+    /// * `sink_id` - The unique identifier of the sink
+    /// * `start` - Starting line number (1-indexed, negative for end-relative)
+    /// * `end` - Ending line number (inclusive, negative for end-relative)
+    ///
+    /// # Returns
+    ///
+    /// * `PyResult<Option<String>>` - Selected lines joined with newlines, or None if sink/file doesn't exist
+    ///
+    /// # Example
+    ///
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log")
+    ///
+    /// # Read first 10 lines
+    /// lines = logger.read_lines(sink_id, 1, 10)
+    ///
+    /// # Read last 5 lines
+    /// lines = logger.read_lines(sink_id, -5, -1)
+    ///
+    /// # Read lines 100-200
+    /// lines = logger.read_lines(sink_id, 100, 200)
+    /// ```
+    #[pyo3(signature = (sink_id, start, end))]
+    pub fn read_lines(&self, sink_id: usize, start: i32, end: i32) -> PyResult<Option<String>> {
+        use std::io::{BufRead, BufReader};
+
+        let result = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(path) = &sink.path {
+                    match std::fs::File::open(path) {
+                        Ok(file) => {
+                            let reader = BufReader::new(file);
+                            let all_lines: Vec<String> =
+                                reader.lines().map_while(Result::ok).collect();
+
+                            let total_lines = all_lines.len() as i32;
+
+                            // Convert negative indices to positive
+                            let start_idx = if start < 0 {
+                                ((total_lines + start).max(0)) as usize
+                            } else {
+                                ((start - 1).max(0)) as usize
+                            };
+
+                            let end_idx = if end < 0 {
+                                ((total_lines + end + 1).max(0)) as usize
+                            } else {
+                                (end.min(total_lines)) as usize
+                            };
+
+                            if start_idx < all_lines.len() && start_idx < end_idx {
+                                let selected_lines: Vec<String> =
+                                    all_lines[start_idx..end_idx.min(all_lines.len())].to_vec();
+                                Some(selected_lines.join("\n"))
+                            } else {
+                                Some(String::new())
+                            }
+                        }
+                        Err(_) => None,
+                    }
+                } else {
+                    None // Not a file sink
+                }
+            } else {
+                None // Sink doesn't exist
+            }
+        });
+        Ok(result)
+    }
+
+    /// Count the number of lines in a sink's log file.
+    ///
+    /// # Arguments
+    ///
+    /// * `sink_id` - The unique identifier of the sink
+    ///
+    /// # Returns
+    ///
+    /// * `PyResult<Option<usize>>` - Number of lines, or None if sink/file doesn't exist
+    ///
+    /// # Example
+    ///
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log")
+    /// logger.info("Line 1")
+    /// logger.info("Line 2")
+    ///
+    /// count = logger.line_count(sink_id)
+    /// print(f"Log has {count} lines")
+    /// ```
+    #[pyo3(signature = (sink_id))]
+    pub fn line_count(&self, sink_id: usize) -> PyResult<Option<usize>> {
+        use std::io::{BufRead, BufReader};
+
+        let result = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(path) = &sink.path {
+                    match std::fs::File::open(path) {
+                        Ok(file) => {
+                            let reader = BufReader::new(file);
+                            let count = reader.lines().count();
+                            Some(count)
+                        }
+                        Err(_) => None,
+                    }
+                } else {
+                    None // Not a file sink
+                }
+            } else {
+                None // Sink doesn't exist
+            }
+        });
+        Ok(result)
+    }
+
+    /// Read and parse JSON log file.
+    ///
+    /// This method reads a JSON-formatted log file and returns it as a parsed structure.
+    /// Supports both JSON array format and newline-delimited JSON (NDJSON).
+    ///
+    /// # Arguments
+    ///
+    /// * `sink_id` - The unique identifier of the sink
+    /// * `pretty` - If true, returns pretty-printed JSON string
+    ///
+    /// # Returns
+    ///
+    /// * `PyResult<Option<String>>` - JSON string (pretty or compact), or None if sink/file doesn't exist
+    ///
+    /// # Example
+    ///
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log", format="json")
+    /// logger.info("Test message")
+    ///
+    /// # Get compact JSON
+    /// json_logs = logger.read_json(sink_id)
+    ///
+    /// # Get pretty-printed JSON
+    /// pretty_logs = logger.read_json(sink_id, pretty=True)
+    /// ```
+    #[pyo3(signature = (sink_id, pretty=false))]
+    pub fn read_json(&self, sink_id: usize, pretty: bool) -> PyResult<Option<String>> {
+        use std::io::{BufRead, BufReader};
+
+        let result = with_state(|s| {
+            if let Some(sink) = s.sinks.get(&sink_id) {
+                if let Some(path) = &sink.path {
+                    match std::fs::File::open(path) {
+                        Ok(file) => {
+                            let reader = BufReader::new(file);
+                            let lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
+
+                            // Try to parse as JSON array first, then as NDJSON
+                            let full_content = lines.join("\n");
+
+                            // Try parsing the entire content as JSON array
+                            if let Ok(parsed) =
+                                serde_json::from_str::<serde_json::Value>(&full_content)
+                            {
+                                if pretty {
+                                    Some(
+                                        serde_json::to_string_pretty(&parsed)
+                                            .unwrap_or(full_content),
+                                    )
+                                } else {
+                                    Some(serde_json::to_string(&parsed).unwrap_or(full_content))
+                                }
+                            } else {
+                                // Try NDJSON format (each line is a JSON object)
+                                let mut json_objects = Vec::new();
+                                for line in &lines {
+                                    if let Ok(obj) = serde_json::from_str::<serde_json::Value>(line)
+                                    {
+                                        json_objects.push(obj);
+                                    }
+                                }
+
+                                if !json_objects.is_empty() {
+                                    let array = serde_json::Value::Array(json_objects);
+                                    if pretty {
+                                        Some(
+                                            serde_json::to_string_pretty(&array)
+                                                .unwrap_or(full_content),
+                                        )
+                                    } else {
+                                        Some(serde_json::to_string(&array).unwrap_or(full_content))
+                                    }
+                                } else {
+                                    // Not valid JSON, return as-is
+                                    Some(full_content)
+                                }
+                            }
+                        }
+                        Err(_) => None,
+                    }
+                } else {
+                    None // Not a file sink
+                }
+            } else {
+                None // Sink doesn't exist
+            }
+        });
+        Ok(result)
     }
 
     // Extra conveniences for tests and control

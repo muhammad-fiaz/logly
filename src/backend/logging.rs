@@ -106,12 +106,29 @@ pub fn log_message(
     extra: Option<&Bound<'_, PyDict>>,
     py_stdout: Option<&Bound<'_, PyAny>>,
 ) {
+    log_message_with_level_override(level, msg, extra, py_stdout, None);
+}
+
+/// Log a message with an optional level string override.
+///
+/// This function allows overriding the display level string while keeping
+/// the internal level for filtering. Used for CRITICAL level to display
+/// as "CRITICAL" instead of "ERROR".
+///
+/// Fixes issue: https://github.com/muhammad-fiaz/logly/issues/66
+pub fn log_message_with_level_override(
+    level: Level,
+    msg: &str,
+    extra: Option<&Bound<'_, PyDict>>,
+    py_stdout: Option<&Bound<'_, PyAny>>,
+    level_override: Option<&str>,
+) {
     let pairs = extra.map(|d| dict_to_pairs(d)).unwrap_or_default();
 
     // Create log record data for callbacks
     let timestamp_rfc3339 = Utc::now().to_rfc3339();
     let timestamp_local = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    let level_str = level_to_str(level).to_string();
+    let level_str = level_override.unwrap_or(level_to_str(level)).to_string();
     let message = msg.to_string();
     let extra_fields = pairs.clone();
 
