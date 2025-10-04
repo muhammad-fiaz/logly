@@ -1,3 +1,9 @@
+---
+title: Complete API Reference - Logly Python Logging
+description: Complete API reference for Logly Python logging library. Comprehensive documentation of all methods, parameters, and functionality in organized tables.
+keywords: python, logging, api, reference, methods, parameters, complete, logly
+---
+
 # Complete API Reference
 
 Comprehensive professional reference for all Logly functionality with detailed tables, examples, and best practices.

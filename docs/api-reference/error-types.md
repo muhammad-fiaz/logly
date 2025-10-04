@@ -1,3 +1,9 @@
+---
+title: Error Types & Exceptions - Logly Python Logging
+description: Complete reference for all error types and exceptions in Logly Python logging library with detailed descriptions and troubleshooting.
+keywords: python, logging, errors, exceptions, error types, troubleshooting, logly
+---
+
 # Error Types & Exceptions
 
 Complete reference for all error types and exceptions in Logly.

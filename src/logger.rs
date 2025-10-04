@@ -733,10 +733,7 @@ impl PyLogger {
         let deleted = with_state(|s| {
             if let Some(sink) = s.sinks.get(&sink_id) {
                 if let Some(ref path) = sink.path {
-                    match std::fs::remove_file(path) {
-                        Ok(_) => true,
-                        Err(_) => false,
-                    }
+                    std::fs::remove_file(path).is_ok()
                 } else {
                     false
                 }
@@ -766,10 +763,10 @@ impl PyLogger {
         let count = with_state(|s| {
             let mut deleted = 0;
             for sink in s.sinks.values() {
-                if let Some(ref path) = sink.path {
-                    if std::fs::remove_file(path).is_ok() {
-                        deleted += 1;
-                    }
+                if let Some(ref path) = sink.path
+                    && std::fs::remove_file(path).is_ok()
+                {
+                    deleted += 1;
                 }
             }
             deleted
@@ -793,7 +790,7 @@ impl PyLogger {
         #[cfg(target_os = "windows")]
         {
             std::process::Command::new("cmd")
-                .args(&["/C", "cls"])
+                .args(["/C", "cls"])
                 .status()
                 .map_err(|e| PyValueError::new_err(format!("Failed to clear console: {}", e)))?;
         }
@@ -831,10 +828,7 @@ impl PyLogger {
         let content = with_state(|s| {
             if let Some(sink) = s.sinks.get(&sink_id) {
                 if let Some(ref path) = sink.path {
-                    match std::fs::read_to_string(path) {
-                        Ok(content) => Some(content),
-                        Err(_) => None,
-                    }
+                    std::fs::read_to_string(path).ok()
                 } else {
                     None
                 }
@@ -866,10 +860,10 @@ impl PyLogger {
         let all_contents = with_state(|s| {
             let mut contents = HashMap::new();
             for (&id, sink) in s.sinks.iter() {
-                if let Some(ref path) = sink.path {
-                    if let Ok(content) = std::fs::read_to_string(path) {
-                        contents.insert(id, content);
-                    }
+                if let Some(ref path) = sink.path
+                    && let Ok(content) = std::fs::read_to_string(path)
+                {
+                    contents.insert(id, content);
                 }
             }
             contents
@@ -972,27 +966,23 @@ impl PyLogger {
 
                             // File path
                             result.insert("path".to_string(), path.clone()); // Created time
-                            if let Ok(created) = metadata.created() {
-                                if let Ok(duration) = created.duration_since(UNIX_EPOCH) {
-                                    let datetime = chrono::DateTime::from_timestamp(
-                                        duration.as_secs() as i64,
-                                        0,
-                                    )
-                                    .unwrap_or_default();
-                                    result.insert("created".to_string(), datetime.to_rfc3339());
-                                }
+                            if let Ok(created) = metadata.created()
+                                && let Ok(duration) = created.duration_since(UNIX_EPOCH)
+                            {
+                                let datetime =
+                                    chrono::DateTime::from_timestamp(duration.as_secs() as i64, 0)
+                                        .unwrap_or_default();
+                                result.insert("created".to_string(), datetime.to_rfc3339());
                             }
 
                             // Modified time
-                            if let Ok(modified) = metadata.modified() {
-                                if let Ok(duration) = modified.duration_since(UNIX_EPOCH) {
-                                    let datetime = chrono::DateTime::from_timestamp(
-                                        duration.as_secs() as i64,
-                                        0,
-                                    )
-                                    .unwrap_or_default();
-                                    result.insert("modified".to_string(), datetime.to_rfc3339());
-                                }
+                            if let Ok(modified) = metadata.modified()
+                                && let Ok(duration) = modified.duration_since(UNIX_EPOCH)
+                            {
+                                let datetime =
+                                    chrono::DateTime::from_timestamp(duration.as_secs() as i64, 0)
+                                        .unwrap_or_default();
+                                result.insert("modified".to_string(), datetime.to_rfc3339());
                             }
 
                             Some(result)
@@ -1053,7 +1043,7 @@ impl PyLogger {
                         Ok(file) => {
                             let reader = BufReader::new(file);
                             let all_lines: Vec<String> =
-                                reader.lines().filter_map(|line| line.ok()).collect();
+                                reader.lines().map_while(Result::ok).collect();
 
                             let total_lines = all_lines.len() as i32;
 
@@ -1071,11 +1061,8 @@ impl PyLogger {
                             };
 
                             if start_idx < all_lines.len() && start_idx < end_idx {
-                                let selected_lines: Vec<String> = all_lines
-                                    [start_idx..end_idx.min(all_lines.len())]
-                                    .iter()
-                                    .cloned()
-                                    .collect();
+                                let selected_lines: Vec<String> =
+                                    all_lines[start_idx..end_idx.min(all_lines.len())].to_vec();
                                 Some(selected_lines.join("\n"))
                             } else {
                                 Some(String::new())
@@ -1178,8 +1165,7 @@ impl PyLogger {
                     match std::fs::File::open(path) {
                         Ok(file) => {
                             let reader = BufReader::new(file);
-                            let lines: Vec<String> =
-                                reader.lines().filter_map(|line| line.ok()).collect();
+                            let lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
                             // Try to parse as JSON array first, then as NDJSON
                             let full_content = lines.join("\n");

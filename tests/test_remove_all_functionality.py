@@ -1,7 +1,9 @@
 """Test remove_all() functionality and removed sink error handling."""
 
 from pathlib import Path
+
 import pytest
+
 from logly import logger
 
 

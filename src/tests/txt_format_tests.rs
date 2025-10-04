@@ -1,7 +1,7 @@
 // Tests for .txt file format support
 
 #[cfg(test)]
-mod txt_format_tests {
+mod tests {
     use std::fs::{self, File};
     use std::io::Write;
     use std::path::Path;

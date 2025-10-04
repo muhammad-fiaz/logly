@@ -2,12 +2,12 @@
 Tests for .txt file logging functionality in Logly.
 """
 
-import pytest
-import logly
-import time
 import os
-import json
-from pathlib import Path
+import time
+
+import pytest
+
+import logly
 
 
 class TestTxtFileBasics:
@@ -72,7 +72,7 @@ class TestTxtFileBasics:
         self.test_files.append(filepath)
         os.makedirs("logs", exist_ok=True)
 
-        sink_id = self.logger.add(
+        self.logger.add(
             filepath,
             rotation="1 KB",  # Rotate at 1KB
         )
@@ -92,7 +92,7 @@ class TestTxtFileBasics:
         self.test_files.append(filepath)
         os.makedirs("logs", exist_ok=True)
 
-        sink_id = self.logger.add(
+        self.logger.add(
             filepath,
             rotation="100B",
             retention=3,  # Keep only 3 files
@@ -113,7 +113,7 @@ class TestTxtFileBasics:
         self.test_files.append(filepath)
         os.makedirs("logs", exist_ok=True)
 
-        sink_id = self.logger.add(filepath, async_write=True)
+        self.logger.add(filepath, async_write=True)
 
         # Write multiple messages quickly
         for i in range(10):
@@ -361,7 +361,7 @@ class TestTxtPerformance:
         self.test_files.append(filepath)
 
         # Test with async
-        sink_id = self.logger.add(filepath, async_write=True)
+        self.logger.add(filepath, async_write=True)
 
         start_time = time.time()
         for i in range(100):
@@ -386,21 +386,21 @@ class TestTxtPerformance:
 
         # Test file_size (should be fast - metadata only)
         start = time.time()
-        size = self.logger.file_size(sink_id)
+        _size = self.logger.file_size(sink_id)
         size_time = time.time() - start
         assert size_time < 1.0  # Should be fast
 
         # Test line_count (may be slower - reads file)
         start = time.time()
         count = self.logger.line_count(sink_id)
-        count_time = time.time() - start
+        _count_time = time.time() - start
         assert count == 1000
         # Line count may take longer for large files
 
         # Test read_lines with small range (should be efficient)
         start = time.time()
         lines = self.logger.read_lines(sink_id, 1, 10)
-        read_time = time.time() - start
+        _read_time = time.time() - start
         assert lines is not None
 
 
@@ -447,9 +447,9 @@ class TestTxtMultipleSinks:
         self.test_files.extend(["test_sync.txt", "test_async.txt", "logs/test_rotated.txt"])
         os.makedirs("logs", exist_ok=True)
 
-        sync_sink = self.logger.add("test_sync.txt", async_write=False)
-        async_sink = self.logger.add("test_async.txt", async_write=True)
-        rotated_sink = self.logger.add("logs/test_rotated.txt", rotation="1 KB", date_enabled=True)
+        self.logger.add("test_sync.txt", async_write=False)
+        self.logger.add("test_async.txt", async_write=True)
+        self.logger.add("logs/test_rotated.txt", rotation="1 KB", date_enabled=True)
 
         # Write to all
         for i in range(10):

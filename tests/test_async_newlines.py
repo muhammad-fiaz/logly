@@ -50,7 +50,7 @@ class TestAsyncNewlines:
             # Read the file and verify each log is on a separate line
             assert log_file.exists(), "Log file should exist"
 
-            with open(log_file, "r", encoding="utf-8") as f:
+            with open(log_file, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Should have exactly 3 lines
@@ -86,7 +86,7 @@ class TestAsyncNewlines:
 
             assert log_file.exists()
 
-            with open(log_file, "r", encoding="utf-8") as f:
+            with open(log_file, encoding="utf-8") as f:
                 lines = f.readlines()
 
             assert len(lines) == 3, f"Expected 3 lines, got {len(lines)}"
@@ -122,7 +122,7 @@ class TestAsyncNewlines:
 
             assert log_file.exists()
 
-            with open(log_file, "r", encoding="utf-8") as f:
+            with open(log_file, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Should have exactly 100 lines
@@ -133,8 +133,8 @@ class TestAsyncNewlines:
                 assert line.endswith("\n"), f"Line {i} should end with newline"
 
             # Verify no concatenation by checking a few specific entries
-            assert any(f"Log entry 0" in line and "Log entry 1" not in line for line in lines)
-            assert any(f"Log entry 50" in line and "Log entry 51" not in line for line in lines)
+            assert any("Log entry 0" in line and "Log entry 1" not in line for line in lines)
+            assert any("Log entry 50" in line and "Log entry 51" not in line for line in lines)
 
     def test_async_rotation_preserves_newlines(self):
         """Test that file rotation with async writes still maintains proper newlines."""
@@ -159,7 +159,7 @@ class TestAsyncNewlines:
 
             # Check main log file
             if log_file.exists():
-                with open(log_file, "r", encoding="utf-8") as f:
+                with open(log_file, encoding="utf-8") as f:
                     lines = f.readlines()
 
                 for i, line in enumerate(lines):
@@ -169,7 +169,7 @@ class TestAsyncNewlines:
             rotated_files = list(Path(tmpdir).glob("rotation_test.txt.*"))
             for rotated_file in rotated_files:
                 self.test_files.append(str(rotated_file))
-                with open(rotated_file, "r", encoding="utf-8") as f:
+                with open(rotated_file, encoding="utf-8") as f:
                     lines = f.readlines()
 
                 for i, line in enumerate(lines):
@@ -206,10 +206,10 @@ class TestAsyncNewlines:
             time.sleep(0.5)
 
             # Both files should have identical line counts
-            with open(sync_file, "r", encoding="utf-8") as f:
+            with open(sync_file, encoding="utf-8") as f:
                 sync_lines = f.readlines()
 
-            with open(async_file, "r", encoding="utf-8") as f:
+            with open(async_file, encoding="utf-8") as f:
                 async_lines = f.readlines()
 
             assert len(sync_lines) == len(async_lines), (

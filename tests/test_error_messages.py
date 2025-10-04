@@ -6,6 +6,7 @@ and that validation works correctly for all parameters.
 """
 
 import pytest
+
 from logly import PyLogger
 
 
@@ -57,8 +58,8 @@ class TestErrorMessages:
 
     def test_valid_rotations_accepted(self):
         """Test that all valid rotation policies are accepted."""
-        import tempfile
         import os
+        import tempfile
 
         valid_rotations = ["daily", "hourly", "minutely"]
         for rotation in valid_rotations:
@@ -70,13 +71,13 @@ class TestErrorMessages:
 
     def test_valid_size_limits_accepted(self):
         """Test that all valid size limit formats are accepted."""
-        import tempfile
         import os
+        import tempfile
 
         valid_sizes = ["500B", "1KB", "5KB", "10MB", "1GB"]
         for size in valid_sizes:
             with tempfile.TemporaryDirectory() as tmpdir:
-                log_file = os.path.join(tmpdir, f"test_size.log")
+                log_file = os.path.join(tmpdir, "test_size.log")
                 # Should not raise any error
                 handler_id = self.logger.add(log_file, size_limit=size, async_write=False)
                 self.logger.remove(handler_id)
@@ -89,8 +90,8 @@ class TestErrorMessages:
 
     def test_case_insensitive_rotations(self):
         """Test that rotation policies are case-insensitive."""
-        import tempfile
         import os
+        import tempfile
 
         with tempfile.TemporaryDirectory() as tmpdir:
             for rotation in ["daily", "DAILY", "Daily"]:
@@ -100,8 +101,8 @@ class TestErrorMessages:
 
     def test_size_limit_with_spaces(self):
         """Test that size limits with spaces are handled correctly."""
-        import tempfile
         import os
+        import tempfile
 
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = os.path.join(tmpdir, "test_size.log")

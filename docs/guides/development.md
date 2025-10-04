@@ -1,3 +1,9 @@
+---
+title: Development Guide - Logly Python Logging
+description: Development setup, testing, code quality, and contribution guidelines for Logly Python logging library.
+keywords: python, logging, development, guide, setup, testing, code quality, contribution, logly
+---
+
 # Development Guide
 
 This guide covers development setup, testing, code quality, and contribution guidelines for Logly.

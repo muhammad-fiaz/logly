@@ -16,10 +16,10 @@ pub fn check_version_async() {
     }
 
     thread::spawn(|| {
-        if let Some(latest) = fetch_latest_version() {
-            if is_newer_version(&latest, CURRENT_VERSION) {
-                print_upgrade_warning(&latest);
-            }
+        if let Some(latest) = fetch_latest_version()
+            && is_newer_version(&latest, CURRENT_VERSION)
+        {
+            print_upgrade_warning(&latest);
         }
     });
 }
@@ -35,14 +35,14 @@ fn fetch_latest_version() -> Option<String> {
 
     match agent.get(PYPI_API_URL).call() {
         Ok(mut response) => {
-            if let Ok(body) = response.body_mut().read_to_string() {
-                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
-                    return json
-                        .get("info")
-                        .and_then(|info| info.get("version"))
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-                }
+            if let Ok(body) = response.body_mut().read_to_string()
+                && let Ok(json) = serde_json::from_str::<serde_json::Value>(&body)
+            {
+                return json
+                    .get("info")
+                    .and_then(|info| info.get("version"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
             }
             None
         }

@@ -1,3 +1,9 @@
+---
+title: Sink Management API - Logly Python Logging
+description: Complete professional guide to managing logging sinks in Logly with comprehensive parameters, examples, and best practices.
+keywords: python, logging, sink management, api, destinations, configuration, rotation, filtering, logly
+---
+
 # Sink Management API Reference
 
 Complete professional guide to managing logging sinks in Logly with comprehensive parameters, examples, and best practices.

@@ -7,7 +7,7 @@ Tests for all new Logly features:
 """
 
 import os
-import pytest
+
 from logly import logger
 
 
@@ -133,13 +133,13 @@ class TestFileOperations:
         assert os.path.exists("test_delete.log"), "File should exist before delete"
 
         result = logger.delete(id)
-        assert result == True, "Delete should return True for existing file"
+        assert result, "Delete should return True for existing file"
         assert not os.path.exists("test_delete.log"), "File should not exist after delete"
 
     def test_delete_invalid_sink(self):
         """Test delete returns False for invalid sink ID"""
         result = logger.delete(99999)
-        assert result == False, "Delete should return False for invalid sink ID"
+        assert not result, "Delete should return False for invalid sink ID"
 
     def test_delete_keeps_sink_active(self):
         """Test delete keeps sink active after file deletion"""

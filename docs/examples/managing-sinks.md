@@ -1,3 +1,9 @@
+---
+title: Managing Multiple Sinks - Logly Examples
+description: Learn how to add, remove, and manage multiple logging sinks efficiently in Logly Python logging library.
+keywords: python, logging, examples, multiple sinks, management, add, remove, logly
+---
+
 # Managing Multiple Sinks
 
 Learn how to add, remove, and manage multiple logging sinks efficiently.

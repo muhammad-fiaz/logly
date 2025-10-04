@@ -1,3 +1,9 @@
+---
+title: File Operations API - Logly Python Logging
+description: Complete guide to file operations in Logly Python logging library for managing, reading, and analyzing log files programmatically.
+keywords: python, logging, file operations, api, read, analyze, manage, logly
+---
+
 # File Operations
 
 Complete guide to file operations in Logly.

@@ -1,3 +1,9 @@
+---
+title: Error Handling Guide - Logly Python Logging
+description: Comprehensive error handling guide for Logly Python logging library with user-friendly error messages and troubleshooting.
+keywords: python, logging, error handling, guide, troubleshooting, messages, logly
+---
+
 # Error Handling
 
 Logly provides comprehensive error handling with user-friendly error messages that help you quickly identify and fix configuration issues.

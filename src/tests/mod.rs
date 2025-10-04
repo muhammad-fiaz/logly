@@ -145,7 +145,7 @@ mod file_ops_tests {
 
         // Read and parse JSON
         let content = fs::read_to_string(test_file).unwrap();
-        let parsed: Result<serde_json::Value, _> = serde_json::from_str(&content.trim());
+        let parsed: Result<serde_json::Value, _> = serde_json::from_str(content.trim());
         assert!(parsed.is_ok(), "Should parse as valid JSON");
 
         let json = parsed.unwrap();

@@ -1,3 +1,9 @@
+---
+title: File Operations Examples - Logly Python Logging
+description: Practical examples demonstrating how to use Logly's file operation features for monitoring, analysis, and log management.
+keywords: python, logging, examples, file operations, monitoring, analysis, management, logly
+---
+
 # File Operations Examples
 
 Practical examples demonstrating how to use Logly's file operation features for monitoring, analysis, and log management.

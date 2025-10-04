@@ -1,3 +1,9 @@
+---
+title: Version Checking Guide - Logly Python Logging
+description: Automatic version checking feature guide for Logly Python logging library to stay updated with new releases.
+keywords: python, logging, version checking, guide, automatic, updates, releases, logly
+---
+
 # Automatic Version Checking
 
 Logly includes an automatic version checking feature that notifies you when a new version is available on PyPI.

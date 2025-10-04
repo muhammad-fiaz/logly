@@ -72,7 +72,7 @@ impl PerformanceConfig {
     /// Self for method chaining
     #[allow(dead_code)]
     pub fn with_buffer_size(mut self, size: usize) -> Self {
-        self.buffer_size = size.max(1024).min(1024 * 1024);
+        self.buffer_size = size.clamp(1024, 1024 * 1024);
         self
     }
 
@@ -87,7 +87,7 @@ impl PerformanceConfig {
     /// Self for method chaining
     #[allow(dead_code)]
     pub fn with_flush_interval(mut self, ms: u64) -> Self {
-        self.flush_interval_ms = ms.max(10).min(10000);
+        self.flush_interval_ms = ms.clamp(10, 10000);
         self
     }
 
@@ -102,7 +102,7 @@ impl PerformanceConfig {
     /// Self for method chaining
     #[allow(dead_code)]
     pub fn with_max_buffered_lines(mut self, lines: usize) -> Self {
-        self.max_buffered_lines = lines.max(100).min(100000);
+        self.max_buffered_lines = lines.clamp(100, 100000);
         self
     }
 
