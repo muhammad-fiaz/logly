@@ -22,6 +22,14 @@ Complete reference documentation for all Logly methods and features.
 
     [Configuration Methods](configuration.md)
 
+-   **Sink Management**
+
+    ---
+
+    Add, remove, and manage logging outputs
+
+    [Sink Management](sink-management.md)
+
 -   **Logging**
 
     ---
@@ -53,6 +61,22 @@ Complete reference documentation for all Logly methods and features.
     Handle exceptions with automatic logging
 
     [Exception Handling](exceptions.md)
+
+-   **Error Types**
+
+    ---
+
+    Error types and exception reference
+
+    [Error Types & Exceptions](error-types.md)
+
+-   **File Operations**
+
+    ---
+
+    Read and analyze log files
+
+    [File Operations](file-operations.md)
 
 -   **Utilities**
 
@@ -108,6 +132,15 @@ Additional helper methods.
 - `enable()` / `disable()` - Toggle logging
 - `level()` - Register custom levels
 - `complete()` - Flush pending logs
+
+### File Operation Methods
+Methods for reading and analyzing log files.
+
+- `file_size()` - Get file size in bytes
+- `file_metadata()` - Get file metadata (created, modified, size, path)
+- `read_lines()` - Read specific line ranges (supports negative indices)
+- `line_count()` - Count total lines in file
+- `read_json()` - Read and parse JSON log files
 
 ---
 

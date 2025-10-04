@@ -173,7 +173,9 @@ requests-toolbelt==1.0.0
 rfc3986==2.0.0
     # via twine
 rich==14.1.0
-    # via twine
+    # via
+    #   logly (pyproject.toml:dev)
+    #   twine
 ruff==0.12.3
     # via logly (pyproject.toml:dev)
 six==1.17.0

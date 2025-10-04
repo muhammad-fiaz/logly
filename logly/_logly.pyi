@@ -13,8 +13,11 @@ class PyLogger:
     optimal performance.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, auto_update_check: bool = True) -> None:
         """Initialize a new PyLogger instance.
+
+        Args:
+            auto_update_check: Enable automatic version checking on startup. Defaults to True.
 
         Creates a logger with default configuration (INFO level, colored console output).
         """
@@ -22,7 +25,7 @@ class PyLogger:
 
     def add(  # pylint: disable=too-many-arguments
         self,
-        sink: str,
+        sink: str | None,
         *,
         rotation: str | None = ...,
         size_limit: str | None = ...,
@@ -65,7 +68,7 @@ class PyLogger:
 
     def configure(
         self,
-        level: str = ...,
+        level: str | None = ...,
         color: bool = ...,
         level_colors: dict[str, str] | None = ...,
         json: bool = ...,
@@ -124,6 +127,159 @@ class PyLogger:
 
         Returns:
             True if the sink was successfully removed, False otherwise.
+        """
+        ...
+
+    def remove_all(self) -> int:
+        """Remove all logging sinks.
+
+        Clears all registered sinks (console and file outputs). This is useful
+        for cleanup or when you want to reconfigure all logging outputs.
+
+        Returns:
+            The number of sinks that were removed.
+        """
+        ...
+
+    def sink_count(self) -> int:
+        """Get the number of active sinks.
+
+        Returns the count of all registered sinks (file and console outputs).
+
+        Returns:
+            The number of active sinks.
+        """
+        ...
+
+    def list_sinks(self) -> list[int]:
+        """List all active sink handler IDs.
+
+        Returns a list of handler IDs for all registered sinks.
+
+        Returns:
+            List of handler IDs (as integers).
+        """
+        ...
+
+    def sink_info(self, handler_id: int) -> dict[str, str] | None:
+        """Get detailed information about a specific sink.
+
+        Args:
+            handler_id: Handler ID returned by add().
+
+        Returns:
+            Dictionary with sink information, or None if handler ID not found.
+        """
+        ...
+
+    def all_sinks_info(self) -> list[dict[str, str]]:
+        """Get information about all active sinks.
+
+        Returns:
+            List of sink information dictionaries.
+        """
+        ...
+
+    def delete(self, handler_id: int) -> bool:
+        """Delete the log file for a specific sink.
+
+        Args:
+            handler_id: Handler ID of the sink whose log file should be deleted.
+
+        Returns:
+            True if the file was successfully deleted, False otherwise.
+        """
+        ...
+
+    def delete_all(self) -> int:
+        """Delete all log files from all sinks.
+
+        Returns:
+            The number of files successfully deleted.
+        """
+        ...
+
+    def clear(self) -> None:
+        """Clear the console display.
+
+        This is a platform-specific operation that clears the terminal screen.
+        """
+        ...
+
+    def read(self, handler_id: int) -> str | None:
+        """Read log content from a specific sink's file.
+
+        Args:
+            handler_id: Handler ID of the sink whose log file should be read.
+
+        Returns:
+            The log file content as a string, or None if the file doesn't exist.
+        """
+        ...
+
+    def read_all(self) -> dict[int, str]:
+        """Read log content from all sinks.
+
+        Returns:
+            Dictionary mapping handler IDs to their log file contents.
+        """
+        ...
+
+    def file_size(self, handler_id: int) -> int | None:
+        """Get the file size of a specific sink's log file in bytes.
+
+        Args:
+            handler_id: The unique identifier of the sink.
+
+        Returns:
+            File size in bytes, or None if not found.
+        """
+        ...
+
+    def file_metadata(self, handler_id: int) -> dict[str, str] | None:
+        """Get detailed metadata for a specific sink's log file.
+
+        Args:
+            handler_id: The unique identifier of the sink.
+
+        Returns:
+            Dictionary with file metadata (size, created, modified, path), or None.
+        """
+        ...
+
+    def read_lines(self, handler_id: int, start: int, end: int) -> str | None:
+        """Read specific lines from a sink's log file.
+
+        Args:
+            handler_id: The unique identifier of the sink.
+            start: Starting line number (1-indexed, negative for end-relative).
+            end: Ending line number (inclusive, negative for end-relative).
+
+        Returns:
+            Selected lines joined with newlines, or None if not found.
+        """
+        ...
+
+    def line_count(self, handler_id: int) -> int | None:
+        """Count the number of lines in a sink's log file.
+
+        Args:
+            handler_id: The unique identifier of the sink.
+
+        Returns:
+            Number of lines, or None if not found.
+        """
+        ...
+
+    def read_json(self, handler_id: int, pretty: bool = False) -> str | None:
+        """Read and parse JSON log file.
+
+        Args:
+            handler_id: The unique identifier of the sink.
+            pretty: If True, returns pretty-printed JSON.
+
+        Returns:
+            JSON string, or None if not found.
         """
         ...
 
@@ -342,4 +498,49 @@ class PyLogger:
         """
         ...
 
+    def _reset_for_tests(self) -> None:
+        """Reset internal state for testing purposes.
+
+        WARNING: This is for internal testing only and should not be used
+        in production code. It does not reset the global tracing subscriber.
+        """
+        ...
+
+    def __call__(self, auto_update_check: bool = True) -> PyLogger:
+        """Create a new logger instance with custom initialization options.
+
+        Args:
+            auto_update_check: Enable automatic version checking on startup. Defaults to True.
+
+        Returns:
+            A new PyLogger instance with the specified configuration.
+
+        Example:
+            >>> from logly import logger
+            >>> # Create logger with auto-update checks (default)
+            >>> default_logger = logger()
+            >>>
+            >>> # Create logger without auto-update checks
+            >>> custom_logger = logger(auto_update_check=False)
+            >>> custom_logger.configure(level="INFO")
+        """
+        ...
+
 logger: PyLogger
+
+def __getattr__(name: str) -> object:
+    """Redirect module attribute access to the logger instance for convenience.
+
+    This allows users to do:
+        import logly as logger
+        logger.info("message")
+
+    Or:
+        import logly
+        logly.info("message")
+
+    Instead of:
+        from logly import logger
+        logger.info("message")
+    """
+    ...

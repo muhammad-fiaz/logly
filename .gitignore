@@ -292,3 +292,4 @@ dmypy.json
 /target
 
 .pypirc
+/logs

@@ -820,3 +820,50 @@ logger.info("No longer logging to temp.log")
 
 !!! warning "Console Sink"
     Removing the console sink (ID 0) may not have visible effects depending on configuration.
+
+---
+
+## Logger Initialization
+
+### Creating Logger Instances
+
+Logly supports creating multiple logger instances with different configurations:
+
+```python
+from logly import logger
+
+# Method 1: Using callable syntax (recommended)
+custom_logger = logger(auto_update_check=False)
+custom_logger.configure(level="DEBUG", color=False)
+
+# Method 2: Using PyLogger directly
+from logly import PyLogger
+direct_logger = PyLogger(auto_update_check=False)
+direct_logger.configure(level="DEBUG", color=False)
+```
+
+### Automatic Version Checking
+
+By default, Logly automatically checks for new versions on startup:
+
+- **Enabled by default**: The global `logger` instance checks for updates
+- **Asynchronous**: Version checks don't block logger operations
+- **Network timeout**: 2-second timeout for version check requests
+- **Error handling**: Network failures are silently ignored
+
+To disable version checking:
+
+```python
+# Disable for specific instances
+custom_logger = logger(auto_update_check=False)
+
+# Or disable globally by creating a new instance
+from logly import PyLogger
+no_check_logger = PyLogger(auto_update_check=False)
+```
+
+!!! info "Version Check Behavior"
+    - Checks PyPI for the latest version
+    - Displays upgrade warnings to stderr if a newer version is available
+    - Only runs once per process, even with multiple logger instances
+    - Safe for air-gapped environments (fails gracefully)

@@ -29,6 +29,11 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
     """
 
     def __init__(self, inner: PyLogger) -> None:
+        """Initialize the logger proxy with a PyLogger instance.
+
+        Args:
+            inner: The underlying PyLogger instance from the Rust backend.
+        """
         self._inner = inner
         # bound context values attached to this proxy
         self._bound: dict[str, object] = {}
@@ -261,6 +266,374 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         """
         return self._inner.remove(handler_id)
 
+    def remove_all(self) -> int:
+        """Remove all logging sinks.
+
+        Clears all registered sinks (console and file outputs). This is useful
+        for cleanup or when you want to reconfigure all logging outputs.
+
+        Returns:
+            The number of sinks that were removed.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.add("app.log")
+            >>> logger.add("error.log")
+            >>> logger.add("debug.log")
+            >>> count = logger.remove_all()
+            >>> print(f"Removed {count} sinks")  # Output: Removed 3 sinks
+            >>> # Now you can add new sinks with fresh configuration
+            >>> logger.add("new_app.log")
+        """
+        return self._inner.remove_all()
+
+    def sink_count(self) -> int:
+        """Get the number of active sinks.
+
+        Returns the count of all registered sinks (file and console outputs).
+        This is useful for monitoring and debugging logging configuration.
+
+        Returns:
+            The number of active sinks.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.add("app.log")
+            >>> logger.add("error.log")
+            >>> count = logger.sink_count()
+            >>> print(f"Active sinks: {count}")  # Output: Active sinks: 2
+        """
+        return self._inner.sink_count()
+
+    def list_sinks(self) -> list[int]:
+        """List all active sink handler IDs.
+
+        Returns a list of handler IDs for all registered sinks. These IDs can
+        be used with remove() to selectively remove sinks.
+
+        Returns:
+            List of handler IDs (as integers).
+
+        Example:
+            >>> from logly import logger
+            >>> id1 = logger.add("app.log")
+            >>> id2 = logger.add("error.log")
+            >>> ids = logger.list_sinks()
+            >>> print(f"Sink IDs: {ids}")  # Output: Sink IDs: [1, 2]
+            >>> logger.remove(ids[0])  # Remove first sink
+        """
+        return self._inner.list_sinks()
+
+    def sink_info(self, handler_id: int) -> dict[str, str] | None:
+        """Get detailed information about a specific sink.
+
+        Returns a dictionary with sink configuration details including path,
+        rotation policy, compression, async settings, and format options.
+
+        Args:
+            handler_id: Handler ID returned by add().
+
+        Returns:
+            Dictionary with sink information, or None if handler ID not found.
+
+        Example:
+            >>> from logly import logger
+            >>> id = logger.add("app.log", rotation="daily", async_mode=True)
+            >>> info = logger.sink_info(id)
+            >>> print(info["path"])  # Output: app.log
+            >>> print(info["rotation"])  # Output: daily
+            >>> print(info["async_write"])  # Output: true
+        """
+        return self._inner.sink_info(handler_id)
+
+    def all_sinks_info(self) -> list[dict[str, str]]:
+        """Get information about all active sinks.
+
+        Returns a list of dictionaries containing configuration details for
+        all registered sinks. This is useful for debugging and monitoring.
+
+        Returns:
+            List of sink information dictionaries.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.add("app.log", rotation="daily")
+            >>> logger.add("error.log", rotation="10MB", json=True)
+            >>> sinks = logger.all_sinks_info()
+            >>> for sink in sinks:
+            ...     print(f"{sink['path']}: rotation={sink['rotation']}, json={sink['json']}")
+            # Output:
+            # app.log: rotation=daily, json=false
+            # error.log: rotation=10485760B, json=true
+        """
+        return self._inner.all_sinks_info()
+
+    def delete(self, handler_id: int) -> bool:
+        """Delete the log file for a specific sink.
+
+        This removes only the log file, not the sink configuration. The sink
+        remains active and will create a new file when the next log is written.
+
+        Args:
+            handler_id: Handler ID of the sink whose log file should be deleted.
+
+        Returns:
+            True if the file was successfully deleted, False otherwise.
+
+        Example:
+            >>> from logly import logger
+            >>> id = logger.add("app.log")
+            >>> logger.info("Some logs")
+            >>> # Delete the log file but keep the sink active
+            >>> success = logger.delete(id)
+            >>> print(f"File deleted: {success}")  # Output: File deleted: True
+            >>> # Sink is still active, new logs will create a new file
+            >>> logger.info("This creates a new app.log file")
+        """
+        return self._inner.delete(handler_id)
+
+    def delete_all(self) -> int:
+        """Delete all log files from all sinks.
+
+        This removes all log files but keeps sink configurations active.
+        All sinks will create new files when the next log is written.
+
+        Returns:
+            The number of files successfully deleted.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.add("app.log")
+            >>> logger.add("error.log")
+            >>> logger.add("debug.log")
+            >>> logger.info("Writing to all sinks")
+            >>> # Delete all log files
+            >>> count = logger.delete_all()
+            >>> print(f"Deleted {count} files")  # Output: Deleted 3 files
+            >>> # All sinks still active, will create new files on next log
+            >>> logger.info("Creates new files")
+        """
+        return self._inner.delete_all()
+
+    def clear(self) -> None:
+        """Clear the console display.
+
+        This is a platform-specific operation that clears the terminal screen.
+        On Windows, it executes 'cls'. On Unix-like systems, it uses ANSI escape codes.
+
+        Note:
+            This only clears the console display. It does not delete any log files
+            or affect sink configurations.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.info("Some messages")
+            >>> logger.info("More messages")
+            >>> # Clear the console display
+            >>> logger.clear()
+            >>> # Console is now cleared, but log files are intact
+        """
+        self._inner.clear()
+
+    def read(self, handler_id: int) -> str | None:
+        """Read log content from a specific sink's file.
+
+        This reads and returns the entire content of the log file associated
+        with the specified sink. The file is not modified or deleted.
+
+        Args:
+            handler_id: Handler ID of the sink whose log file should be read.
+
+        Returns:
+            The log file content as a string, or None if the file doesn't exist
+            or the handler ID is invalid.
+
+        Example:
+            >>> from logly import logger
+            >>> id = logger.add("app.log")
+            >>> logger.info("First message")
+            >>> logger.info("Second message")
+            >>> # Read the log content
+            >>> content = logger.read(id)
+            >>> if content:
+            ...     print(f"Log content:\\n{content}")
+            >>> # File is still intact after reading
+        """
+        return self._inner.read(handler_id)
+
+    def read_all(self) -> dict[int, str]:
+        """Read log content from all sinks.
+
+        This reads and returns the content of all log files from all active sinks.
+        Files are not modified or deleted.
+
+        Returns:
+            Dictionary mapping handler IDs to their log file contents.
+            Only includes sinks with existing log files.
+
+        Example:
+            >>> from logly import logger
+            >>> id1 = logger.add("app.log")
+            >>> id2 = logger.add("error.log")
+            >>> logger.info("Message to both")
+            >>> # Read all logs
+            >>> all_logs = logger.read_all()
+            >>> for sink_id, content in all_logs.items():
+            ...     print(f"Sink {sink_id}:\\n{content}")
+            >>> # All files are still intact after reading
+        """
+        return self._inner.read_all()
+
+    def file_size(self, handler_id: int) -> int | None:
+        """Get the file size of a specific sink's log file in bytes.
+
+        Returns the size of the log file associated with the given sink ID.
+        Returns None if the sink doesn't exist, is not a file sink, or the file
+        doesn't exist yet.
+
+        Args:
+            handler_id: The unique identifier of the sink (returned by add()).
+
+        Returns:
+            File size in bytes, or None if not found.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.info("Hello world!")
+            >>> size = logger.file_size(sink_id)
+            >>> if size:
+            ...     print(f"Log file is {size} bytes")
+            Log file is 42 bytes
+        """
+        return self._inner.file_size(handler_id)
+
+    def file_metadata(self, handler_id: int) -> dict[str, str] | None:
+        """Get detailed metadata for a specific sink's log file.
+
+        Returns a dictionary with comprehensive file information including:
+        - size: File size in bytes
+        - created: Creation timestamp (ISO 8601 format)
+        - modified: Last modified timestamp (ISO 8601 format)
+        - path: Full file path
+
+        Args:
+            handler_id: The unique identifier of the sink (returned by add()).
+
+        Returns:
+            Dictionary with file metadata, or None if sink/file doesn't exist.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.info("Test message")
+            >>> metadata = logger.file_metadata(sink_id)
+            >>> if metadata:
+            ...     print(f"Size: {metadata['size']} bytes")
+            ...     print(f"Created: {metadata['created']}")
+            ...     print(f"Modified: {metadata['modified']}")
+            ...     print(f"Path: {metadata['path']}")
+        """
+        return self._inner.file_metadata(handler_id)
+
+    def read_lines(self, handler_id: int, start: int, end: int) -> str | None:
+        """Read specific lines from a sink's log file.
+
+        Allows reading a specific range of lines rather than the entire file.
+        Line numbers are 1-indexed. Supports negative indices to count from the end:
+        - start=-10 means "start from 10th line from the end"
+        - end=-1 means "end at last line"
+
+        Args:
+            handler_id: The unique identifier of the sink (returned by add()).
+            start: Starting line number (1-indexed, negative for end-relative).
+            end: Ending line number (inclusive, negative for end-relative).
+
+        Returns:
+            Selected lines joined with newlines, or None if sink/file doesn't exist.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> for i in range(20):
+            ...     logger.info(f"Message {i}")
+            >>>
+            >>> # Read first 5 lines
+            >>> lines = logger.read_lines(sink_id, 1, 5)
+            >>>
+            >>> # Read last 3 lines
+            >>> lines = logger.read_lines(sink_id, -3, -1)
+            >>>
+            >>> # Read lines 10-15
+            >>> lines = logger.read_lines(sink_id, 10, 15)
+        """
+        return self._inner.read_lines(handler_id, start, end)
+
+    def line_count(self, handler_id: int) -> int | None:
+        """Count the number of lines in a sink's log file.
+
+        Returns the total number of lines in the log file for the given sink.
+        Useful for paginating through large log files.
+
+        Args:
+            handler_id: The unique identifier of the sink (returned by add()).
+
+        Returns:
+            Number of lines in the file, or None if sink/file doesn't exist.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.info("Line 1")
+            >>> logger.info("Line 2")
+            >>> logger.info("Line 3")
+            >>>
+            >>> count = logger.line_count(sink_id)
+            >>> print(f"Log has {count} lines")
+            Log has 3 lines
+        """
+        return self._inner.line_count(handler_id)
+
+    def read_json(self, handler_id: int, pretty: bool = False) -> str | None:
+        """Read and parse JSON log file.
+
+        Reads a JSON-formatted log file and returns it as a string.
+        Supports both JSON array format and newline-delimited JSON (NDJSON).
+
+        For NDJSON files (each line is a separate JSON object), this method will
+        automatically collect all objects into a single JSON array.
+
+        Args:
+            handler_id: The unique identifier of the sink (returned by add()).
+            pretty: If True, returns pretty-printed JSON with indentation.
+
+        Returns:
+            JSON string (pretty or compact), or None if sink/file doesn't exist.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log", format="json")
+            >>> logger.info("Test message", user="alice", action="login")
+            >>>
+            >>> # Get compact JSON
+            >>> json_logs = logger.read_json(sink_id)
+            >>> print(json_logs)
+            [{"level":"INFO","message":"Test message","user":"alice","action":"login"}]
+            >>>
+            >>> # Get pretty-printed JSON
+            >>> pretty_logs = logger.read_json(sink_id, pretty=True)
+            >>> print(pretty_logs)
+            [
+              {
+                "level": "INFO",
+                "message": "Test message",
+                "user": "alice",
+                "action": "login"
+              }
+            ]
+        """
+        return self._inner.read_json(handler_id, pretty)
+
     # enable / disable
     def enable(self) -> None:
         """Enable logging for this logger instance.
@@ -291,6 +664,22 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
 
     # logging methods with kwargs as context key-values
     def _augment_with_callsite(self, kwargs: dict[str, object]) -> dict[str, object]:
+        """Augment log record with caller information from the call stack.
+
+        Uses Python's inspect module to automatically add caller context information
+        to log records, including module name, function name, filename, and line number.
+        This information is only added if not already present in the kwargs.
+
+        Args:
+            kwargs: Dictionary of context fields to potentially augment with caller info.
+
+        Returns:
+            The kwargs dictionary with caller information added if available.
+
+        Note:
+            This method inspects the call stack to find the actual logging call site.
+            It gracefully handles any inspection failures by returning the original kwargs.
+        """
         try:
             import inspect  # pylint: disable=import-outside-toplevel
 
@@ -691,6 +1080,27 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         """
         return self._inner.remove_callback(callback_id)
 
+    def __call__(self, auto_update_check: bool = True) -> _LoggerProxy:
+        """Create a new logger instance with custom initialization options.
+
+        Args:
+            auto_update_check: Enable automatic version checking on startup. Defaults to True.
+
+        Returns:
+            A new _LoggerProxy instance with the specified configuration.
+
+        Example:
+            >>> from logly import logger
+            >>> # Create logger with auto-update checks (default)
+            >>> default_logger = logger()
+            >>>
+            >>> # Create logger without auto-update checks
+            >>> custom_logger = logger(auto_update_check=False)
+            >>> custom_logger.configure(level="INFO")
+        """
+        new_py_logger = PyLogger(auto_update_check)
+        return _LoggerProxy(new_py_logger)
+
 
 logger = _LoggerProxy(_rust_logger)
 
@@ -699,3 +1109,25 @@ __all__ = [
     "__version__",
     "logger",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Redirect module attribute access to the logger instance for convenience.
+
+    This allows users to do:
+        import logly as logger
+        logger.info("message")
+
+    Or:
+        import logly
+        logly.info("message")
+
+    Instead of:
+        from logly import logger
+        logger.info("message")
+    """
+    if name in ("logger", "__version__", "PyLogger"):
+        # Return the actual attributes for explicit access
+        return globals()[name]
+    # For any other attribute access, delegate to the logger instance
+    return getattr(logger, name)
