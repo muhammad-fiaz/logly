@@ -41,7 +41,7 @@ class TestFileOperations:
             logger.complete()
 
             size2 = logger.file_size(sink_id)
-            assert size2 > size1
+            assert size2 is not None and size2 > size1
 
     def test_file_metadata_retrieval(self):
         """Test retrieving comprehensive file metadata."""
@@ -85,6 +85,7 @@ class TestFileOperations:
 
             # Read lines 3-5
             content = logger.read_lines(sink_id, 3, 5)
+            assert content is not None
             assert "Line 3" in content
             assert "Line 4" in content
             assert "Line 5" in content

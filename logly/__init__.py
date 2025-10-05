@@ -16,9 +16,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import ContextDecorator, contextmanager
+from typing import TypedDict
 
 from logly._logly import PyLogger, __version__
 from logly._logly import logger as _rust_logger
+
+
+class SearchResult(TypedDict):
+    """Result of a log search operation."""
+    line: int
+    content: str
+    match: str
+    context_before: list[str] | None
+    context_after: list[str] | None
 
 
 class _LoggerProxy:  # pylint: disable=too-many-public-methods
@@ -160,7 +170,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         time_levels: dict[str, bool] | None = None,
         color_levels: dict[str, bool] | None = None,
         storage_levels: dict[str, bool] | None = None,
-        color_callback: Callable[[str], str] | None = None,
+        color_callback: Callable[[str, str], str] | None = None,
         auto_sink: bool = True,
         auto_sink_levels: dict[str, str | dict[str, object]] | None = None,
     ) -> None:
@@ -1227,7 +1237,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         context_after: int | None = None,
         level_filter: str | None = None,
         invert_match: bool = False,
-    ) -> list[dict[str, object]] | None:
+    ) -> list[SearchResult] | None:
         """Search a sink's log file for a pattern (Rust-powered).
 
         All search operations are performed by the high-performance Rust backend.

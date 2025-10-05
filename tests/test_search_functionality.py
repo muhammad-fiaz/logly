@@ -44,7 +44,7 @@ class TestBasicSearch:
             assert results is not None
             assert len(results) == 1
             assert results[0]["line"] == 1
-            assert "Error: Connection failed" in results[0]["content"]
+            assert "Error: Connection failed" in results[0]["content"]  # type: ignore
             assert results[0]["match"] == "Error"
 
     def test_search_finds_multiple_matches(self):
@@ -64,8 +64,8 @@ class TestBasicSearch:
             assert len(results) == 2
             assert results[0]["line"] == 1
             assert results[1]["line"] == 3
-            assert "Connection failed" in results[0]["content"]
-            assert "Timeout occurred" in results[1]["content"]
+            assert "Connection failed" in results[0]["content"]  # type: ignore
+            assert "Timeout occurred" in results[1]["content"]  # type: ignore
 
     def test_search_no_matches(self):
         """Test searching for a string that doesn't exist."""
@@ -112,7 +112,7 @@ class TestCaseSensitivity:
 
             assert results is not None
             assert len(results) == 3  # Finds all case variants
-            assert all("error" in r["content"].lower() for r in results)
+            assert all("error" in r["content"].lower() for r in results)  # type: ignore
 
     def test_case_sensitive_search(self):
         """Test case-sensitive search mode."""
@@ -129,8 +129,8 @@ class TestCaseSensitivity:
 
             assert results is not None
             assert len(results) == 1  # Only lowercase "error"
-            assert results[0]["line"] == 2
-            assert "error: User mistake" in results[0]["content"]
+            assert results[0]["line"] == 2  # type: ignore
+            assert "error: User mistake" in results[0]["content"]  # type: ignore
 
     def test_case_sensitive_uppercase(self):
         """Test case-sensitive search for uppercase."""
@@ -147,7 +147,7 @@ class TestCaseSensitivity:
 
             assert results is not None
             assert len(results) == 1  # Only uppercase "ERROR"
-            assert "ERROR: System failure" in results[0]["content"]
+            assert "ERROR: System failure" in results[0]["content"]  # type: ignore
 
 
 class TestFirstOnly:
@@ -169,7 +169,7 @@ class TestFirstOnly:
             assert results is not None
             assert len(results) == 1
             assert results[0]["line"] == 1
-            assert "Match 1" in results[0]["content"]
+            assert "Match 1" in results[0]["content"]  # type: ignore
 
     def test_first_only_with_no_match(self):
         """Test first_only=True when no matches exist."""
@@ -237,7 +237,7 @@ class TestEdgeCases:
 
             assert results is not None
             assert len(results) == 1
-            assert "[Connection]" in results[0]["content"]
+            assert "[Connection]" in results[0]["content"]  # type: ignore
 
     def test_search_json_logs(self):
         """Test searching in JSON-formatted logs."""
@@ -288,7 +288,7 @@ class TestEdgeCases:
 
             assert results is not None
             assert len(results) == 1
-            assert "After rotation" in results[0]["content"]
+            assert "After rotation" in results[0]["content"]  # type: ignore
 
 
 class TestResultStructure:
@@ -348,7 +348,7 @@ class TestResultStructure:
             assert results is not None
             assert len(results) == 1
             # Match field should contain the actual string from file (Error, not error)
-            assert results[0]["match"] in results[0]["content"]
+            assert results[0]["match"] in results[0]["content"]  # type: ignore
 
 
 class TestPerformance:

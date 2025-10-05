@@ -1,9 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Generator
+from typing import TypedDict
 
 __version__: str
 """The version string of the logly library."""
+
+class SearchResult(TypedDict):
+    """Result of a log search operation."""
+    line: int
+    content: str
+    match: str
+    context_before: list[str] | None
+    context_after: list[str] | None
 
 class PyLogger:
     """High-performance logger implemented in Rust with asynchronous writing.
@@ -85,7 +94,7 @@ class PyLogger:
         time_levels: dict[str, bool] | None = ...,
         color_levels: dict[str, bool] | None = ...,
         storage_levels: dict[str, bool] | None = ...,
-        color_callback: Callable[[str], str] | None = ...,
+        color_callback: Callable[[str, str], str] | None = ...,
         auto_sink: bool = ...,
         auto_sink_levels: dict[str, str | dict[str, object]] | None = ...,
     ) -> None:
@@ -610,7 +619,7 @@ class PyLogger:
         context_after: int | None = None,
         level_filter: str | None = None,
         invert_match: bool = False,
-    ) -> list[dict[str, object]] | None:
+    ) -> list[SearchResult] | None:
         """Search a sink's log file for a pattern (Rust-powered).
 
         All search operations are performed by the high-performance Rust backend.
