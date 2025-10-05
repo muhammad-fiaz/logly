@@ -30,7 +30,7 @@ Welcome to the Logly examples! This section contains comprehensive, runnable exa
 - **[Context Binding](context-binding.md)** - Add persistent context to all log messages
 - **[Exception Handling](exception-handling.md)** - Automatic exception logging and traceback capture
 - **[Color Callback Styling](color-callback.md)** - Custom color styling with callback functions
-- **[Auto-Sink Levels](auto-sink-levels.md)** - ✨ **NEW in v0.1.6**: Declarative per-level sink configuration
+- **[Auto-Sink Levels](auto-sink-levels.md)** - ✨ **NEW in v0.1.5**: Declarative per-level sink configuration
 
 ## 🚀 Quick Start
 

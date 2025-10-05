@@ -216,7 +216,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
                       Set to False if you want full manual control over sinks.
                       WARNING: If auto_sink=True and you later try to add a console sink manually,
                       you'll receive a warning about duplicate console sinks.
-            auto_sink_levels: **NEW in v0.1.6**: Automatically create sinks for different log levels.
+            auto_sink_levels: **NEW in v0.1.5**: Automatically create sinks for different log levels.
                              Maps level names to file paths (str) or configuration dicts.
                              Each sink automatically filters logs by the specified level and above.
                              Simple: {"INFO": "logs/info.log"}
@@ -259,7 +259,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             ...     reset = "\033[0m"
             ...     return f"{colors.get(level, '')}{text}{reset}"
             >>> logger.configure(level="INFO", color_callback=custom_color)
-            >>> # Configure with auto-sink levels (NEW in v0.1.6)
+            >>> # Configure with auto-sink levels (NEW in v0.1.5)
             >>> logger.configure(
             ...     level="DEBUG",
             ...     auto_sink_levels={

@@ -6,7 +6,7 @@ keywords: python, logging, auto-sink, levels, automatic, file management, log ro
 
 # Auto-Sink Levels
 
-**NEW in v0.1.6**: Automatically create and manage separate log files for different log levels with a single configuration.
+**NEW in v0.1.5**: Automatically create and manage separate log files for different log levels with a single configuration.
 
 ---
 

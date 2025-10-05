@@ -129,7 +129,7 @@ logger.add(
     async_write=True         # Async writing for performance
 )
 
-# **NEW in v0.1.6:** Auto-Sink Levels - Automatic file management
+# **NEW in v0.1.5:** Auto-Sink Levels - Automatic file management
 logger.configure(
     level="DEBUG",
     color=True,
