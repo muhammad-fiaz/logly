@@ -26,6 +26,10 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 !!! warning "Active Development"
     Logly is actively developed. Performance continues to improve with each release.
 
+!!! note "Note"
+    The Documentation is up-to-date with the main branch so some features may be missing for the old releases on PyPI. also the docs are improving continuously. if you find any issues please report them on GitHub.
+
+
 ### 🎯 Why Logly?
 
 Logly combines the simplicity of Python with the performance and safety of Rust, providing:
@@ -41,8 +45,8 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 - 📦 **Modular Architecture**: Clean separation (backend, config, format, utils)
 - 🔄 **Async Logging**: Background thread writing with configurable buffering
 - 📋 **Structured JSON**: Native JSON support with custom fields and pretty printing
-- � **Colored Levels**: Automatic color mapping (TRACE=cyan, SUCCESS=green, WARNING=yellow, FAIL=magenta, etc.)
-- �🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
+- 🎨 **Colored Levels**: Automatic color mapping (TRACE=cyan, SUCCESS=green, WARNING=yellow, FAIL=magenta, etc.)
+- ⚙️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
 - 🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
 - 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
 - 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
