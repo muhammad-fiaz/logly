@@ -121,6 +121,7 @@ nav:
     - examples/index.md
     - Basic Console Logging: examples/basic-console.md
     - Color Callback Styling: examples/color-callback.md
+    - Colored Logging: examples/colored-logging.md
     - Per-Level Controls: examples/per-level-controls.md
     - Template String Formatting: examples/template-strings.md
     - File Logging with Rotation: examples/file-rotation.md
@@ -131,6 +132,7 @@ nav:
     - Exception Handling: examples/exception-handling.md
     - Managing Multiple Sinks: examples/managing-sinks.md
     - Multi-Sink Setup: examples/multi-sink.md
+    - Auto-Sink Levels: examples/auto-sink-levels.md
   - Guides:
     - Getting Started: guides/getting-started.md
     - Configuration: guides/configuration.md
@@ -144,8 +146,10 @@ nav:
     - Complete Reference: api-reference/complete-reference.md
     - Configuration: api-reference/configuration.md
     - Sink Management: api-reference/sink-management.md
+    - Sink Control: api-reference/sink-control.md
     - Logging Methods: api-reference/logging.md
     - File Operations: api-reference/file-operations.md
+    - Search: api-reference/search.md
     - Context Management: api-reference/context.md
     - Callbacks: api-reference/callbacks.md
     - Exception Handling: api-reference/exceptions.md

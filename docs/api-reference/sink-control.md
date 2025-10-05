@@ -366,8 +366,8 @@ logger.disable_sink(specific_sink)  # Sink-specific disable
 ## Related Documentation
 
 - [Configuration Guide](configuration.md) - All configure() parameters
-- [Sinks and Outputs](../guides/sinks.md) - Managing multiple outputs
-- [Performance Tuning](../guides/performance.md) - Optimization strategies
+- [Sink Management](sink-management.md) - Managing multiple outputs
+- [Configuration Guide](../guides/configuration.md#performance-tuning) - Performance optimization strategies
 - [API Reference](index.md) - Complete API documentation
 
 ---
