@@ -17,7 +17,7 @@ def test_bind_and_contextualize(tmp_path: Path):
     """Test binding context and contextualize functionality."""
     p = tmp_path / "bind.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     bound = logger.bind(request_id="r1")
     bound.info("started")
@@ -36,7 +36,7 @@ def test_enable_disable(tmp_path: Path):
     """Test enable/disable functionality."""
     p = tmp_path / "enable.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.disable()
     logger.info("should_not_appear")
@@ -54,7 +54,7 @@ def test_level_mapping(tmp_path: Path):
     p = tmp_path / "level.log"
     logger.add(str(p))
     logger.level("NOTICE", "info")
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.log("NOTICE", "notice message")
     logger.complete()
@@ -67,7 +67,7 @@ def test_catch_decorator_and_context_manager(tmp_path: Path):
     """Test catch decorator and context manager functionality."""
     p = tmp_path / "catch.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     @logger.catch(reraise=False)
     def will_raise():
@@ -96,7 +96,7 @@ def test_exception_logs_traceback(tmp_path: Path):
     """Test exception logging with traceback."""
     p = tmp_path / "exc.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     try:
         _ = 1 / 0
@@ -112,7 +112,7 @@ def test_remove_and_complete_noop(tmp_path: Path):
     """Test remove handler and complete functionality."""
     p = tmp_path / "rm.log"
     handler_id = logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     # Log before removal
     logger.info("before remove")
@@ -138,7 +138,9 @@ def test_all_log_levels(tmp_path: Path):
     """Test all log levels including trace and critical."""
     p = tmp_path / "levels.log"
     logger.add(str(p))
-    logger.configure(level="TRACE", color=False)  # Set to TRACE to capture all levels
+    logger.configure(
+        level="TRACE", color=False, auto_sink=False
+    )  # Set to TRACE to capture all levels
 
     logger.trace("trace message", level="TRACE")
     logger.debug("debug message", level="DEBUG")
@@ -163,7 +165,7 @@ def test_log_levels_with_formatting(tmp_path: Path):
     """Test log levels with string formatting."""
     p = tmp_path / "format.log"
     logger.add(str(p))
-    logger.configure(level="TRACE", color=False)
+    logger.configure(level="TRACE", color=False, auto_sink=False)
 
     logger.trace("trace %s %d", "formatted", 42, extra="data")
     logger.critical("critical %s", "formatted", code=500)
@@ -183,7 +185,7 @@ def test_disabled_logger_early_returns(tmp_path: Path):
     """Test that disabled logger methods return early without logging."""
     p = tmp_path / "disabled.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     # Disable logger
     logger.disable()
@@ -212,7 +214,7 @@ def test_caller_info_exceptions(tmp_path: Path):
     """Test exception handling in caller info augmentation."""
     p = tmp_path / "caller.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     # This should work normally
     logger.info("normal message", explicit_module="test")
@@ -232,7 +234,7 @@ def test_log_method_disabled(tmp_path: Path):
     """Test log() method early return when disabled."""
     p = tmp_path / "log_disabled.log"
     logger.add(str(p))
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.disable()
     logger.log("INFO", "should_not_log")
@@ -256,7 +258,7 @@ def test_custom_level_colors(tmp_path: Path):
         "WARNING": "35",  # Magenta
         "ERROR": "36",  # Cyan
     }
-    logger.configure(level="INFO", level_colors=custom_colors)
+    logger.configure(level="INFO", level_colors=custom_colors, auto_sink=False)
 
     logger.info("info message")
     logger.warning("warning message")
@@ -275,12 +277,12 @@ def test_default_colors_vs_custom_colors(tmp_path: Path):
     logger.add(str(p))
 
     # First configure with defaults
-    logger.configure(level="INFO", color=True)
+    logger.configure(level="INFO", color=True, auto_sink=False)
     logger.info("default color info")
 
     # Then configure with custom colors
     custom_colors = {"INFO": "31"}  # Red
-    logger.configure(level="INFO", level_colors=custom_colors)
+    logger.configure(level="INFO", level_colors=custom_colors, auto_sink=False)
     logger.info("custom color info")
 
     logger.complete()
@@ -297,7 +299,7 @@ def test_color_names(tmp_path: Path):
 
     # Configure with custom colors using color names
     custom_colors = {"INFO": "GREEN", "WARNING": "YELLOW", "ERROR": "RED"}
-    logger.configure(level="INFO", level_colors=custom_colors)
+    logger.configure(level="INFO", level_colors=custom_colors, auto_sink=False)
 
     logger.info("info message with green")
     logger.warning("warning message with yellow")
@@ -317,11 +319,11 @@ def test_show_time_configuration(tmp_path: Path):
     logger.add(str(p))
 
     # Configure with timestamps enabled (default)
-    logger.configure(level="INFO", show_time=True)
+    logger.configure(level="INFO", show_time=True, auto_sink=False)
     logger.info("message with timestamp")
 
     # Configure with timestamps disabled
-    logger.configure(level="INFO", show_time=False)
+    logger.configure(level="INFO", show_time=False, auto_sink=False)
     logger.info("message without timestamp")
 
     logger.complete()
@@ -337,19 +339,19 @@ def test_show_module_function_configuration(tmp_path: Path):
     logger.add(str(p))
 
     # Configure with module and function info enabled (default)
-    logger.configure(level="INFO", show_module=True, show_function=True)
+    logger.configure(level="INFO", show_module=True, show_function=True, auto_sink=False)
     logger.info("message with module and function")
 
     # Configure with module and function info disabled
-    logger.configure(level="INFO", show_module=False, show_function=False)
+    logger.configure(level="INFO", show_module=False, show_function=False, auto_sink=False)
     logger.info("message without module and function")
 
     # Configure with only module disabled
-    logger.configure(level="INFO", show_module=False, show_function=True)
+    logger.configure(level="INFO", show_module=False, show_function=True, auto_sink=False)
     logger.info("message without module but with function")
 
     # Configure with only function disabled
-    logger.configure(level="INFO", show_module=True, show_function=False)
+    logger.configure(level="INFO", show_module=True, show_function=False, auto_sink=False)
     logger.info("message with module but without function")
 
     logger.complete()
@@ -367,19 +369,19 @@ def test_show_filename_lineno_configuration(tmp_path: Path):
     logger.add(str(p))
 
     # Configure with filename and lineno info enabled
-    logger.configure(level="INFO", show_filename=True, show_lineno=True)
+    logger.configure(level="INFO", show_filename=True, show_lineno=True, auto_sink=False)
     logger.info("message with filename and lineno")
 
     # Configure with filename and lineno info disabled
-    logger.configure(level="INFO", show_filename=False, show_lineno=False)
+    logger.configure(level="INFO", show_filename=False, show_lineno=False, auto_sink=False)
     logger.info("message without filename and lineno")
 
     # Configure with only filename disabled
-    logger.configure(level="INFO", show_filename=False, show_lineno=True)
+    logger.configure(level="INFO", show_filename=False, show_lineno=True, auto_sink=False)
     logger.info("message without filename but with lineno")
 
     # Configure with only lineno disabled
-    logger.configure(level="INFO", show_filename=True, show_lineno=False)
+    logger.configure(level="INFO", show_filename=True, show_lineno=False, auto_sink=False)
     logger.info("message with filename but without lineno")
 
     logger.complete()
@@ -398,7 +400,9 @@ def test_per_level_console_controls(tmp_path: Path):
 
     # Configure with per-level console settings
     logger.configure(
-        level="DEBUG", console_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
+        level="DEBUG",
+        console_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True},
+        auto_sink=False,
     )
 
     logger.debug("debug message")
@@ -425,6 +429,7 @@ def test_per_level_time_controls(tmp_path: Path):
         level="DEBUG",
         show_time=False,  # Global default off
         time_levels={"DEBUG": True, "INFO": False, "WARN": True},
+        auto_sink=False,
     )
 
     logger.debug("debug with time")
@@ -460,6 +465,7 @@ def test_per_level_color_controls(tmp_path: Path):
         level="DEBUG",
         color=True,  # Global default on
         color_levels={"DEBUG": False, "INFO": True, "WARN": False},
+        auto_sink=False,
     )
 
     logger.debug("debug uncolored")
@@ -481,7 +487,9 @@ def test_per_level_storage_controls(tmp_path: Path):
 
     # Configure with per-level storage settings
     logger.configure(
-        level="DEBUG", storage_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True}
+        level="DEBUG",
+        storage_levels={"DEBUG": True, "INFO": False, "WARN": True, "ERROR": True},
+        auto_sink=False,
     )
 
     logger.debug("debug stored")
@@ -506,7 +514,7 @@ def test_per_sink_custom_formatting(tmp_path: Path):
     logger.add("console")
     # Add file with custom format
     logger.add(str(file_log), format="{time} [{level}] {message} {extra}")
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.info("Test message", user="alice", action="login")
     logger.warning("Warning message", code=404, path="/api/users")
@@ -539,7 +547,7 @@ def test_per_sink_format_with_extra_placeholder(tmp_path: Path):
     log_file = tmp_path / "extra.log"
 
     logger.add(str(log_file), format="{level}: {message} | {extra}")
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.info("Simple message")
     logger.warning("Message with extras", key1="value1", key2="value2")
@@ -565,7 +573,7 @@ def test_per_sink_format_case_insensitive(tmp_path: Path):
     log_file = tmp_path / "case.log"
 
     logger.add(str(log_file), format="{TIME} | {LEVEL} | {MESSAGE}")
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     logger.info("Case test message")
     logger.complete()
@@ -585,7 +593,7 @@ def test_per_sink_format_mixed_placeholders(tmp_path: Path):
     log_file = tmp_path / "mixed.log"
 
     logger.add(str(log_file), format="[{level}] {time} - {message} | user={user} | {extra}")
-    logger.configure(level="INFO", color=False)
+    logger.configure(level="INFO", color=False, auto_sink=False)
 
     bound_logger = logger.bind(user="testuser")
     bound_logger.info("Mixed format test", action="click", button="submit")
@@ -610,7 +618,7 @@ def test_per_sink_format_backward_compatibility(tmp_path: Path):
 
     # Add sink without format (should use default)
     logger.add(str(log_file))
-    logger.configure(level="INFO", color=False, show_time=False)
+    logger.configure(level="INFO", color=False, show_time=False, auto_sink=False)
 
     logger.info("Compatibility test", extra_field="value")
     logger.complete()
@@ -630,26 +638,28 @@ def test_per_sink_format_with_filters(tmp_path: Path):
     logger.add(
         str(error_log), format="ERROR - {time} - {message} | {extra}", filter_min_level="ERROR"
     )
-    logger.configure(level="DEBUG", color=False)
+    logger.configure(level="DEBUG", color=False, auto_sink=False)
 
     logger.debug("Debug message")  # Should not appear in either
-    logger.info("Info message")  # Should appear in info.log
-    logger.error("Error message", code=500)  # Should appear in error.log
+    logger.info("Info message")  # Should appear in info.log (and all higher levels)
+    logger.error(
+        "Error message", code=500
+    )  # Should appear in both logs (ERROR >= INFO and ERROR >= ERROR)
     logger.complete()
 
-    # Check info log
+    # Check info log (should have INFO and ERROR since filter_min_level="INFO" means INFO and above)
     info_content = read_log(info_log)
     assert "INFO: Info message" in info_content
     assert "Debug message" not in info_content
-    assert "Error message" not in info_content
+    assert "ERROR: Error message" in info_content  # ERROR is >= INFO
 
-    # Check error log
+    # Check error log (should only have ERROR since filter_min_level="ERROR")
     error_content = read_log(error_log)
     assert "ERROR -" in error_content
     assert "Error message" in error_content
     assert "code=500" in error_content
     assert "Debug message" not in error_content
-    assert "Info message" not in error_content
+    assert "Info message" not in error_content  # INFO is < ERROR
 
 
 def test_per_sink_format_filename_lineno_placeholders(tmp_path: Path):
@@ -657,7 +667,9 @@ def test_per_sink_format_filename_lineno_placeholders(tmp_path: Path):
     log_file = tmp_path / "filename_lineno.log"
 
     logger.add(str(log_file), format="{level}: {filename}:{lineno} - {message}")
-    logger.configure(level="INFO", color=False, show_filename=True, show_lineno=True)
+    logger.configure(
+        level="INFO", color=False, show_filename=True, show_lineno=True, auto_sink=False
+    )
 
     logger.info("Test message with filename and lineno")
     logger.complete()

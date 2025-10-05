@@ -118,6 +118,8 @@ pub struct SinkConfig {
     pub format: Option<String>,
     /// Format this sink's output as JSON
     pub json: bool,
+    /// Whether this sink is enabled (logs are written when true)
+    pub enabled: bool,
 }
 
 /// Statistics for monitoring logger performance.
@@ -464,6 +466,7 @@ mod tests {
             retention: Some(10),
             format: Some("{time} | {level} | {message}".to_string()),
             json: false,
+            enabled: true,
         };
 
         assert_eq!(config.id, 1);
@@ -484,5 +487,6 @@ mod tests {
             config.format,
             Some("{time} | {level} | {message}".to_string())
         );
+        assert!(config.enabled);
     }
 }

@@ -134,7 +134,13 @@ pub fn start_async_writer_if_needed() {
         if s.async_write && s.async_sender.is_none() && s.file_writer.is_some() {
             let (tx, rx) = channel::<String>();
             // Clone the Arc to the file writer for the background thread
-            let file_writer = s.file_writer.as_ref().unwrap().clone();
+            let file_writer = match s.file_writer.as_ref() {
+                Some(writer) => writer.clone(),
+                None => {
+                    eprintln!("Error: Async writer enabled but file_writer is None");
+                    return;
+                }
+            };
             let buffer_size = s.buffer_size;
             let flush_interval = s.flush_interval;
             let max_buffered_lines = s.max_buffered_lines;

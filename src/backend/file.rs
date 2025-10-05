@@ -298,16 +298,36 @@ pub fn make_file_appender(
     // try to create a SimpleRollingWriter; on error, fallback to writing directly to the given path
     match SimpleRollingWriter::new(p, rot, date_style, retention, size_bytes) {
         Ok(w) => Arc::new(Mutex::new(Box::new(w))),
-        Err(_) => {
+        Err(e) => {
+            eprintln!(
+                "Warning: Failed to create rotating file writer: {}. Using fallback.",
+                e
+            );
             // fallback: open a simple append file
-            let _ = std::fs::create_dir_all(p.parent().unwrap_or_else(|| Path::new(".")));
+            let parent = p.parent().unwrap_or_else(|| Path::new("."));
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                eprintln!("Warning: Failed to create directory {:?}: {}", parent, e);
+            }
+
             let f = OpenOptions::new()
                 .create(true)
                 .append(true)
                 .open(p)
-                .unwrap_or_else(|_| {
-                    // If all else fails, create a no-op writer
-                    File::create("fallback.log").expect("Cannot create fallback log file")
+                .unwrap_or_else(|e1| {
+                    eprintln!(
+                        "Warning: Failed to open {:?}: {}. Creating fallback.log",
+                        p, e1
+                    );
+                    // If all else fails, create a fallback log file
+                    File::create("fallback.log").unwrap_or_else(|e2| {
+                        eprintln!(
+                            "Critical: Cannot create fallback.log: {}. Creating no-op sink.",
+                            e2
+                        );
+                        // Last resort: create an empty file handle that will fail silently
+                        File::create(std::env::temp_dir().join("logly_emergency.log"))
+                            .expect("Cannot create emergency log file in temp directory")
+                    })
                 });
             Arc::new(Mutex::new(Box::new(f)))
         }

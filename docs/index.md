@@ -26,6 +26,10 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 !!! warning "Active Development"
     Logly is actively developed. Performance continues to improve with each release.
 
+!!! note "Note"
+    The Documentation is up-to-date with the main branch so some features may be missing for the old releases on PyPI. also the docs are improving continuously. if you find any issues please report them on GitHub.
+
+
 ### 🎯 Why Logly?
 
 Logly combines the simplicity of Python with the performance and safety of Rust, providing:
@@ -41,12 +45,14 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 - 📦 **Modular Architecture**: Clean separation (backend, config, format, utils)
 - 🔄 **Async Logging**: Background thread writing with configurable buffering
 - 📋 **Structured JSON**: Native JSON support with custom fields and pretty printing
-- 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
+- 🎨 **Colored Levels**: Automatic color mapping (TRACE=cyan, SUCCESS=green, WARNING=yellow, FAIL=magenta, etc.)
+- ⚙️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
 - 🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
 - 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
 - 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
 - 🔍 **Rich Filtering**: Filter by level, module, or function name
 - 📞 **Callbacks**: Custom log processing with async execution, color styling, and filename/line number tracking
+- 🆕 **FAIL Level**: New log level for operation failures (v0.1.5)
 - 🛡️ **Memory Safe**: Rust's ownership system prevents data races
 - 🧵 **Thread Safe**: Lock-free operations with optimized synchronization
 
@@ -79,21 +85,37 @@ pip install logly
 
 ### Basic Usage
 
+**NEW in v0.1.5:** No configuration needed - just import and log!
+
 ```python
 from logly import logger
 
-# Configure
-logger.configure(level="INFO", json=False, color=True)
+# That's it! Start logging immediately with colored output
+logger.info("Application started", version="1.0.0")     # ✅ White
+logger.success("Database connected")                    # ✅ Green
+logger.warning("Cache is full")                         # ✅ Yellow
+logger.error("Failed to connect", retry_count=3)        # ✅ Red
+logger.fail("Authentication failed", user="alice")      # ✅ Magenta (NEW)
+```
 
-# Add outputs
-logger.add("console")
+**Why it works:**
+- Logger is auto-configured on import (since v0.1.5)
+- Default settings: `console=True`, `auto_sink=True`, `color=True`
+- Console sink created automatically with colored levels
+- **File sinks are NEVER automatic** - add them explicitly
+
+### Advanced: Add File Sinks
+
+```python
+from logly import logger
+
+# Console already works, now add file logging
 logger.add("logs/app.log", rotation="daily", retention=7)
+logger.add("logs/errors.log", filter_min_level="ERROR")
 
-# Log messages
-logger.info("Application started", version="1.0.0")
-logger.error("Failed to connect", retry_count=3)
+logger.info("Logs to both console and files")
 
-# Cleanup
+# Cleanup when done
 logger.complete()
 ```
 

@@ -18,6 +18,9 @@ Logly provides utility methods for:
 |--------|---------|
 | `enable()` | Enable logging for this logger instance |
 | `disable()` | Disable logging for this logger instance |
+| `enable_sink()` | Enable a specific sink by handler ID |
+| `disable_sink()` | Disable a specific sink by handler ID |
+| `is_sink_enabled()` | Check if a specific sink is enabled |
 | `level()` | Register custom log level aliases |
 | `reset()` | Reset logger configuration to default settings |
 | `complete()` | Finalize logger and flush all buffers |
@@ -599,6 +602,301 @@ if __name__ == "__main__":
 
 ---
 
+## logger.enable_sink()
+
+Enable a specific sink by its handler ID.
+
+### Signature
+
+```python
+logger.enable_sink(sink_id: int) -> bool
+```
+
+### Parameters
+- `sink_id` (`int`): The handler ID of the sink to enable
+
+### Returns
+- `bool`: `True` if the sink was found and enabled, `False` if not found
+
+### Description
+
+Enables a specific sink by its handler ID. When a sink is enabled, log messages will be written to it. Sinks are enabled by default when created with `logger.add()`.
+
+Unlike the global `enable()` method which affects all logging, `enable_sink()` provides fine-grained control over individual output destinations.
+
+### Examples
+
+=== "Basic Usage"
+    ```python
+    from logly import logger
+    
+    # Add sinks
+    console_id = logger.add("console")
+    file_id = logger.add("app.log")
+    
+    # Disable file logging
+    logger.disable_sink(file_id)
+    logger.info("Only to console")  # Logged to console only
+    
+    # Re-enable file logging
+    logger.enable_sink(file_id)
+    logger.info("To both sinks")  # Logged to both console and file
+    ```
+
+=== "Conditional Output"
+    ```python
+    from logly import logger
+    
+    # Setup sinks
+    console_id = logger.add("console")
+    debug_file_id = logger.add("debug.log")
+    error_file_id = logger.add("error.log", filter_min_level="ERROR")
+    
+    # Disable debug file in production
+    if production:
+        logger.disable_sink(debug_file_id)
+    
+    logger.debug("Debug info")  # To console (and debug file in dev)
+    logger.error("Error occurred")  # To all sinks
+    ```
+
+=== "Dynamic Control"
+    ```python
+    from logly import logger
+    
+    # Feature-specific logging
+    feature_sinks = {}
+    
+    def enable_feature_logging(feature_name):
+        """Enable detailed logging for a feature."""
+        sink_id = logger.add(f"logs/{feature_name}.log")
+        feature_sinks[feature_name] = sink_id
+        return sink_id
+    
+    def disable_feature_logging(feature_name):
+        """Disable logging for a feature."""
+        if feature_name in feature_sinks:
+            sink_id = feature_sinks[feature_name]
+            logger.disable_sink(sink_id)
+    
+    # Use feature logging
+    enable_feature_logging("payment")
+    # ... lots of payment logs ...
+    disable_feature_logging("payment")  # Stop logging payments
+    ```
+
+### Notes
+
+!!! tip "Sink-Level Control"
+    `enable_sink()` and `disable_sink()` provide granular control over individual sinks without affecting other outputs.
+
+!!! info "Default State"
+    Sinks are **enabled** by default when created with `add()`.
+
+!!! warning "Disabled vs Removed"
+    - Disabled sinks remain registered but don't write logs
+    - Use `remove()` to completely unregister a sink
+    - Disabled sinks can be re-enabled; removed sinks cannot
+
+---
+
+## logger.disable_sink()
+
+Disable a specific sink by its handler ID.
+
+### Signature
+
+```python
+logger.disable_sink(sink_id: int) -> bool
+```
+
+### Parameters
+- `sink_id` (`int`): The handler ID of the sink to disable
+
+### Returns
+- `bool`: `True` if the sink was found and disabled, `False` if not found
+
+### Description
+
+Disables a specific sink by its handler ID. When a sink is disabled, log messages will not be written to it, but the sink remains registered and can be re-enabled later with `enable_sink()`.
+
+This provides fine-grained control for temporarily suspending output to specific destinations without removing them entirely.
+
+### Examples
+
+=== "Temporary Silence"
+    ```python
+    from logly import logger
+    
+    # Setup
+    file_id = logger.add("app.log")
+    
+    # Temporarily stop file logging
+    logger.disable_sink(file_id)
+    logger.info("Not in file")
+    
+    # Resume file logging
+    logger.enable_sink(file_id)
+    logger.info("Back in file")
+    ```
+
+=== "Performance Optimization"
+    ```python
+    from logly import logger
+    import time
+    
+    # Setup sinks
+    console_id = logger.add("console")
+    verbose_id = logger.add("verbose.log")
+    
+    # Disable verbose logging for high-performance section
+    logger.disable_sink(verbose_id)
+    
+    start = time.time()
+    for i in range(1000000):
+        process_item(i)
+        # No verbose file writes during hot loop
+    
+    logger.enable_sink(verbose_id)
+    logger.info(f"Processed 1M items in {time.time() - start:.2f}s")
+    ```
+
+=== "Environment-Based Control"
+    ```python
+    from logly import logger
+    import os
+    
+    # Setup sinks
+    console_id = logger.add("console")
+    debug_id = logger.add("debug.log")
+    
+    # Disable debug file in production
+    if os.getenv("ENV") == "production":
+        logger.disable_sink(debug_id)
+    
+    logger.debug("Debug information")  # Only to console in prod
+    logger.info("Application started")  # To both sinks
+    ```
+
+### Notes
+
+!!! tip "Use Cases"
+    - **Performance**: Disable expensive sinks during hot loops
+    - **Environment**: Different outputs for dev vs prod
+    - **Features**: Enable/disable per-feature logging dynamically
+
+!!! info "State Preserved"
+    Disabled sinks maintain their configuration (filters, format, rotation) and can be re-enabled anytime.
+
+!!! warning "Check Return Value"
+    ```python
+    success = logger.disable_sink(sink_id)
+    if not success:
+        print(f"Sink {sink_id} not found")
+    ```
+
+---
+
+## logger.is_sink_enabled()
+
+Check if a specific sink is enabled.
+
+### Signature
+
+```python
+logger.is_sink_enabled(sink_id: int) -> bool | None
+```
+
+### Parameters
+- `sink_id` (`int`): The handler ID of the sink to check
+
+### Returns
+- `True` if the sink is enabled
+- `False` if the sink is disabled
+- `None` if the sink does not exist
+
+### Description
+
+Checks whether a specific sink is currently enabled. This is useful for conditional logic, debugging, or monitoring sink status.
+
+### Examples
+
+=== "Basic Check"
+    ```python
+    from logly import logger
+    
+    file_id = logger.add("app.log")
+    
+    # Check initial state
+    enabled = logger.is_sink_enabled(file_id)
+    print(f"Sink enabled: {enabled}")  # True
+    
+    # Disable and check
+    logger.disable_sink(file_id)
+    enabled = logger.is_sink_enabled(file_id)
+    print(f"Sink enabled: {enabled}")  # False
+    ```
+
+=== "Conditional Logic"
+    ```python
+    from logly import logger
+    
+    debug_id = logger.add("debug.log")
+    
+    def toggle_debug_logging():
+        """Toggle debug file logging."""
+        if logger.is_sink_enabled(debug_id):
+            logger.disable_sink(debug_id)
+            logger.info("Debug logging disabled")
+        else:
+            logger.enable_sink(debug_id)
+            logger.info("Debug logging enabled")
+    ```
+
+=== "Sink Status Report"
+    ```python
+    from logly import logger
+    
+    # Add multiple sinks
+    console_id = logger.add("console")
+    app_log_id = logger.add("app.log")
+    error_log_id = logger.add("error.log", filter_min_level="ERROR")
+    
+    # Report status
+    for sink_id in logger.list_sinks():
+        info = logger.sink_info(sink_id)
+        enabled = logger.is_sink_enabled(sink_id)
+        
+        print(f"Sink {sink_id}:")
+        print(f"  Type: {info.get('type', 'unknown')}")
+        print(f"  Path: {info.get('path', 'N/A')}")
+        print(f"  Enabled: {enabled}")
+    ```
+
+### Notes
+
+!!! tip "Use in Assertions"
+    ```python
+    # Verify sink state in tests
+    assert logger.is_sink_enabled(sink_id) == True
+    logger.disable_sink(sink_id)
+    assert logger.is_sink_enabled(sink_id) == False
+    ```
+
+!!! info "None Return"
+    Returns `None` if the sink ID doesn't exist. Check before using:
+    ```python
+    enabled = logger.is_sink_enabled(sink_id)
+    if enabled is None:
+        print(f"Sink {sink_id} not found")
+    elif enabled:
+        print("Sink is active")
+    else:
+        print("Sink is disabled")
+    ```
+
+---
+
 ## Best Practices
 
 ### ✅ DO
@@ -633,6 +931,18 @@ def reset_logger():
 # 5. Create bound loggers with independent enable/disable
 request_logger = logger.bind(request_id="123")
 request_logger.disable()  # Only affects bound instance
+
+# 6. Use sink-specific control for granular output management
+console_id = logger.add("console")
+debug_file_id = logger.add("debug.log")
+
+# Disable debug file in production
+if production:
+    logger.disable_sink(debug_file_id)
+
+# 7. Check sink status before operations
+if logger.is_sink_enabled(debug_file_id):
+    logger.debug("Detailed debug information")
 ```
 
 ### ❌ DON'T
@@ -663,7 +973,112 @@ logger.configure(level="DEBUG")
 logger.disable()
 req_logger = logger.bind(request_id="123")
 req_logger.info("Test")  # ❌ Still suppressed (parent disabled)
+
+# 6. DON'T remove sinks just to temporarily disable them
+# ❌ Bad: Removing sink loses configuration
+logger.remove_sink(file_id)
+# ... later
+logger.add("app.log")  # Must reconfigure everything
+
+# ✅ Good: Disable/enable preserves configuration
+logger.disable_sink(file_id)
+# ... later
+logger.enable_sink(file_id)  # Same configuration restored
+
+# 7. DON'T confuse global vs. sink-specific disable
+logger.disable()  # ❌ Stops ALL logging (all sinks)
+logger.disable_sink(file_id)  # ✅ Only stops this specific sink
 ```
+
+---
+
+## Global vs. Per-Sink Control
+
+Understanding when to use global enable/disable vs. per-sink controls:
+
+=== "Global Control"
+    ```python
+    # Use logger.disable()/enable() when:
+    # • Testing: Silence all log output
+    # • Performance: Temporarily disable all logging
+    # • Application state: Pause all logging during critical sections
+    
+    logger.add("console")
+    logger.add("app.log")
+    logger.add("error.log")
+    
+    # Disable ALL sinks at once
+    logger.disable()
+    logger.info("Not logged anywhere")  # No output to any sink
+    
+    # Re-enable ALL sinks
+    logger.enable()
+    logger.info("Logged everywhere")  # Console + both files
+    ```
+
+=== "Per-Sink Control"
+    ```python
+    # Use enable_sink()/disable_sink() when:
+    # • Conditional output: Only certain sinks based on conditions
+    # • Dynamic routing: Change where logs go at runtime
+    # • Performance tuning: Disable expensive sinks temporarily
+    
+    console_id = logger.add("console")
+    app_log_id = logger.add("app.log")
+    debug_log_id = logger.add("debug.log")
+    
+    # Disable only debug file in production
+    if production:
+        logger.disable_sink(debug_log_id)
+    
+    logger.info("User login")  # → Console + app.log only
+    
+    # Re-enable debug file for troubleshooting
+    if user_requests_debug:
+        logger.enable_sink(debug_log_id)
+    
+    logger.debug("Detailed info")  # → All 3 sinks now
+    ```
+
+=== "Combined Usage"
+    ```python
+    # Combine both for maximum flexibility
+    
+    console_id = logger.add("console")
+    file_id = logger.add("app.log")
+    
+    # Scenario 1: Testing mode - silence everything
+    if testing:
+        logger.disable()  # Global disable (fastest)
+    
+    # Scenario 2: Debug mode - extra file output
+    if debug_mode:
+        debug_id = logger.add("debug.log")
+    
+    # Scenario 3: Performance mode - file logging only
+    if performance_mode:
+        logger.disable_sink(console_id)  # Disable console
+        # File logging still active
+    
+    # Global disable overrides per-sink settings
+    logger.disable()
+    logger.enable_sink(file_id)  # Has no effect until global enable()
+    logger.info("Not logged")  # Still disabled globally
+    
+    logger.enable()
+    logger.info("Logged to file")  # Now works (file is enabled)
+    ```
+
+**Key Differences:**
+
+| Feature | Global (`disable()`/`enable()`) | Per-Sink (`disable_sink()`/`enable_sink()`) |
+|---------|--------------------------------|---------------------------------------------|
+| **Scope** | All sinks | Single sink by ID |
+| **Use Case** | Testing, app-wide pause | Conditional routing, dynamic control |
+| **Performance** | Fastest (early exit in Python) | Checks each sink in Rust backend |
+| **Configuration** | All settings preserved | Individual sink settings preserved |
+| **Priority** | Overrides all per-sink settings | Ignored if globally disabled |
+| **Bound Loggers** | Affects bound instances | Only affects parent logger sinks |
 
 ---
 

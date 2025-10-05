@@ -51,14 +51,21 @@ After installation, verify that Logly is working correctly:
 ```python
 from logly import logger
 
-logger.info("Logly installed successfully!")
+# NEW in v0.1.5: No configuration needed!
+logger.info("Logly installed successfully!")  # ✅ Works immediately
 logger.complete()
 ```
 
 You should see:
 ```
-2025-01-15 10:30:45 | INFO     | Logly installed successfully!
+2025-10-05 10:30:45 | INFO     | Logly installed successfully!
 ```
+
+**Why it works immediately:**
+- Logger is auto-configured on import (since v0.1.5)
+- Default settings: `console=True`, `auto_sink=True`
+- No need to call `configure()` before logging
+- File sinks are NEVER automatic - add with `logger.add("file.log")`
 
 ---
 

@@ -17,6 +17,7 @@ class TestSinkManagement:
     def setup_method(self):
         """Clean up before each test"""
         logger.remove_all()
+        logger.configure(console=True, auto_sink=False)
         self.cleanup_files()
 
     def teardown_method(self):
@@ -105,6 +106,7 @@ class TestFileOperations:
     def setup_method(self):
         """Clean up before each test"""
         logger.remove_all()
+        logger.configure(console=True, auto_sink=False)
         self.cleanup_files()
 
     def teardown_method(self):
@@ -191,6 +193,7 @@ class TestLogReading:
     def setup_method(self):
         """Clean up before each test"""
         logger.remove_all()
+        logger.configure(console=True, auto_sink=False)
         self.cleanup_files()
 
     def teardown_method(self):
@@ -271,6 +274,7 @@ class TestConsoleOperations:
     def setup_method(self):
         """Clean up before each test"""
         logger.remove_all()
+        logger.configure(console=True, auto_sink=False)
 
     def teardown_method(self):
         """Clean up after each test"""
@@ -331,6 +335,7 @@ class TestAdvancedFileOperations:
     def setup_method(self):
         """Clean up before each test"""
         logger.remove_all()
+        logger.configure(console=True, auto_sink=False)
         self.cleanup_files()
 
     def teardown_method(self):

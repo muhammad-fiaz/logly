@@ -42,24 +42,41 @@ Before you begin, ensure you have:
 
 ## Step 2: Basic Setup
 
-Create a new Python file and add this basic setup:
+**NEW in v0.1.5**: Just import and log - no configuration needed!
 
 ```python
 # app.py
 from logly import logger
 
-# Configure logging
-logger.configure(
-    level="INFO",  # Minimum log level
-    format="{time} | {level} | {message}"  # Log format
-)
-
-# Your application code
-logger.info("Application started")
-logger.warning("This is a warning")
-logger.error("This is an error")
+# That's it! Start logging immediately
+logger.info("Application started")      # ✅ Works right away
+logger.warning("This is a warning")     # ⚠️ No configure() needed  
+logger.error("This is an error")        # ❌ Auto-configured on import
 
 print("Check your console output above!")
+```
+
+**Why it works:**
+- Logger is auto-configured on import (since v0.1.5)
+- Default settings: `console=True`, `auto_sink=True`
+- Console sink created automatically
+- **File sinks are NEVER automatic** - add them explicitly with `logger.add("file.log")`
+
+### Optional: Customize Configuration
+
+If you need custom settings, call `configure()`:
+
+```python
+from logly import logger
+
+# Customize logging (optional)
+logger.configure(
+    level="DEBUG",     # Change minimum log level
+    color=True,        # Enable colors
+    show_time=True     # Show timestamps
+)
+
+logger.debug("Debug messages now visible")
 ```
 
 Run it:

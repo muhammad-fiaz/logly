@@ -26,7 +26,7 @@ def test_remove_all_basic(tmp_path: Path):
     logger.add(str(p2))
     logger.add(str(p3))
 
-    logger.configure(level="INFO", color=False, console=False)
+    logger.configure(level="INFO", color=False, console=True)
     logger.info("before remove_all")
     logger.complete()
 
@@ -143,7 +143,7 @@ def test_remove_all_then_add_new_sinks(tmp_path: Path):
 
     logger.add(str(p1))
     logger.add(str(p2))
-    logger.configure(level="INFO", color=False, console=False)
+    logger.configure(level="INFO", color=False, console=True)
 
     logger.info("old message")
     logger.complete()
@@ -252,7 +252,8 @@ def test_remove_all_does_not_affect_callbacks(tmp_path: Path):
     p = tmp_path / "callback_test.log"
     logger.add(str(p))
 
-    logger.configure(level="INFO", color=False, console=False)
+    # Configure with console enabled so callbacks can execute
+    logger.configure(level="INFO", color=False, console=True)
     logger.info("with sink")
     logger.complete()
     time.sleep(0.1)  # Give callbacks time to execute

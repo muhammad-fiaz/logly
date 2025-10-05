@@ -12,6 +12,7 @@ class TestConfigureMethodParameters:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):
@@ -76,6 +77,7 @@ class TestAddMethodParameters:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):
@@ -130,6 +132,7 @@ class TestExceptionMethod:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):
@@ -203,6 +206,7 @@ class TestCatchMethod:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):
@@ -276,6 +280,7 @@ class TestEdgeCases:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):
@@ -349,6 +354,7 @@ class TestIntegrationScenarios:
 
     def setup_method(self):
         """Reset logger state before each test."""
+        logger.remove_all()  # Clear all sinks from previous tests
         logger.reset()
 
     def teardown_method(self):

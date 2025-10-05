@@ -9,6 +9,7 @@ use tracing::Level;
 use crate::config::state;
 use crate::format::dict_to_pairs;
 use crate::format::template::format_with_template;
+use crate::utils::error::validate_color;
 use crate::utils::levels::{level_to_str, to_filter, to_level};
 
 /// Convert color name to ANSI color code.
@@ -132,47 +133,48 @@ pub fn log_message_with_level_override(
     let message = msg.to_string();
     let extra_fields = pairs.clone();
 
-    // Call callbacks asynchronously in background thread
-    let has_callbacks = state::with_state(|s| !s.callbacks.is_empty());
+    // Call callbacks synchronously if console_enabled
+    let has_callbacks = state::with_state(|s| !s.callbacks.is_empty() && s.console_enabled);
 
     if has_callbacks {
-        let timestamp_bg = timestamp_rfc3339.clone();
-        let level_str_bg = level_str.clone();
-        let message_bg = message.clone();
-        let extra_fields_bg = extra_fields.clone();
+        Python::attach(|py| {
+            let callbacks = state::with_state(|s| s.callbacks.clone());
+            for callback in callbacks {
+                // Create the record dict
+                let dict = pyo3::types::PyDict::new(py);
+                let _ = dict.set_item("timestamp", &timestamp_rfc3339);
+                let _ = dict.set_item("level", &level_str);
+                let _ = dict.set_item("message", &message);
 
-        std::thread::spawn(move || {
-            Python::attach(|py| {
-                let callbacks = state::with_state(|s| s.callbacks.clone());
-                for callback in callbacks {
-                    // Create the record dict in the background thread
-                    let dict = pyo3::types::PyDict::new(py);
-                    let _ = dict.set_item("timestamp", &timestamp_bg);
-                    let _ = dict.set_item("level", &level_str_bg);
-                    let _ = dict.set_item("message", &message_bg);
-
-                    // Add extra fields
-                    for (k, v) in &extra_fields_bg {
-                        let _ = dict.set_item(k, v);
-                    }
-
-                    // Call the callback with the record
-                    let _ = callback.call1(py, (&dict,));
+                // Add extra fields
+                for (k, v) in &extra_fields {
+                    let _ = dict.set_item(k, v);
                 }
-            });
+
+                // Call the callback with the record
+                let _ = callback.call1(py, (&dict,));
+            }
         });
     }
 
     // Process each sink individually with its own configuration
     state::with_state(|s| {
         for (sink_id, sink_config) in &s.sinks {
+            // Skip disabled sinks
+            if !sink_config.enabled {
+                continue;
+            }
+
             // Apply per-sink filtering
             let mut allow_sink = true;
 
             // Level filtering
             if let Some(min_level) = sink_config.min_level {
                 let current: tracing_subscriber::filter::LevelFilter = to_filter(level);
-                if current != min_level {
+                // In tracing, lower severity = higher enum value
+                // OFF < ERROR < WARN < INFO < DEBUG < TRACE
+                // We want to filter out levels that are MORE verbose (higher) than min_level
+                if current > min_level {
                     allow_sink = false;
                 }
             }
@@ -207,13 +209,13 @@ pub fn log_message_with_level_override(
 
             // Per-level output controls
             let is_console = sink_config.path.is_none();
-            if is_console {
+            if !s.console_enabled {
+                allow_sink = false;
+            } else if is_console {
                 // Check per-level console output control
-                if let Some(&enabled) = s.console_levels.get(&level_str) {
-                    if !enabled {
-                        allow_sink = false;
-                    }
-                } else if !s.console_enabled {
+                if let Some(&enabled) = s.console_levels.get(&level_str)
+                    && !enabled
+                {
                     allow_sink = false;
                 }
             } else {
@@ -444,6 +446,19 @@ pub fn configure_with_colors(
     color_callback: Option<Py<PyAny>>,
 ) -> PyResult<()> {
     let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
+
+    // Validate all provided colors before modifying state
+    if let Some(ref colors) = level_colors {
+        for (level_name, color_value) in colors {
+            validate_color(color_value).map_err(|e| {
+                PyValueError::new_err(format!(
+                    "Invalid color '{}' for level '{}': {}",
+                    color_value, level_name, e
+                ))
+            })?;
+        }
+    }
+
     state::with_state(|s| {
         s.level_filter = to_filter(lvl);
         s.color = color;
@@ -462,6 +477,19 @@ pub fn configure_with_colors(
         s.storage_levels = storage_levels.unwrap_or_default();
         if let Some(colors) = level_colors {
             s.level_colors = colors;
+        } else if color {
+            // Set default color mapping when color is enabled but no custom colors provided
+            let mut default_colors = AHashMap::new();
+            default_colors.insert("TRACE".to_string(), "CYAN".to_string());
+            default_colors.insert("DEBUG".to_string(), "BLUE".to_string());
+            default_colors.insert("INFO".to_string(), "WHITE".to_string());
+            default_colors.insert("SUCCESS".to_string(), "GREEN".to_string());
+            default_colors.insert("WARN".to_string(), "YELLOW".to_string());
+            default_colors.insert("WARNING".to_string(), "YELLOW".to_string());
+            default_colors.insert("ERROR".to_string(), "RED".to_string());
+            default_colors.insert("CRITICAL".to_string(), "BRIGHT_RED".to_string());
+            default_colors.insert("FAIL".to_string(), "MAGENTA".to_string());
+            s.level_colors = default_colors;
         }
 
         // Update fast path enabled flag based on current configuration

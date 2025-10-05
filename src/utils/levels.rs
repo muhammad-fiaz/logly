@@ -25,7 +25,7 @@ pub enum Rotation {
 /// - "debug" → DEBUG
 /// - "info", "success" → INFO
 /// - "warn", "warning" → WARN
-/// - "error", "critical", "fatal" → ERROR
+/// - "error", "critical", "fatal", "fail" → ERROR
 ///
 /// # Arguments
 ///
@@ -40,7 +40,7 @@ pub fn to_level(name: &str) -> Option<Level> {
         "debug" => Some(Level::DEBUG),
         "info" | "success" => Some(Level::INFO),
         "warn" | "warning" => Some(Level::WARN),
-        "error" | "critical" | "fatal" => Some(Level::ERROR),
+        "error" | "critical" | "fatal" | "fail" => Some(Level::ERROR),
         _ => None,
     }
 }

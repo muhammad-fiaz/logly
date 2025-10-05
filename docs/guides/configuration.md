@@ -15,6 +15,8 @@ Logly configuration consists of:
 ```python
 logger.configure(
     level="INFO",        # Global minimum log level
+    console=True,        # Global enable/disable ALL logging (kill-switch)
+    color=True,          # Enable colored output
     format="{time} | {level} | {message}",  # Default format
     sinks=[             # List of output destinations
         {
@@ -23,6 +25,14 @@ logger.configure(
         }
     ]
 )
+
+!!! warning "Global Console Parameter"
+    The `console` parameter acts as a **global kill-switch** for ALL logging:
+    
+    - `console=True` (default): All logging enabled (console + file sinks)
+    - `console=False`: **ALL logging disabled** globally, equivalent to `logger.disable()`
+    
+    This is different from per-sink enable/disable which controls individual outputs.
 ```
 
 ## Sink Types
@@ -166,6 +176,66 @@ logger.add_level("TRACE", 5)  # Below DEBUG
 # Use custom level
 logger.trace("Very detailed information")
 ```
+
+## Runtime Sink Management
+
+### Dynamic Sink Control
+
+After configuration, you can dynamically enable/disable individual sinks without removing them:
+
+```python
+from logly import logger
+
+# Initial setup
+console_id = logger.add("console")
+app_log_id = logger.add("app.log")
+debug_log_id = logger.add("debug.log")
+
+# Disable specific sink (preserves configuration)
+logger.disable_sink(debug_log_id)
+logger.info("Not written to debug.log")
+
+# Re-enable when needed
+logger.enable_sink(debug_log_id)
+logger.debug("Now written to debug.log")
+
+# Check sink status
+if logger.is_sink_enabled(debug_log_id):
+    logger.info("Debug logging is active")
+```
+
+### Use Cases
+
+**Production Mode:**
+```python
+# Disable debug file in production
+if os.getenv("ENV") == "production":
+    logger.disable_sink(debug_file_id)
+```
+
+**Performance Tuning:**
+```python
+# Temporarily disable expensive sinks during critical operations
+logger.disable_sink(json_api_sink_id)
+process_critical_data()
+logger.enable_sink(json_api_sink_id)
+```
+
+**User Preferences:**
+```python
+# Toggle console output based on user settings
+if not user_settings.get("show_logs"):
+    logger.disable_sink(console_id)
+```
+
+**Comparison: Global vs. Per-Sink:**
+
+| Method | Scope | Use Case |
+|--------|-------|----------|
+| `logger.disable()` | All sinks | Testing, complete silence |
+| `logger.disable_sink(id)` | Single sink | Conditional output, dynamic routing |
+
+See [Utilities API Reference](../api-reference/utilities.md#enable_sink) for complete documentation.
 
 ## Rotation and Retention
 

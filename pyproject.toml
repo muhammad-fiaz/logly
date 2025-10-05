@@ -40,6 +40,7 @@ Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 
 [dependency-groups]
 dev = [
+  "ipykernel>=6.30.1",
   "maturin==1.9.1",
   "mkdocs>=1.5.0",
   "mkdocs-material>=9.0.0",

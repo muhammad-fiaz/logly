@@ -14,6 +14,7 @@ Welcome to the Logly examples! This section contains comprehensive, runnable exa
 ### 🏗️ Getting Started Examples
 
 - **[Basic Console Logging](basic-console.md)** - Start here! Simple console output with colors and formatting
+- **[Colored Logging](colored-logging.md)** - Default colors, custom colors, and FAIL level (NEW v0.1.5)
 - **[Per-Level Controls](per-level-controls.md)** - Control console output, timestamps, and colors per log level
 - **[Template String Formatting](template-strings.md)** - Custom log message formatting with placeholders
 
@@ -29,6 +30,7 @@ Welcome to the Logly examples! This section contains comprehensive, runnable exa
 - **[Context Binding](context-binding.md)** - Add persistent context to all log messages
 - **[Exception Handling](exception-handling.md)** - Automatic exception logging and traceback capture
 - **[Color Callback Styling](color-callback.md)** - Custom color styling with callback functions
+- **[Auto-Sink Levels](auto-sink-levels.md)** - ✨ **NEW in v0.1.5**: Declarative per-level sink configuration
 
 ## 🚀 Quick Start
 
