@@ -8,6 +8,7 @@ __version__: str
 
 class SearchResult(TypedDict):
     """Result of a log search operation."""
+
     line: int
     content: str
     match: str

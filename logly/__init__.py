@@ -24,6 +24,7 @@ from logly._logly import logger as _rust_logger
 
 class SearchResult(TypedDict):
     """Result of a log search operation."""
+
     line: int
     content: str
     match: str
