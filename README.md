@@ -43,9 +43,6 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 
 ### 🎯 Why Logly?
 
-Logly combines the simplicity of Python with the performance and safety of Rust, providing:
-
-## ✨ Features
 
 Logly offers a comprehensive set of logging features designed for modern Python applications:
 
