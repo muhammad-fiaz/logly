@@ -2,6 +2,8 @@
 #    uv pip compile pyproject.toml --group dev -o requirements.txt
 astroid==3.3.11
     # via pylint
+asttokens==3.0.0
+    # via stack-data
 babel==2.17.0
     # via mkdocs-material
 backrefs==5.9
@@ -17,20 +19,29 @@ click==8.3.0
 colorama==0.4.6
     # via
     #   click
+    #   ipython
     #   mkdocs
     #   mkdocs-material
     #   pylint
     #   pytest
+comm==0.2.3
+    # via ipykernel
 coverage==7.10.7
     # via pytest-cov
 csscompressor==0.9.5
     # via mkdocs-minify-plugin
+debugpy==1.8.17
+    # via ipykernel
+decorator==5.2.1
+    # via ipython
 dill==0.4.0
     # via pylint
 distlib==0.4.0
     # via virtualenv
 docutils==0.22.2
     # via readme-renderer
+executing==2.2.1
+    # via stack-data
 filelock==3.19.1
     # via virtualenv
 ghp-import==2.1.0
@@ -45,6 +56,12 @@ idna==3.10
     # via requests
 iniconfig==2.1.0
     # via pytest
+ipykernel==6.30.1
+    # via logly (pyproject.toml:dev)
+ipython==9.6.0
+    # via ipykernel
+ipython-pygments-lexers==1.1.1
+    # via ipython
 isort==6.0.1
     # via pylint
 jaraco-classes==3.4.0
@@ -53,12 +70,20 @@ jaraco-context==6.0.1
     # via keyring
 jaraco-functools==4.3.0
     # via keyring
+jedi==0.19.2
+    # via ipython
 jinja2==3.1.6
     # via
     #   mkdocs
     #   mkdocs-material
 jsmin==3.0.1
     # via mkdocs-minify-plugin
+jupyter-client==8.6.3
+    # via ipykernel
+jupyter-core==5.8.1
+    # via
+    #   ipykernel
+    #   jupyter-client
 keyring==25.6.0
     # via twine
 markdown==3.9
@@ -72,6 +97,10 @@ markupsafe==3.0.3
     # via
     #   jinja2
     #   mkdocs
+matplotlib-inline==0.1.7
+    # via
+    #   ipykernel
+    #   ipython
 maturin==1.9.1
     # via logly (pyproject.toml:dev)
 mccabe==0.7.0
@@ -103,6 +132,8 @@ mypy==1.16.1
     # via logly (pyproject.toml:dev)
 mypy-extensions==1.1.0
     # via mypy
+nest-asyncio==1.6.0
+    # via ipykernel
 nh3==0.3.0
     # via readme-renderer
 nodeenv==1.9.1
@@ -111,17 +142,21 @@ orjson==3.11.3
     # via mypy
 packaging==25.0
     # via
+    #   ipykernel
     #   mkdocs
     #   pytest
     #   twine
 paginate==0.5.7
     # via mkdocs-material
+parso==0.8.5
+    # via jedi
 pathspec==0.12.1
     # via
     #   mkdocs
     #   mypy
 platformdirs==4.4.0
     # via
+    #   jupyter-core
     #   mkdocs-get-deps
     #   pylint
     #   virtualenv
@@ -131,8 +166,16 @@ pluggy==1.6.0
     #   pytest-cov
 pre-commit==4.2.0
     # via logly (pyproject.toml:dev)
+prompt-toolkit==3.0.52
+    # via ipython
+psutil==7.1.0
+    # via ipykernel
+pure-eval==0.2.3
+    # via stack-data
 pygments==2.19.2
     # via
+    #   ipython
+    #   ipython-pygments-lexers
     #   mkdocs-material
     #   pytest
     #   readme-renderer
@@ -148,7 +191,11 @@ pytest==8.4.1
 pytest-cov==6.2.1
     # via logly (pyproject.toml:dev)
 python-dateutil==2.9.0.post0
-    # via ghp-import
+    # via
+    #   ghp-import
+    #   jupyter-client
+pywin32==311
+    # via jupyter-core
 pywin32-ctypes==0.2.3
     # via keyring
 pyyaml==6.0.3
@@ -160,6 +207,10 @@ pyyaml==6.0.3
     #   pyyaml-env-tag
 pyyaml-env-tag==1.1
     # via mkdocs
+pyzmq==27.1.0
+    # via
+    #   ipykernel
+    #   jupyter-client
 readme-renderer==44.0
     # via twine
 requests==2.32.5
@@ -180,8 +231,21 @@ ruff==0.12.3
     # via logly (pyproject.toml:dev)
 six==1.17.0
     # via python-dateutil
+stack-data==0.6.3
+    # via ipython
 tomlkit==0.13.3
     # via pylint
+tornado==6.5.2
+    # via
+    #   ipykernel
+    #   jupyter-client
+traitlets==5.14.3
+    # via
+    #   ipykernel
+    #   ipython
+    #   jupyter-client
+    #   jupyter-core
+    #   matplotlib-inline
 twine==6.2.0
     # via logly (pyproject.toml:dev)
 typing-extensions==4.15.0
@@ -194,3 +258,5 @@ virtualenv==20.34.0
     # via pre-commit
 watchdog==6.0.0
     # via mkdocs
+wcwidth==0.2.14
+    # via prompt-toolkit
