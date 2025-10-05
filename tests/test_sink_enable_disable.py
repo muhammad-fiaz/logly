@@ -1,6 +1,5 @@
 """Comprehensive tests for sink enable/disable functionality."""
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -134,7 +133,7 @@ class TestSinkEnableDisable:
         """Test that global console=False disables all sinks."""
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = Path(tmpdir) / "test.log"
-            sink_id = logger.add(str(log_file))
+            _ = logger.add(str(log_file))
 
             # Sink enabled, global enabled
             logger.configure(console=True, auto_sink=False)
@@ -162,7 +161,7 @@ class TestSinkEnableDisable:
         logger.configure(auto_sink=False)
         sink_id = logger.add("console")
 
-        for i in range(5):
+        for _ in range(5):
             logger.disable_sink(sink_id)
             assert logger.is_sink_enabled(sink_id) is False
 

@@ -171,7 +171,10 @@ pub fn log_message_with_level_override(
             // Level filtering
             if let Some(min_level) = sink_config.min_level {
                 let current: tracing_subscriber::filter::LevelFilter = to_filter(level);
-                if current != min_level {
+                // In tracing, lower severity = higher enum value
+                // OFF < ERROR < WARN < INFO < DEBUG < TRACE
+                // We want to filter out levels that are MORE verbose (higher) than min_level
+                if current > min_level {
                     allow_sink = false;
                 }
             }

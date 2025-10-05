@@ -194,8 +194,10 @@ mod tests {
     #[test]
     fn test_case_sensitive() {
         let file = create_test_file(&["ERROR", "error", "Error"]);
-        let mut options = SearchOptions::default();
-        options.case_sensitive = true;
+        let options = SearchOptions {
+            case_sensitive: true,
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "error", &options).unwrap();
         assert_eq!(results.len(), 1);
@@ -205,8 +207,10 @@ mod tests {
     #[test]
     fn test_first_only() {
         let file = create_test_file(&["match 1", "match 2", "match 3"]);
-        let mut options = SearchOptions::default();
-        options.first_only = true;
+        let options = SearchOptions {
+            first_only: true,
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "match", &options).unwrap();
         assert_eq!(results.len(), 1);
@@ -216,8 +220,10 @@ mod tests {
     #[test]
     fn test_regex_search() {
         let file = create_test_file(&["error: 123", "error: abc", "warning: 456"]);
-        let mut options = SearchOptions::default();
-        options.use_regex = true;
+        let options = SearchOptions {
+            use_regex: true,
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), r"error:\s+\d+", &options).unwrap();
         assert_eq!(results.len(), 1);
@@ -227,9 +233,11 @@ mod tests {
     #[test]
     fn test_line_range_filter() {
         let file = create_test_file(&["line 1", "line 2", "line 3", "line 4", "line 5"]);
-        let mut options = SearchOptions::default();
-        options.start_line = Some(2);
-        options.end_line = Some(4);
+        let options = SearchOptions {
+            start_line: Some(2),
+            end_line: Some(4),
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "line", &options).unwrap();
         assert_eq!(results.len(), 3);
@@ -240,8 +248,10 @@ mod tests {
     #[test]
     fn test_max_results() {
         let file = create_test_file(&["match", "match", "match", "match"]);
-        let mut options = SearchOptions::default();
-        options.max_results = Some(2);
+        let options = SearchOptions {
+            max_results: Some(2),
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "match", &options).unwrap();
         assert_eq!(results.len(), 2);
@@ -250,9 +260,11 @@ mod tests {
     #[test]
     fn test_context_lines() {
         let file = create_test_file(&["line 1", "line 2", "MATCH", "line 4", "line 5"]);
-        let mut options = SearchOptions::default();
-        options.context_before = Some(1);
-        options.context_after = Some(1);
+        let options = SearchOptions {
+            context_before: Some(1),
+            context_after: Some(1),
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "MATCH", &options).unwrap();
         assert_eq!(results.len(), 1);
@@ -270,8 +282,10 @@ mod tests {
             "INFO: continuing",
             "ERROR: crashed",
         ]);
-        let mut options = SearchOptions::default();
-        options.level_filter = Some("ERROR".to_string());
+        let options = SearchOptions {
+            level_filter: Some("ERROR".to_string()),
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), ":", &options).unwrap();
         assert_eq!(results.len(), 2);
@@ -282,8 +296,10 @@ mod tests {
     #[test]
     fn test_invert_match() {
         let file = create_test_file(&["error", "info", "warning", "error"]);
-        let mut options = SearchOptions::default();
-        options.invert_match = true;
+        let options = SearchOptions {
+            invert_match: true,
+            ..Default::default()
+        };
 
         let results = search_file(file.path(), "error", &options).unwrap();
         assert_eq!(results.len(), 2);

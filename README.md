@@ -35,9 +35,9 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 
 **If you like Logly, please give it a star ⭐ on GitHub! It really helps!**
 
-> ⚠️ **Active Development**: Logly is actively developed. Performance continues to improve with each release. also if you find a bug or a missing feature, please report it on GitHub.
+> ⚠️ **Active Development**: Logly is a newer project and actively developed. Performance continues to improve with each release. also if you find a bug or a missing feature, please report it on GitHub. also Logly is not Production Ready yet :)
 
-> NOTE: The Main Branch Contains the latest features and improvements for upcoming releases. For stable production use, consider using the latest tagged release. because you may find an non existing feature or a bug in older releases.
+> 📍 NOTE: The Main Branch Contains the latest features and improvements for upcoming releases. For stable production use, consider using the latest tagged release. because you may find an non existing feature or a bug in older releases.
 
 ### 🎯 Why Logly?
 

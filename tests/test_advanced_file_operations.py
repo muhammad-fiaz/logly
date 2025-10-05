@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-import time
 from pathlib import Path
 
 import pytest
@@ -161,7 +160,7 @@ class TestFileOperations:
         """Test deleting all log files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             files = [Path(tmpdir) / f"file{i}.log" for i in range(3)]
-            sinks = [logger.add(str(f)) for f in files]
+            _ = [logger.add(str(f)) for f in files]
 
             logger.info("Test message")
             logger.complete()
@@ -282,7 +281,7 @@ class TestFileOperations:
         """Test creating log files in nested directories."""
         with tempfile.TemporaryDirectory() as tmpdir:
             nested_path = Path(tmpdir) / "logs" / "app" / "debug.log"
-            sink_id = logger.add(str(nested_path))
+            _ = logger.add(str(nested_path))
 
             logger.info("Test in nested directory")
             logger.complete()
@@ -299,7 +298,7 @@ class TestFileHandlingEdgeCases:
         """Test log files with special characters in name."""
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = Path(tmpdir) / "test-log_2024.log"
-            sink_id = logger.add(str(log_file))
+            _ = logger.add(str(log_file))
 
             logger.info("Special filename test")
             logger.complete()
@@ -325,7 +324,7 @@ class TestFileHandlingEdgeCases:
             # Create a reasonably long filename (not exceeding OS limits)
             long_name = "a" * 100 + ".log"
             log_file = Path(tmpdir) / long_name
-            sink_id = logger.add(str(log_file))
+            _ = logger.add(str(log_file))
 
             logger.info("Long filename test")
             logger.complete()
@@ -340,7 +339,7 @@ class TestFileHandlingEdgeCases:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = Path(tmpdir) / "readonly.log"
-            sink_id = logger.add(str(log_file))
+            _ = logger.add(str(log_file))
 
             logger.info("First write")
             logger.complete()

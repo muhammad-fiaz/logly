@@ -641,23 +641,25 @@ def test_per_sink_format_with_filters(tmp_path: Path):
     logger.configure(level="DEBUG", color=False, auto_sink=False)
 
     logger.debug("Debug message")  # Should not appear in either
-    logger.info("Info message")  # Should appear in info.log
-    logger.error("Error message", code=500)  # Should appear in error.log
+    logger.info("Info message")  # Should appear in info.log (and all higher levels)
+    logger.error(
+        "Error message", code=500
+    )  # Should appear in both logs (ERROR >= INFO and ERROR >= ERROR)
     logger.complete()
 
-    # Check info log
+    # Check info log (should have INFO and ERROR since filter_min_level="INFO" means INFO and above)
     info_content = read_log(info_log)
     assert "INFO: Info message" in info_content
     assert "Debug message" not in info_content
-    assert "Error message" not in info_content
+    assert "ERROR: Error message" in info_content  # ERROR is >= INFO
 
-    # Check error log
+    # Check error log (should only have ERROR since filter_min_level="ERROR")
     error_content = read_log(error_log)
     assert "ERROR -" in error_content
     assert "Error message" in error_content
     assert "code=500" in error_content
     assert "Debug message" not in error_content
-    assert "Info message" not in error_content
+    assert "Info message" not in error_content  # INFO is < ERROR
 
 
 def test_per_sink_format_filename_lineno_placeholders(tmp_path: Path):

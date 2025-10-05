@@ -97,13 +97,14 @@ class TestAutoSinkLevels:
         logger.error("Error as JSON")
         logger.complete()
 
-        # Verify files exist
-        assert debug_log.exists()
+        # Verify files exist (debug log will have date suffix with date_enabled=True)
+        debug_files = list(tmp_path.glob("debug_rotating*.log"))
+        assert len(debug_files) > 0, "Debug log file should exist with date suffix"
         assert warning_log.exists()
         assert error_log.exists()
 
         # Verify content
-        assert "Debug with rotation" in debug_log.read_text()
+        assert "Debug with rotation" in debug_files[0].read_text()
         assert "Warning with size limit" in warning_log.read_text()
 
         # JSON output should contain JSON structure
@@ -121,12 +122,12 @@ class TestAutoSinkLevels:
             auto_sink_levels={
                 "INFO": {
                     "path": str(info_log),
-                    "filter_module": "__main__",
+                    "filter_module": "tests.test_auto_sink_levels",
                     "format": "{time} | {level} | {message}",
                 },
                 "ERROR": {
                     "path": str(error_log),
-                    "filter_module": "__main__",
+                    "filter_module": "tests.test_auto_sink_levels",
                 },
             },
         )

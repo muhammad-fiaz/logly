@@ -322,9 +322,11 @@ impl PyLogger {
             s.callbacks.clear();
         });
 
+        // Configure with defaults but don't auto-create console sink
+        // This allows tests to start with a clean state
         self.configure(
             py, "INFO", false, None, false, false, true, true, true, false, false, false, None,
-            None, None, None, None, true, None,
+            None, None, None, None, false, None,
         )
     }
 

@@ -365,7 +365,35 @@ Logly supports 7 log levels (from lowest to highest):
 | **SUCCESS** | `logger.success()` | Success messages | Operation completed |
 | **WARNING** | `logger.warning()` | Warning messages | Deprecated API usage |
 | **ERROR** | `logger.error()` | Error messages | Failed operations |
+| **FAIL** | `logger.fail()` | Test failures | Failed test cases |
 | **CRITICAL** | `logger.critical()` | Critical errors | System failures |
+
+!!! info "Level Filtering & Hierarchy"
+    When configuring sinks with `filter_min_level`, logs are filtered by **threshold**: the specified level **and all levels above** it are accepted.
+    
+    **Level Hierarchy** (lowest to highest severity):
+    ```
+    TRACE < DEBUG < INFO/SUCCESS < WARNING < ERROR/FAIL/CRITICAL
+    ```
+    
+    **Important Notes:**
+    
+    - **CRITICAL**, **FAIL**, and **ERROR** are equivalent (all map to ERROR level internally)
+    - **SUCCESS** is equivalent to **INFO**  
+    - Setting `filter_min_level="INFO"` accepts: INFO, SUCCESS, WARNING, ERROR, FAIL, CRITICAL
+    - Setting `filter_min_level="INFO"` rejects: TRACE, DEBUG
+    - Setting `filter_min_level="ERROR"` accepts: ERROR, FAIL, CRITICAL only
+    
+    **Example:**
+    ```python
+    # This sink captures INFO and everything more severe
+    logger.add("app.log", filter_min_level="INFO")
+    logger.debug("Not logged")     # ✗ Rejected (DEBUG < INFO)
+    logger.info("Logged")          # ✓ Accepted (INFO >= INFO)  
+    logger.warning("Logged")       # ✓ Accepted (WARNING > INFO)
+    logger.error("Logged")         # ✓ Accepted (ERROR > INFO)
+    logger.critical("Logged")      # ✓ Accepted (CRITICAL > INFO)
+    ```
 
 ```python
 # Examples
