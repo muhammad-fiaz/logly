@@ -1,6 +1,5 @@
-// Test module for Logly file operations features
-// These tests verify the core functionality of new file operation methods
-
+mod logger_tests;
+mod search;
 mod txt_format_tests;
 
 #[cfg(test)]

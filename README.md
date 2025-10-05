@@ -33,7 +33,11 @@
 
 Built with a modular Rust backend using PyO3/Maturin, Logly provides fast logging while maintaining memory safety and thread safety through Rust's ownership system.
 
-> ⚠️ **Active Development**: Logly is actively developed. Performance continues to improve with each release. 
+**If you like Logly, please give it a star ⭐ on GitHub! It really helps!**
+
+> ⚠️ **Active Development**: Logly is actively developed. Performance continues to improve with each release. also if you find a bug or a missing feature, please report it on GitHub.
+
+> NOTE: The Main Branch Contains the latest features and improvements for upcoming releases. For stable production use, consider using the latest tagged release. because you may find an non existing feature or a bug in older releases.
 
 ### 🎯 Why Logly?
 
@@ -51,6 +55,7 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 - 🔄 **Async Logging**: Background thread writing with configurable buffering
 - 📋 **Structured JSON**: Native JSON support with custom fields and pretty printing
 - 🎛️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
+- ⚡ **Auto-Sink Levels**: Automatic file creation and management for each log level
 - 🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
 - 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
 - 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
@@ -86,11 +91,34 @@ For detailed installation instructions, see the [Installation Guide](https://muh
 
 ## Quick Start
 
+**NEW in v0.1.5:** Start logging immediately - no configuration needed!
+
 ```python
 from logly import logger
 
-# Add console output
-logger.add("console")
+# That's it! Start logging immediately
+logger.info("Hello, Logly!")         # ✅ Works right away
+logger.warning("Super simple!")       # ⚠️ No configure() needed
+logger.error("Just import and log!") # ❌ Auto-configured on import
+
+# Logs appear automatically because:
+# - Auto-configure runs when you import logger
+# - Console sink is created automatically (auto_sink=True)
+# - Logging is enabled globally (console=True)
+```
+
+### Advanced Usage
+
+```python
+from logly import logger
+
+# Optional: Customize configuration
+logger.configure(
+    level="DEBUG",           # Set minimum log level
+    color=True,              # Enable colored output
+    console=True,            # Enable console output (default: True)
+    auto_sink=True           # Auto-create console sink (default: True)
+)
 
 # Add file output with rotation
 logger.add(
@@ -100,6 +128,19 @@ logger.add(
     date_enabled=True,       # Add date to filename
     async_write=True         # Async writing for performance
 )
+
+# **NEW in v0.1.6:** Auto-Sink Levels - Automatic file management
+logger.configure(
+    level="DEBUG",
+    color=True,
+    auto_sink=True,  # Console output
+    auto_sink_levels={
+        "DEBUG": "logs/debug.log",    # All logs (DEBUG and above)
+        "INFO": "logs/info.log",      # INFO and above
+        "ERROR": "logs/error.log",    # ERROR and above
+    }
+)
+# ✅ Three files created automatically with level filtering!
 
 # Configure global settings
 logger.configure(

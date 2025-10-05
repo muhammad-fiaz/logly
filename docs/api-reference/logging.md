@@ -12,17 +12,18 @@ Methods for emitting log messages at different severity levels.
 
 ## Overview
 
-Logly supports 7 log levels (from lowest to highest):
+Logly supports 8 log levels (from lowest to highest):
 
-| Level | Method | Color | Use Case |
-|-------|--------|-------|----------|
-| **TRACE** | `logger.trace()` | Gray | Detailed debugging, function entry/exit |
-| **DEBUG** | `logger.debug()` | Cyan | Development debugging, variable inspection |
+| Level | Method | Default Color | Use Case |
+|-------|--------|---------------|----------|
+| **TRACE** | `logger.trace()` | Cyan | Detailed debugging, function entry/exit |
+| **DEBUG** | `logger.debug()` | Blue | Development debugging, variable inspection |
 | **INFO** | `logger.info()` | White | General information, application state |
 | **SUCCESS** | `logger.success()` | Green | Successful operations |
 | **WARNING** | `logger.warning()` | Yellow | Warning messages, deprecations |
 | **ERROR** | `logger.error()` | Red | Error conditions, failed operations |
-| **CRITICAL** | `logger.critical()` | Bold Red | Critical errors, system failures |
+| **CRITICAL** | `logger.critical()` | Bright Red | Critical errors, system failures |
+| **FAIL** | `logger.fail()` | Magenta | Operation failures (NEW in v0.1.5) |
 
 All logging methods support:
 - ✅ Structured fields (kwargs become JSON fields)
@@ -167,6 +168,51 @@ logger.critical("System out of memory", available_mb=10, required_mb=500)
 
 ---
 
+## logger.fail()
+
+**NEW in v0.1.5**: Log at FAIL level for operation failures distinct from errors.
+
+### Signature
+
+```python
+logger.fail(message: str, **kwargs) -> None
+```
+
+### Example
+
+```python
+# Authentication failures
+logger.fail("Login failed", user="alice", attempts=3, reason="invalid_password")
+
+# Payment/transaction failures
+logger.fail("Payment declined", card_last4="1234", reason="insufficient_funds")
+
+# Validation failures
+logger.fail("Validation failed", field="email", value="invalid@", rule="email_format")
+
+# API/operation failures
+logger.fail("API request failed", endpoint="/api/users", status=403, reason="forbidden")
+```
+
+### Use Cases
+- Authentication/authorization failures
+- Payment or transaction failures
+- Validation failures
+- Operation timeouts
+- Resource access denials
+- Business logic failures
+
+### FAIL vs ERROR
+
+- **FAIL**: Use for **expected** operation failures (auth, validation, business rules)
+- **ERROR**: Use for **unexpected** technical errors (exceptions, crashes, bugs)
+
+### Default Color
+- Displayed in **magenta** to visually distinguish from ERROR (red)
+- Maps to ERROR level internally for filtering purposes
+
+---
+
 ## logger.log()
 
 Log at a custom or runtime-determined level.
@@ -178,7 +224,7 @@ logger.log(level: str, message: str, **kwargs) -> None
 ```
 
 ### Parameters
-- `level` (str): Log level name (e.g., `"INFO"`, `"ERROR"`)
+- `level` (str): Log level name (e.g., `"INFO"`, `"ERROR"`, `"FAIL"`)
 - `message` (str): Log message
 - `**kwargs`: Additional context fields
 
@@ -188,6 +234,9 @@ logger.log(level: str, message: str, **kwargs) -> None
 # Runtime level determination
 log_level = "DEBUG" if dev_mode else "INFO"
 logger.log(log_level, "Processing data", records=1000)
+
+# Use FAIL level dynamically
+logger.log("FAIL", "Operation failed", reason="timeout")
 
 # Custom level aliases (mapped to existing levels)
 logger.level("NOTICE", "INFO")

@@ -67,6 +67,22 @@ Tests are organized in the `tests/` directory:
 - `test_logger_features.py` - Core logging features
 - `test_performance_features.py` - Performance and edge cases
 
+### Rust Tests
+
+Logly includes comprehensive Rust unit tests for the backend:
+
+```bash
+# Run all Rust tests
+cargo test --lib
+
+# Run Rust tests with output
+cargo test --lib -- --nocapture
+
+# Run specific Rust test module
+cargo test --lib backend::logging::tests
+```
+
+
 ### Writing Tests
 
 When adding new features, ensure comprehensive test coverage:
@@ -307,7 +323,7 @@ uv run python bench/benchmark_matrix.py
 For maintainers:
 
 1. Update version in `Cargo.toml` and `pyproject.toml`
-2. Update `CHANGELOG.md`
+2. Update `CHANGELOG.md` but I use the release draft feature of GitHub
 3. Create git tag
 4. Build and publish to PyPI
 5. Deploy documentation

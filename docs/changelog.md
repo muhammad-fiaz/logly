@@ -6,8 +6,6 @@ keywords: python, logging, changelog, releases, updates, version, history, logly
 
 # Changelog
 
-## Release Notes
-
 For detailed changelogs, release notes, and version history, please refer to the [**GitHub Releases**](https://github.com/muhammad-fiaz/logly/releases) page.
 
 Each release includes:
@@ -19,8 +17,6 @@ Each release includes:
 - 📚 Documentation updates
 
 [**View All Releases →**](https://github.com/muhammad-fiaz/logly/releases)
-
----
 
 
 ## Release History
@@ -73,7 +69,7 @@ logger.info("Hello")
 
 ### From Loguru
 
-Logly API is inspired by Loguru but built for performance:
+Logly API is inspired by Loguru but built for performance and features:
 
 ```python
 # Before (loguru)

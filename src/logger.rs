@@ -1,11 +1,11 @@
 use crate::backend;
 use crate::config::state::with_state;
-use crate::utils::error::{validate_level, validate_rotation, validate_size_limit};
+use crate::utils::error::{LoglyError, validate_level, validate_rotation, validate_size_limit};
 use crate::utils::levels::to_level;
 use crate::utils::version_check;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 use std::collections::HashMap;
 use tracing::Level;
 
@@ -54,13 +54,17 @@ impl PyLogger {
     /// * `color_levels` - Optional dictionary mapping level names to color enable/disable
     /// * `storage_levels` - Optional dictionary mapping level names to file storage enable/disable
     /// * `color_callback` - Optional Python callable for custom color formatting with signature (level, text) -> colored_text
+    /// * `auto_sink` - Automatically create a console sink if no sinks exist (default: true)
+    /// * `auto_sink_levels` - Dictionary mapping log levels to file paths for automatic sink creation.
+    ///                        Handled in Python layer, passed through for validation only.
     ///
     /// # Returns
     /// PyResult indicating success or error
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, show_filename=false, show_lineno=false, console_levels=None, time_levels=None, color_levels=None, storage_levels=None, color_callback=None))]
+    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, show_filename=false, show_lineno=false, console_levels=None, time_levels=None, color_levels=None, storage_levels=None, color_callback=None, auto_sink=true, auto_sink_levels=None))]
     pub fn configure(
         &self,
+        py: Python<'_>,
         level: &str,
         color: bool,
         level_colors: Option<HashMap<String, String>>,
@@ -77,6 +81,8 @@ impl PyLogger {
         color_levels: Option<HashMap<String, bool>>,
         storage_levels: Option<HashMap<String, bool>>,
         color_callback: Option<Py<PyAny>>,
+        auto_sink: bool,
+        auto_sink_levels: Option<Py<PyAny>>,
     ) -> PyResult<()> {
         // Validate log level parameter
         validate_level(level)?;
@@ -103,7 +109,201 @@ impl PyLogger {
             storage_lvls,
             colors,
             color_callback,
-        )
+        )?;
+
+        // Process auto_sink_levels if provided
+        if let Some(auto_levels) = auto_sink_levels {
+            let dict = auto_levels
+                .downcast_bound::<pyo3::types::PyDict>(py)
+                .map_err(|_| {
+                    LoglyError::AutoSinkLevels("auto_sink_levels must be a dictionary".to_string())
+                })?;
+
+            for (key, value) in dict.iter() {
+                let sink_level = key.extract::<String>().map_err(|_| {
+                    LoglyError::AutoSinkLevels(
+                        "auto_sink_levels keys must be strings (log level names)".to_string(),
+                    )
+                })?;
+
+                // Validate the log level
+                validate_level(&sink_level).map_err(|_| {
+                    LoglyError::AutoSinkLevels(format!(
+                        "Invalid log level '{}' in auto_sink_levels",
+                        sink_level
+                    ))
+                })?;
+
+                // Process value (either string path or dict config)
+                if let Ok(path) = value.extract::<String>() {
+                    // Simple string path: validate and create sink
+                    if path.trim().is_empty() {
+                        return Err(LoglyError::AutoSinkLevels(format!(
+                            "Empty path for level '{}' in auto_sink_levels",
+                            sink_level
+                        ))
+                        .into());
+                    }
+
+                    // Add sink with filter_min_level
+                    self.add(
+                        &path,
+                        None,
+                        None,
+                        Some(sink_level.clone()),
+                        None,
+                        None,
+                        true,
+                        8192,
+                        100,
+                        1000,
+                        None,
+                        false,
+                        None,
+                        None,
+                        false,
+                    )?;
+                } else if let Ok(config_dict) = value.downcast::<pyo3::types::PyDict>() {
+                    // Advanced dict configuration
+                    let path = config_dict.get_item("path")
+                            .map_err(|_| LoglyError::AutoSinkLevels(
+                                format!("Missing 'path' in auto_sink_levels configuration for level '{}'", sink_level)
+                            ))?
+                            .ok_or_else(|| LoglyError::AutoSinkLevels(
+                                format!("Missing 'path' in auto_sink_levels configuration for level '{}'", sink_level)
+                            ))?
+                            .extract::<String>()
+                            .map_err(|_| LoglyError::AutoSinkLevels(
+                                format!("'path' must be a string in auto_sink_levels configuration for level '{}'", sink_level)
+                            ))?;
+
+                    if path.trim().is_empty() {
+                        return Err(LoglyError::AutoSinkLevels(format!(
+                            "Empty path for level '{}' in auto_sink_levels",
+                            sink_level
+                        ))
+                        .into());
+                    }
+
+                    // Extract optional parameters with defaults
+                    let rotation = config_dict
+                        .get_item("rotation")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let size_limit = config_dict
+                        .get_item("size_limit")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let filter_module = config_dict
+                        .get_item("filter_module")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let filter_function = config_dict
+                        .get_item("filter_function")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let async_write = config_dict
+                        .get_item("async_write")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<bool>().ok())
+                        .unwrap_or(true);
+                    let buffer_size = config_dict
+                        .get_item("buffer_size")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<usize>().ok())
+                        .unwrap_or(8192);
+                    let flush_interval = config_dict
+                        .get_item("flush_interval")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<u64>().ok())
+                        .unwrap_or(100);
+                    let max_buffered_lines = config_dict
+                        .get_item("max_buffered_lines")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<usize>().ok())
+                        .unwrap_or(1000);
+                    let date_style = config_dict
+                        .get_item("date_style")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let date_enabled = config_dict
+                        .get_item("date_enabled")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<bool>().ok())
+                        .unwrap_or(false);
+                    let retention = config_dict
+                        .get_item("retention")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<usize>().ok());
+                    let format = config_dict
+                        .get_item("format")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<String>().ok());
+                    let json_output = config_dict
+                        .get_item("json")
+                        .ok()
+                        .flatten()
+                        .and_then(|v| v.extract::<bool>().ok())
+                        .unwrap_or(false);
+
+                    // Add sink with all configuration
+                    self.add(
+                        &path,
+                        rotation.as_deref(),
+                        size_limit.as_deref(),
+                        Some(sink_level.clone()),
+                        filter_module,
+                        filter_function,
+                        async_write,
+                        buffer_size,
+                        flush_interval,
+                        max_buffered_lines,
+                        date_style,
+                        date_enabled,
+                        retention,
+                        format,
+                        json_output,
+                    )?;
+                } else {
+                    return Err(LoglyError::AutoSinkLevels(format!(
+                        "Invalid configuration type for level '{}' in auto_sink_levels. \
+                                Expected str (file path) or dict (configuration)",
+                        sink_level
+                    ))
+                    .into());
+                }
+            }
+        }
+
+        // Auto-create console sink if enabled and no sinks exist
+        if auto_sink {
+            let sink_count = with_state(|s| s.sinks.len());
+            if sink_count == 0 {
+                // Check if there's already a console sink to avoid duplicates
+                let has_console = with_state(|s| s.sinks.values().any(|sink| sink.path.is_none()));
+
+                if !has_console {
+                    self.add(
+                        "console", None, None, None, None, None, false, 8192, 1000, 1000, None,
+                        false, None, None, false,
+                    )?;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Reset logger configuration to defaults.
@@ -113,7 +313,7 @@ impl PyLogger {
     ///
     /// # Returns
     /// PyResult indicating success or error
-    pub fn reset(&self) -> PyResult<()> {
+    pub fn reset(&self, py: Python<'_>) -> PyResult<()> {
         // Clear all sinks and related state
         with_state(|s| {
             s.sinks.clear();
@@ -123,8 +323,8 @@ impl PyLogger {
         });
 
         self.configure(
-            "INFO", false, None, false, false, true, true, true, false, false, false, None, None,
-            None, None, None,
+            py, "INFO", false, None, false, false, true, true, true, false, false, false, None,
+            None, None, None, None, true, None,
         )
     }
 
@@ -188,6 +388,42 @@ impl PyLogger {
             validate_size_limit(sl)?;
         }
 
+        // Check for duplicate sinks and warn
+        let is_console = sink == "console";
+        let sink_path = if is_console {
+            None
+        } else {
+            Some(sink.to_string())
+        };
+
+        let has_duplicate = with_state(|s| {
+            s.sinks
+                .values()
+                .any(|existing_sink| existing_sink.path == sink_path)
+        });
+
+        if has_duplicate {
+            Python::attach(|py| {
+                let warnings = py.import("warnings")?;
+                if is_console {
+                    warnings.call_method1(
+                        "warn",
+                        (
+                            "A console sink already exists. Adding another console sink may result in duplicate log output.",
+                        ),
+                    )?;
+                } else {
+                    warnings.call_method1(
+                        "warn",
+                        (
+                            format!("A sink for path '{}' already exists. Adding another sink with the same path may cause conflicts.", sink),
+                        ),
+                    )?;
+                }
+                Ok::<_, PyErr>(())
+            })?;
+        }
+
         let handler_id = with_state(|s| {
             let id = s.next_handler_id;
             s.next_handler_id += 1;
@@ -209,11 +445,7 @@ impl PyLogger {
 
             let sink_config = SinkConfig {
                 id,
-                path: if sink == "console" {
-                    None
-                } else {
-                    Some(sink.to_string())
-                },
+                path: sink_path.clone(),
                 rotation: rotation_policy,
                 compression: crate::config::state::Compression::None, // Default for now
                 min_level: filter_min_level
@@ -236,6 +468,7 @@ impl PyLogger {
                     format
                 },
                 json,
+                enabled: true, // Sinks are enabled by default
             };
 
             s.sinks.insert(id, sink_config);
@@ -470,6 +703,9 @@ impl PyLogger {
                     map.insert("retention".to_string(), retention.to_string());
                 }
 
+                // Enabled status
+                map.insert("enabled".to_string(), sink.enabled.to_string());
+
                 map
             })
         });
@@ -665,6 +901,19 @@ impl PyLogger {
     #[pyo3(signature = (msg, **kwargs))]
     pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
         backend::log_message_with_level_override(Level::ERROR, msg, kwargs, None, Some("CRITICAL"));
+    }
+
+    /// Log a message at FAIL level (mapped to ERROR in tracing).
+    ///
+    /// Displays as [FAIL] while using ERROR level internally for filtering.
+    /// Use this for operation failures that are different from errors.
+    ///
+    /// # Arguments
+    /// * `msg` - Log message
+    /// * `kwargs` - Optional key-value context fields
+    #[pyo3(signature = (msg, **kwargs))]
+    pub fn fail(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        backend::log_message_with_level_override(Level::ERROR, msg, kwargs, None, Some("FAIL"));
     }
 
     /// Log a message at a custom or aliased level.
@@ -1227,5 +1476,229 @@ impl PyLogger {
     /// in production code. It does not reset the global tracing subscriber.
     pub fn _reset_for_tests(&self) {
         crate::config::state::reset_state();
+    }
+
+    /// Enable a specific sink by its handler ID.
+    ///
+    /// When a sink is enabled, log messages will be written to it.
+    /// Sinks are enabled by default when created.
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink to enable
+    ///
+    /// # Returns
+    /// `true` if the sink was found and enabled, `false` if not found
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// sink_id = logger.add("app.log")
+    /// logger.disable_sink(sink_id)
+    /// logger.info("Not logged")  # Sink disabled
+    /// logger.enable_sink(sink_id)
+    /// logger.info("Logged")  # Sink re-enabled
+    /// ```
+    pub fn enable_sink(&self, sink_id: usize) -> PyResult<bool> {
+        let enabled = with_state(|s| {
+            if let Some(sink) = s.sinks.get_mut(&sink_id) {
+                sink.enabled = true;
+                true
+            } else {
+                false
+            }
+        });
+        Ok(enabled)
+    }
+
+    /// Disable a specific sink by its handler ID.
+    ///
+    /// When a sink is disabled, log messages will not be written to it,
+    /// but the sink remains registered and can be re-enabled later.
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink to disable
+    ///
+    /// # Returns
+    /// `true` if the sink was found and disabled, `false` if not found
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// sink_id = logger.add("app.log")
+    /// logger.disable_sink(sink_id)
+    /// logger.info("Not logged")  # Sink disabled
+    /// ```
+    pub fn disable_sink(&self, sink_id: usize) -> PyResult<bool> {
+        let disabled = with_state(|s| {
+            if let Some(sink) = s.sinks.get_mut(&sink_id) {
+                sink.enabled = false;
+                true
+            } else {
+                false
+            }
+        });
+        Ok(disabled)
+    }
+
+    /// Check if a specific sink is enabled.
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink to check
+    ///
+    /// # Returns
+    /// `Some(true)` if enabled, `Some(false)` if disabled, `None` if not found
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    /// sink_id = logger.add("app.log")
+    /// enabled = logger.is_sink_enabled(sink_id)  # Returns True
+    /// logger.disable_sink(sink_id)
+    /// enabled = logger.is_sink_enabled(sink_id)  # Returns False
+    /// ```
+    pub fn is_sink_enabled(&self, sink_id: usize) -> PyResult<Option<bool>> {
+        let enabled = with_state(|s| s.sinks.get(&sink_id).map(|sink| sink.enabled));
+        Ok(enabled)
+    }
+
+    /// Search a sink's log file for a pattern with advanced options.
+    ///
+    /// This is the Rust-powered search implementation providing high performance
+    /// and advanced features like regex, filtering, and context lines.
+    ///
+    /// # Arguments
+    /// * `sink_id` - The handler ID of the sink whose log file to search
+    /// * `pattern` - The string or regex pattern to search for
+    /// * `case_sensitive` - Perform case-sensitive matching (default: false)
+    /// * `first_only` - Return only the first match (default: false)
+    /// * `use_regex` - Treat pattern as regular expression (default: false)
+    /// * `start_line` - Start searching from this line number (1-indexed)
+    /// * `end_line` - Stop searching at this line number (inclusive)
+    /// * `max_results` - Maximum number of results to return
+    /// * `context_before` - Number of context lines before each match
+    /// * `context_after` - Number of context lines after each match
+    /// * `level_filter` - Only search lines containing this log level
+    /// * `invert_match` - Return lines that DON'T match (like grep -v)
+    ///
+    /// # Returns
+    /// List of dictionaries with:
+    /// - `line`: Line number (1-indexed)
+    /// - `content`: Full line content
+    /// - `match`: The matched text
+    /// - `context_before`: Lines before match (if requested)
+    /// - `context_after`: Lines after match (if requested)
+    ///
+    /// Returns None if sink not found or file doesn't exist.
+    ///
+    /// # Example
+    /// ```python
+    /// from logly import logger
+    ///
+    /// sink_id = logger.add("app.log")
+    /// logger.error("Connection failed")
+    /// logger.info("Retrying...")
+    /// logger.complete()
+    ///
+    /// # Basic search
+    /// results = logger.search_log(sink_id, "error")
+    ///
+    /// # Case-sensitive search
+    /// results = logger.search_log(sink_id, "ERROR", case_sensitive=True)
+    ///
+    /// # Regex search for error codes
+    /// results = logger.search_log(sink_id, r"error:\s+\d+", use_regex=True)
+    ///
+    /// # Search with context lines
+    /// results = logger.search_log(sink_id, "failed", context_before=2, context_after=2)
+    ///
+    /// # Filter by log level
+    /// results = logger.search_log(sink_id, "timeout", level_filter="ERROR")
+    ///
+    /// # Find lines that don't contain pattern
+    /// results = logger.search_log(sink_id, "success", invert_match=True)
+    /// ```
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (
+        sink_id,
+        pattern,
+        *,
+        case_sensitive=false,
+        first_only=false,
+        use_regex=false,
+        start_line=None,
+        end_line=None,
+        max_results=None,
+        context_before=None,
+        context_after=None,
+        level_filter=None,
+        invert_match=false
+    ))]
+    pub fn search_log<'py>(
+        &self,
+        py: Python<'py>,
+        sink_id: usize,
+        pattern: &str,
+        case_sensitive: bool,
+        first_only: bool,
+        use_regex: bool,
+        start_line: Option<usize>,
+        end_line: Option<usize>,
+        max_results: Option<usize>,
+        context_before: Option<usize>,
+        context_after: Option<usize>,
+        level_filter: Option<String>,
+        invert_match: bool,
+    ) -> PyResult<Option<Bound<'py, PyList>>> {
+        // Flush pending writes first
+        self.complete();
+
+        // Get file path from sink
+        let file_path = with_state(|s| s.sinks.get(&sink_id).and_then(|sink| sink.path.clone()));
+
+        let Some(path) = file_path else {
+            return Ok(None); // Sink not found or no file path
+        };
+
+        // Build search options
+        let options = backend::SearchOptions {
+            case_sensitive,
+            first_only,
+            use_regex,
+            start_line,
+            end_line,
+            max_results,
+            context_before,
+            context_after,
+            level_filter,
+            invert_match,
+        };
+
+        // Perform search in Rust
+        match backend::search_file(&path, pattern, &options) {
+            Ok(results) => {
+                // Convert Rust results to Python list of dicts
+                let py_list = PyList::empty(py);
+
+                for result in results {
+                    let dict = PyDict::new(py);
+                    dict.set_item("line", result.line_number)?;
+                    dict.set_item("content", result.content)?;
+                    dict.set_item("match", result.matched_text)?;
+
+                    if !result.context_before.is_empty() {
+                        dict.set_item("context_before", result.context_before)?;
+                    }
+
+                    if !result.context_after.is_empty() {
+                        dict.set_item("context_after", result.context_after)?;
+                    }
+
+                    py_list.append(dict)?;
+                }
+
+                Ok(Some(py_list))
+            }
+            Err(_) => Ok(None), // File read error
+        }
     }
 }

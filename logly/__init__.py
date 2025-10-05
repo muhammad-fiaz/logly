@@ -28,11 +28,13 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
     the high-performance Rust implementation for optimal logging performance.
     """
 
-    def __init__(self, inner: PyLogger) -> None:
+    def __init__(self, inner: PyLogger, auto_configure: bool = True) -> None:
         """Initialize the logger proxy with a PyLogger instance.
 
         Args:
             inner: The underlying PyLogger instance from the Rust backend.
+            auto_configure: Automatically configure with defaults for immediate use (default: True).
+                          This ensures users can start logging immediately without calling configure().
         """
         self._inner = inner
         # bound context values attached to this proxy
@@ -41,6 +43,13 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._enabled: bool = True
         # custom level name mappings
         self._levels: dict[str, str] = {}
+        # track if we auto-created a console sink (for cleanup when auto_sink=False)
+        self._auto_created_console_sink: int | None = None
+
+        # Auto-configure on initialization so users can log immediately
+        # This creates the default console sink (auto_sink=True by default)
+        if auto_configure:
+            self.configure()
 
     # configuration and sinks
     def add(  # pylint: disable=too-many-arguments
@@ -70,7 +79,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             size_limit: Size-based rotation limit (e.g., "5KB", "10MB", "1GB").
             retention: Number of rotated files to keep. Older files are deleted.
             filter_min_level: Minimum log level for this sink. Options: "TRACE", "DEBUG",
-                            "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL".
+                            "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL", "FAIL".
             filter_module: Only log messages from this module name.
             filter_function: Only log messages from this function name.
             async_write: Enable asynchronous writing for better performance (default: True).
@@ -151,13 +160,25 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         time_levels: dict[str, bool] | None = None,
         color_levels: dict[str, bool] | None = None,
         storage_levels: dict[str, bool] | None = None,
-        color_callback: Callable | None = None,
+        color_callback: Callable[[str], str] | None = None,
+        auto_sink: bool = True,
+        auto_sink_levels: dict[str, str | dict[str, object]] | None = None,
     ) -> None:
         """Configure global logger settings.
 
         Args:
             level: Default minimum log level. Options: "TRACE", "DEBUG", "INFO",
-                  "SUCCESS", "WARNING", "ERROR", "CRITICAL".
+                  "SUCCESS", "WARNING", "ERROR", "CRITICAL", "FAIL".
+            color: Enable colored output for console logs. When enabled without
+                  custom level_colors, default colors are applied:
+                  - TRACE: Cyan
+                  - DEBUG: Blue
+                  - INFO: White
+                  - SUCCESS: Green
+                  - WARNING: Yellow
+                  - ERROR: Red
+                  - CRITICAL: Bright Red
+                  - FAIL: Magenta
             color: Enable colored output for console logs (default: True). When False,
                   disables all coloring. When True, uses built-in ANSI colors or custom
                   color callback if provided.
@@ -169,7 +190,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
                                     "CYAN", "WHITE", "BRIGHT_BLACK", "BRIGHT_RED", etc.
             json: Output logs in JSON format (default: False).
             pretty_json: Output logs in pretty-printed JSON format (default: False).
-            console: Enable console output (default: True).
+            console: Enable all logging output globally (default: True). When set to False,
+                    disables ALL logging across all sinks (console and file), similar to logger.disable().
+                    This provides a global kill-switch for logging output.
             show_time: Show timestamps in console output (default: True).
             show_module: Show module information in console output (default: True).
             show_function: Show function information in console output (default: True).
@@ -187,11 +210,31 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
                            If provided, this function is used instead of built-in ANSI coloring.
                            Allows integration with external color libraries like Rich, colorama, etc.
                            When provided, level_colors parameter is ignored.
+            auto_sink: Automatically create a console sink if no sinks exist (default: True).
+                      When True and no sinks have been added, a console sink is created automatically.
+                      This ensures logs are displayed even if you forget to add sinks.
+                      Set to False if you want full manual control over sinks.
+                      WARNING: If auto_sink=True and you later try to add a console sink manually,
+                      you'll receive a warning about duplicate console sinks.
+            auto_sink_levels: **NEW in v0.1.6**: Automatically create sinks for different log levels.
+                             Maps level names to file paths (str) or configuration dicts.
+                             Each sink automatically filters logs by the specified level and above.
+                             Simple: {"INFO": "logs/info.log"}
+                             Advanced: {"INFO": {"path": "logs/info.log", "rotation": "daily"}}
+                             Supports all logger.add() options in dict form.
+                             Set to None to disable automatic level-based sink creation.
 
         Example:
             >>> from logly import logger
-            >>> # Configure with colored INFO level
+            >>> # Configure with colored INFO level and auto console sink
             >>> logger.configure(level="INFO", color=True)
+            >>> logger.info("Logs appear in console automatically!")
+            >>>
+            >>> # Configure without auto sink (manual sink management)
+            >>> logger.configure(level="DEBUG", auto_sink=False)
+            >>> logger.add("app.log")  # Must manually add sinks
+            >>> logger.info("This goes to file only")
+            >>>
             >>> # Configure with JSON output
             >>> logger.configure(level="DEBUG", json=True)
             >>> # Configure with custom colors using color names
@@ -216,7 +259,53 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             ...     reset = "\033[0m"
             ...     return f"{colors.get(level, '')}{text}{reset}"
             >>> logger.configure(level="INFO", color_callback=custom_color)
+            >>> # Configure with auto-sink levels (NEW in v0.1.6)
+            >>> logger.configure(
+            ...     level="DEBUG",
+            ...     auto_sink_levels={
+            ...         "DEBUG": "logs/debug.log",
+            ...         "INFO": "logs/info.log",
+            ...         "ERROR": "logs/error.log",
+            ...     }
+            ... )
+            >>> # Advanced auto-sink configuration
+            >>> logger.configure(
+            ...     level="INFO",
+            ...     auto_sink_levels={
+            ...         "INFO": {
+            ...             "path": "logs/info.log",
+            ...             "rotation": "daily",
+            ...             "retention": 7,
+            ...         },
+            ...         "ERROR": {
+            ...             "path": "logs/errors.json",
+            ...             "json": True,
+            ...             "async_write": True,
+            ...         },
+            ...     }
+            ... )
         """
+        # Set global enabled state based on console parameter
+        self._enabled = console
+
+        # auto_sink_levels validation and processing is handled in Rust
+        # The Rust layer will validate levels, paths, and configuration
+        # and automatically create the appropriate sinks
+
+        # If auto_sink=False is explicitly passed, remove any auto-created console sink
+        # This allows users to have full manual control over sinks
+        if not auto_sink and self._auto_created_console_sink is not None:
+            try:
+                self.remove(self._auto_created_console_sink)
+                self._auto_created_console_sink = None
+            except (ValueError, KeyError, RuntimeError):
+                # Sink might have already been removed, that's OK
+                pass
+
+        # Track if this configure() call will auto-create a console sink
+        # so we can remove it later if user calls configure(auto_sink=False)
+        sinks_before = len(self.list_sinks())
+
         self._inner.configure(
             level=level,
             color=color,
@@ -234,7 +323,16 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             color_levels=color_levels,
             storage_levels=storage_levels,
             color_callback=color_callback,
+            auto_sink=auto_sink,
+            auto_sink_levels=auto_sink_levels,
         )
+
+        # Track the auto-created console sink ID if one was just created
+        if auto_sink and sinks_before == 0 and len(self.list_sinks()) == 1:
+            # A sink was auto-created, track it
+            sinks = self.list_sinks()
+            if sinks:
+                self._auto_created_console_sink = sinks[0]
 
     def reset(self) -> None:
         """Reset logger configuration to default settings.
@@ -247,6 +345,7 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> logger.configure(level="DEBUG", console_levels={"INFO": False})
             >>> logger.reset()  # Back to defaults
         """
+        self._enabled = True  # Reset global enabled flag to default
         self._inner.reset()
 
     def remove(self, handler_id: int) -> bool:
@@ -837,6 +936,28 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         msg = message % args if args else message
         self._inner.critical(msg, **merged)
 
+    def fail(self, message: str, /, *args: object, **kwargs: object) -> None:
+        """Log a message at FAIL level (operation failures).
+
+        Use this for operation failures that are distinct from errors.
+        Displayed with magenta color by default to distinguish from ERROR.
+
+        Args:
+            message: The log message, optionally with % formatting placeholders.
+            *args: Arguments for % string formatting.
+            **kwargs: Additional context fields to attach to the log record.
+
+        Example:
+            >>> from logly import logger
+            >>> logger.fail("Authentication failed", user="alice", attempts=3)
+        """
+        if not self._enabled:
+            return
+        merged = {**self._bound, **kwargs}
+        merged = self._augment_with_callsite(merged)
+        msg = message % args if args else message
+        self._inner.fail(msg, **merged)
+
     def log(self, level: str, message: str, /, *args: object, **kwargs: object) -> None:
         """Log a message at a custom or aliased level.
 
@@ -894,10 +1015,12 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> # Original logger is unchanged
             >>> logger.info("Other message")  # No request context
         """
-        new = _LoggerProxy(self._inner)
+        # Skip auto_configure for bound loggers (they share the same Rust backend)
+        new = _LoggerProxy(self._inner, auto_configure=False)
         new._bound = {**self._bound, **kwargs}
         new._enabled = self._enabled
         new._levels = dict(self._levels)
+        new._auto_created_console_sink = self._auto_created_console_sink
         return new
 
     # context manager to temporarily attach values
@@ -947,6 +1070,9 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             ... except ZeroDivisionError:
             ...     logger.exception("Math error occurred")
         """
+        if not self._enabled:
+            return
+
         import traceback  # pylint: disable=import-outside-toplevel
 
         tb = traceback.format_exc()
@@ -1017,6 +1143,134 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> logger.log("FATAL", "Fatal error occurred")
         """
         self._levels[name] = mapped_to
+
+    def enable_sink(self, sink_id: int) -> bool:
+        """Enable a specific sink by its handler ID.
+
+        When a sink is enabled, log messages will be written to it.
+        Sinks are enabled by default when created.
+
+        Args:
+            sink_id: The handler ID of the sink to enable.
+
+        Returns:
+            True if the sink was found and enabled, False if not found.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.disable_sink(sink_id)
+            >>> logger.info("Not logged to file")  # Sink disabled
+            >>> logger.enable_sink(sink_id)
+            >>> logger.info("Logged to file")  # Sink re-enabled
+        """
+        if sink_id < 0:
+            return False
+        return self._inner.enable_sink(sink_id)
+
+    def disable_sink(self, sink_id: int) -> bool:
+        """Disable a specific sink by its handler ID.
+
+        When a sink is disabled, log messages will not be written to it,
+        but the sink remains registered and can be re-enabled later.
+
+        Args:
+            sink_id: The handler ID of the sink to disable.
+
+        Returns:
+            True if the sink was found and disabled, False if not found.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.disable_sink(sink_id)
+            >>> logger.info("Not logged to file")  # Sink disabled
+            >>> logger.enable_sink(sink_id)
+            >>> logger.info("Now logged to file")  # Sink re-enabled
+        """
+        if sink_id < 0:
+            return False
+        return self._inner.disable_sink(sink_id)
+
+    def is_sink_enabled(self, sink_id: int) -> bool | None:
+        """Check if a specific sink is enabled.
+
+        Args:
+            sink_id: The handler ID of the sink to check.
+
+        Returns:
+            True if enabled, False if disabled, None if not found.
+
+        Example:
+            >>> from logly import logger
+            >>> sink_id = logger.add("app.log")
+            >>> logger.is_sink_enabled(sink_id)  # Returns True
+            >>> logger.disable_sink(sink_id)
+            >>> logger.is_sink_enabled(sink_id)  # Returns False
+        """
+        if sink_id < 0:
+            return None
+        return self._inner.is_sink_enabled(sink_id)
+
+    def search_log(
+        self,
+        sink_id: int,
+        search_string: str,
+        *,
+        first_only: bool = False,
+        case_sensitive: bool = False,
+        use_regex: bool = False,
+        start_line: int | None = None,
+        end_line: int | None = None,
+        max_results: int | None = None,
+        context_before: int | None = None,
+        context_after: int | None = None,
+        level_filter: str | None = None,
+        invert_match: bool = False,
+    ) -> list[dict[str, object]] | None:
+        """Search a sink's log file for a pattern (Rust-powered).
+
+        All search operations are performed by the high-performance Rust backend.
+
+        Args:
+            sink_id: Handler ID of the sink whose log file to search.
+            search_string: String or regex pattern to search for.
+            first_only: Return only first match (default: False).
+            case_sensitive: Perform case-sensitive search (default: False).
+            use_regex: Treat search_string as regex (default: False).
+            start_line: Start from this line number (1-indexed).
+            end_line: Stop at this line number (inclusive).
+            max_results: Maximum number of results.
+            context_before: Lines to include before match.
+            context_after: Lines to include after match.
+            level_filter: Only search lines with this log level.
+            invert_match: Return lines that DON'T match.
+
+        Returns:
+            List of dicts with "line", "content", "match" keys.
+            None if sink not found. Empty list if no matches.
+
+        Example:
+            >>> results = logger.search_log(sink_id, "error")
+            >>> results = logger.search_log(sink_id, r"\\d+", use_regex=True)
+        """
+        if sink_id < 0:
+            return None
+
+        return self._inner.search_log(
+            sink_id,
+            search_string,
+            case_sensitive=case_sensitive,
+            first_only=first_only,
+            use_regex=use_regex,
+            start_line=start_line,
+            end_line=end_line,
+            max_results=max_results,
+            context_before=context_before,
+            context_after=context_after,
+            level_filter=level_filter,
+            invert_match=invert_match,
+        )
 
     # callback functionality for async log processing
     def add_callback(self, callback: object) -> int:
@@ -1099,7 +1353,8 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> custom_logger.configure(level="INFO")
         """
         new_py_logger = PyLogger(auto_update_check)
-        return _LoggerProxy(new_py_logger)
+        # New loggers get auto-configured for immediate use
+        return _LoggerProxy(new_py_logger, auto_configure=True)
 
 
 logger = _LoggerProxy(_rust_logger)

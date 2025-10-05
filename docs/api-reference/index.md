@@ -30,6 +30,14 @@ Complete reference documentation for all Logly methods and features.
 
     [Sink Management](sink-management.md)
 
+-   **Sink Control**
+
+    ---
+
+    Enable/disable sinks and global logging control
+
+    [Sink Control](sink-control.md)
+
 -   **Logging**
 
     ---
@@ -77,6 +85,23 @@ Complete reference documentation for all Logly methods and features.
     Read and analyze log files
 
     [File Operations](file-operations.md)
+
+-   **Log Search**
+
+    ---
+
+    Search log files for specific strings
+
+    [:material-magnify: Search Functionality](search.md)
+    { .md-button }
+
+-   **Troubleshooting**
+
+    ---
+
+    Common issues and solutions
+
+    [Troubleshooting Guide](../guides/troubleshooting.md)
 
 -   **Utilities**
 

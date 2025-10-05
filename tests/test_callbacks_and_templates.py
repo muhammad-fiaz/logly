@@ -170,9 +170,9 @@ def test_callback_threading():
     logger.complete()
     time.sleep(0.1)
 
-    # Callback should have run in a different thread
+    # Callbacks are now synchronous, so they run in the main thread
     assert len(thread_ids) == 1
-    assert thread_ids[0] != main_thread
+    assert thread_ids[0] == main_thread  # Changed: callbacks are synchronous now
 
     logger.remove_callback(callback_id)
 

@@ -12,64 +12,94 @@ Get started with Logly in 5 minutes!
 
 ## Basic Setup
 
-### 1. Import and Configure
+### 1. Import and Start Logging Immediately
 
-Logly supports multiple import styles for convenience:
+**NEW in v0.1.5:** Logly now works immediately after import - no configuration needed!
 
 ```python
-# Option 1: Import the logger instance (recommended)
+# Just import and log - it works automatically!
 from logly import logger
 
-# Option 2: Import as logger (convenient alias)
-import logly as logger
+logger.info("Hello, Logly!")         # ✅ Logs appear immediately (white)
+logger.success("Task completed!")     # ✅ Green color
+logger.warning("This works right away!")  # ✅ Yellow color  
+logger.error("Connection failed!")    # ✅ Red color
+logger.fail("Login failed!")          # ✅ NEW: Magenta color
 
-# Option 3: Import module and use directly
-import logly
+# Logs appear automatically because:
+# - Auto-configure runs on import
+# - auto_sink=True creates console sink automatically
+# - console=True enables logging globally
+```
 
-# Option 4: Direct PyLogger import (for custom instances)
-from logly import PyLogger
-logger = PyLogger(auto_update_check=False)
+**Why it works:**
+- Logly auto-configures with sensible defaults on import
+- A console sink is created automatically (`auto_sink=True`)
+- Logging is enabled globally (`console=True`)
+- You can start logging immediately without any setup!
 
-# Configure logging level and output format
+### 2. Optional: Customize Configuration
+
+If you want to change defaults, call `configure()`:
+
+```python
+from logly import logger
+
+# Configure logging level and output format (optional)
 logger.configure(
-    level="INFO",      # Minimum log level
-    color=True         # Colored output for console
+    level="INFO",      # Minimum log level (default: "INFO")
+    color=True,        # Colored output for console (default: True)
+    console=True,      # Global enable/disable ALL logging (default: True)
+    auto_sink=True     # Auto-create console sink (default: True)
 )
 
-# Or with direct module access:
-logly.configure(
-    level="INFO",
-    color=True
-)
-
-# Or with PyLogger instance:
-# (Already configured in the import)
+# Start logging with your custom config
+logger.info("Logging with custom configuration")
 ```
 
-### 2. Add Output Destinations
+### 3. Add Additional Output Destinations (Optional)
+
+By default, logs go to the console. Add file sinks for persistent logging:
 
 ```python
-# Add console output (automatically added by configure)
-# Add file output with daily rotation
-logger.add("logs/app.log", rotation="daily", retention=7)
+# Add a file sink (logs go to both console and file)
+file_id = logger.add("app.log")
+
+# Or disable auto console sink and use only files
+logger.configure(auto_sink=False)  # No automatic console sink
+logger.add("app.log")  # Manual file sink only
 ```
 
-### 3. Start Logging
+### 4. Explore All Log Levels
+
+Logly provides 8 log levels with automatic color coding:
 
 ```python
-# All import styles work the same way:
+from logly import logger
 
-# Using imported logger instance
-logger.info("Application started", version="1.0.0")
-logger.debug("Debug information", step=1)
+# All levels with their default colors (when color=True)
+logger.trace("Entering function")       # Cyan - most verbose
+logger.debug("Variable x = 42")         # Blue  
+logger.info("Server started")           # White
+logger.success("Payment processed")     # Green
+logger.warning("Disk space low")        # Yellow
+logger.error("Database timeout")        # Red
+logger.critical("System crash!")        # Bright Red
+logger.fail("Authentication failed")    # Magenta - NEW in v0.1.5
+```
 
-# Using module as logger
-logly.info("Application started", version="1.0.0")
-logly.debug("Debug information", step=1)
+### 5. Start Logging
 
-# Log messages at different levels
+```python
+# Log messages at different levels with context
+logger.info("Application started", version="1.0.0", port=8000)
+logger.debug("Debug information", step=1, data={"key": "value"})
+logger.success("User created", user_id=123, email="user@example.com")
+
+# Log warnings and errors
 logger.warning("Low disk space", available_gb=2.5)
-logger.error("Failed to connect", retry_count=3)
+logger.error("Failed to connect", retry_count=3, reason="timeout")
+logger.fail("Payment failed", card_last4="1234", reason="insufficient_funds")
 logger.critical("System out of memory")
 
 # Always call complete() before exit
@@ -544,6 +574,54 @@ Traceback (most recent call last):
   File "example.py", line 25, in risky_operation
     ZeroDivisionError: division by zero
 ```
+
+---
+
+## Runtime Sink Control
+
+### Enable/Disable Individual Sinks
+
+You can dynamically control which sinks receive logs without removing them:
+
+```python
+from logly import logger
+
+# Add sinks and store their IDs
+console_id = logger.add("console")
+app_log_id = logger.add("logs/app.log")
+debug_log_id = logger.add("logs/debug.log")
+
+# Disable debug file in production
+import os
+if os.getenv("ENV") == "production":
+    logger.disable_sink(debug_log_id)
+
+logger.info("Application started")  # → console + app.log only
+
+# Enable debug file for troubleshooting
+logger.enable_sink(debug_log_id)
+logger.debug("Detailed diagnostics")  # → all three sinks
+
+# Check sink status
+if logger.is_sink_enabled(debug_log_id):
+    logger.info("Debug logging is active")
+```
+
+**Output:**
+```
+[2024-01-15 10:30:15] INFO: Application started  # (console + app.log)
+[2024-01-15 10:30:16] DEBUG: Detailed diagnostics  # (console + app.log + debug.log)
+[2024-01-15 10:30:16] INFO: Debug logging is active
+```
+
+**Use Cases:**
+
+- **Production Mode:** Disable verbose debug files
+- **Performance:** Temporarily disable expensive sinks during critical operations
+- **User Preferences:** Toggle console output based on settings
+- **Testing:** Control output destinations without reconfiguration
+
+**See Also:** [Utilities API Reference](api-reference/utilities.md#enable_sink) for complete documentation.
 
 ---
 

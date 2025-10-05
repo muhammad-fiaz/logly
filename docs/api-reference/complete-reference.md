@@ -53,7 +53,8 @@ logger.configure(
     time_levels: dict[str, bool] | None = None,
     color_levels: dict[str, bool] | None = None,
     storage_levels: dict[str, bool] | None = None,
-    color_callback: callable | None = None
+    color_callback: callable | None = None,
+    auto_sink: bool = True
 ) -> None
 ```
 
@@ -77,6 +78,7 @@ logger.configure(
 | `color_levels` | `dict[str, bool] \| None` | `None` | Per-level color control. Example: `{"DEBUG": False}` disables colors for DEBUG logs. |
 | `storage_levels` | `dict[str, bool] \| None` | `None` | Per-level file storage control. Example: `{"TRACE": False}` prevents TRACE from being written to files. |
 | `color_callback` | `callable \| None` | `None` | Custom color function with signature `(level: str, text: str) -> str`. Overrides built-in ANSI coloring. Use for Rich, colorama, etc. |
+| `auto_sink` | `bool` | `True` | Automatically create a console sink if no sinks exist. When `True` and no sinks have been added, a console sink is created automatically. This ensures logs are displayed even if you forget to add sinks. Set to `False` for full manual control. **WARNING**: If `auto_sink=True` and you try to add a console sink manually, you'll receive a duplicate sink warning |
 
 #### Returns
 

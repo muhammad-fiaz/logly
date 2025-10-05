@@ -14,6 +14,8 @@ Methods for configuring the logger and managing output destinations.
 
 Set global logger configuration including level, output format, and colors.
 
+**NEW in v0.1.5**: The logger is automatically configured on import with default settings (`console=True`, `auto_sink=True`). This means you can start logging immediately without calling `configure()`. Calling `configure()` is optional and only needed if you want to customize the settings.
+
 ### Signature
 
 ```python
@@ -33,7 +35,9 @@ logger.configure(
     time_levels: dict[str, bool] | None = None,
     color_levels: dict[str, bool] | None = None,
     storage_levels: dict[str, bool] | None = None,
-    color_callback: callable | None = None
+    color_callback: callable | None = None,
+    auto_sink: bool = True,
+    auto_sink_levels: dict[str, str | dict[str, str]] | None = None
 ) -> None
 ```
 
@@ -41,12 +45,12 @@ logger.configure(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `level` | `str` | `"INFO"` | Minimum log level: `"TRACE"`, `"DEBUG"`, `"INFO"`, `"SUCCESS"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"` |
-| `color` | `bool` | `True` | Enable colored console output. When True, uses ANSI escape codes for coloring unless color_callback is provided. When False, disables all coloring regardless of other settings |
-| `level_colors` | `dict[str, str] \| None` | `None` | Custom colors for each log level. Supports both ANSI color codes and color names. If `None`, uses default colors |
+| `level` | `str` | `"INFO"` | Minimum log level: `"TRACE"`, `"DEBUG"`, `"INFO"`, `"SUCCESS"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"`, `"FAIL"` |
+| `color` | `bool` | `True` | Enable colored console output. When True, uses ANSI escape codes for coloring unless color_callback is provided. When False, disables all coloring regardless of other settings. Default colors: TRACE=cyan, DEBUG=blue, INFO=white, SUCCESS=green, WARNING=yellow, ERROR=red, CRITICAL=bright_red, FAIL=magenta |
+| `level_colors` | `dict[str, str] \| None` | `None` | Custom colors for each log level. Supports both ANSI color codes and color names. If `None`, uses default color mapping (see above). Custom colors override defaults |
 | `json` | `bool` | `False` | Output logs in JSON format instead of text |
 | `pretty_json` | `bool` | `False` | Pretty-print JSON output (higher cost, more readable) |
-| `console` | `bool` | `True` | Enable console output |
+| `console` | `bool` | `True` | **Global enable/disable ALL logging** (kill-switch). When `True` (default), all logging is enabled across all sinks (console and file). When `False`, **ALL logging is disabled globally**, equivalent to calling `logger.disable()`. This is different from per-sink enable/disable which controls individual outputs |
 | `show_time` | `bool` | `True` | Show timestamps in console output |
 | `show_module` | `bool` | `True` | Show module information in console output |
 | `show_function` | `bool` | `True` | Show function information in console output |
@@ -57,6 +61,8 @@ logger.configure(
 | `color_levels` | `dict[str, bool] \| None` | `None` | Per-level color control. Maps level names to enable/disable colors |
 | `storage_levels` | `dict[str, bool] \| None` | `None` | Per-level storage control. Maps level names to enable/disable file logging |
 | `color_callback` | `callable \| None` | `None` | Custom color callback function with signature `(level: str, text: str) -> str`. When provided, overrides built-in ANSI coloring. Allows integration with external libraries like Rich, colorama, or termcolor for advanced coloring and styling |
+| `auto_sink` | `bool` | `True` | **NEW in v0.1.5**: Automatically create a console sink if no sinks exist. Since v0.1.5, `configure()` is called automatically on import, so when `auto_sink=True` (default), a console sink is created immediately when you import the logger. This enables "import and log" workflow with zero configuration. Set to `False` if you want full manual control over sinks. **Note**: `auto_sink` only affects console sinks - file sinks are NEVER created automatically and must be added explicitly with `logger.add(file_path)` |
+| `auto_sink_levels` | `dict[str, str \| dict[str, str]] \| None` | `None` | **NEW in v0.1.6**: Automatically configure per-level sinks using declarative configuration. Maps log level names to either sink type strings (`"console"`, `"file"`) or sink configuration dictionaries with `type` and `path` keys. See [Auto-Sink Levels Example](../examples/auto-sink-levels.md) for detailed usage |
 
 ### Color Configuration
 
@@ -139,6 +145,25 @@ def color_callback(level: str, text: str) -> str:
 `None`
 
 ### Examples
+
+=== "Default Colored Output (NEW v0.1.5)"
+
+    ```python
+    from logly import logger
+    
+    # Colors are automatic when color=True (default)
+    logger.configure(color=True)
+    
+    # Each level gets its default color
+    logger.trace("Trace message")      # Cyan
+    logger.debug("Debug info")         # Blue
+    logger.info("Information")         # White
+    logger.success("Success!")         # Green
+    logger.warning("Warning!")         # Yellow
+    logger.error("Error occurred")     # Red
+    logger.critical("Critical!")       # Bright Red
+    logger.fail("Operation failed")    # Magenta (NEW)
+    ```
 
 === "Text Output with Colors"
 
