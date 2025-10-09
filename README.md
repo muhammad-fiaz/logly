@@ -87,7 +87,6 @@ Logly offers a comprehensive set of logging features designed for modern Python 
 - **Custom Formatting**: Flexible template-based formatting with custom fields
 - **Color Styling**: Rich color support for console output and callback processing
 - **Extensibility**: Plugin architecture for custom sinks and processors and more...
----
 
 ---
 
