@@ -235,7 +235,7 @@ if not user_settings.get("show_logs"):
 | `logger.disable()` | All sinks | Testing, complete silence |
 | `logger.disable_sink(id)` | Single sink | Conditional output, dynamic routing |
 
-See [Utilities API Reference](../api-reference/utilities.md#enable_sink) for complete documentation.
+See [Utilities API Reference](../api-reference/utilities.md#loggerenable_sink) for complete documentation.
 
 ## Rotation and Retention
 

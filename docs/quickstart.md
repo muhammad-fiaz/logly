@@ -665,7 +665,7 @@ if logger.is_sink_enabled(debug_log_id):
 - **User Preferences:** Toggle console output based on settings
 - **Testing:** Control output destinations without reconfiguration
 
-**See Also:** [Utilities API Reference](api-reference/utilities.md#enable_sink) for complete documentation.
+**See Also:** [Utilities API Reference](api-reference/utilities.md#loggerenable_sink) for complete documentation.
 
 ---
 

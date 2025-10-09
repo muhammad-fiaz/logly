@@ -1,3 +1,9 @@
+---
+title: Sink Control API - Logly Python Logging
+description: Logly sink control API reference. Learn how to enable/disable individual sinks and manage global logging state for fine-grained control.
+keywords: python, logging, sink control, api, enable, disable, global, state, logly
+---
+
 # API Reference: Sink Control
 
 Control individual sinks (enable/disable) and manage global logging state.
