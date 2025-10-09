@@ -3,7 +3,10 @@ use std::thread;
 use std::time::Duration;
 
 static VERSION_CHECK_DONE: AtomicBool = AtomicBool::new(false);
-const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+const CURRENT_VERSION: &str = match option_env!("CARGO_PKG_VERSION") {
+    Some(v) => v,
+    None => "unknown",
+};
 const PYPI_API_URL: &str = "https://pypi.org/pypi/logly/json";
 const CHECK_TIMEOUT_MS: u64 = 2000;
 
