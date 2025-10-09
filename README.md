@@ -27,13 +27,6 @@
 
 ---
 
-## 🎉 Recent Fixes
-
-- ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
-- ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
-
----
-
 ## Overview
 
 **Logly** is a high-performance logging library for Python, powered by Rust. It combines the familiar Loguru-like API with the performance and safety guarantees of Rust.
@@ -96,6 +89,14 @@ Logly offers a comprehensive set of logging features designed for modern Python 
 - **Extensibility**: Plugin architecture for custom sinks and processors and more...
 ---
 
+---
+
+### 🎉 Recent Fixes
+
+- ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
+- ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
+
+---
 ## Installation
 
 ### From PyPI (Recommended)
