@@ -13,7 +13,9 @@
 <a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://codecov.io/gh/muhammad-fiaz/logly/graph/badge.svg?token=1G3MU8SDX1" alt="codecov"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs.yml/badge.svg" alt="Deploy Documentation"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml/badge.svg" alt="Publish Python distributions"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml">
+  <img src="https://github.com/muhammad-fiaz/logly/actions/workflows/python_publish.yaml/badge.svg?event=release" alt="Publish Python distributions" />
+</a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/dependabot/dependabot-updates"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/dependabot/dependabot-updates/badge.svg" alt="Dependabot Updates"></a>

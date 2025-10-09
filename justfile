@@ -13,25 +13,43 @@
 @develop-release:
   uv run maturin develop -r --uv
 
-@install: && develop
+@install: develop
   uv sync --frozen --all-extras
 
-@install-release: && develop-release
+@install-release: develop-release
   uv sync --frozen --all-extras
+
+@build:
+  cargo build --release
+
+@release:
+  uv run maturin build --release
+
+@docs:
+  uv run mkdocs build
+
+@docs-serve:
+  uv run mkdocs serve
+
+@clean:
+  cargo clean
+  rm -rf target/
+  rm -rf dist/
+  rm -rf site/
 
 @lint:
-  echo cargo check
-  just --justfile {{justfile()}} check
-  echo cargo clippy
-  just --justfile {{justfile()}} clippy
-  echo cargo fmt
-  just --justfile {{justfile()}} fmt
-  echo mypy
-  just --justfile {{justfile()}} mypy
-  echo ruff check
-  just --justfile {{justfile()}} ruff-check
-  echo ruff formatting
-  just --justfile {{justfile()}} ruff-format
+  echo "Running cargo check..."
+  just check
+  echo "Running cargo clippy..."
+  just clippy
+  echo "Running cargo fmt check..."
+  just fmt
+  echo "Running mypy..."
+  just mypy
+  echo "Running ruff check..."
+  just ruff-check
+  echo "Running ruff format check..."
+  just ruff-format
 
 @check:
   cargo check
@@ -49,7 +67,18 @@
   uv run ruff check logly tests --fix
 
 @ruff-format:
-  uv run ruff format logly tests
+  uv run ruff format logly tests --check
 
 @test *args="":
   uv run pytest {{args}}
+
+@coverage:
+  uv run pytest --cov=logly --cov-report=html --cov-report=term-missing
+
+@ci: lint
+  just test
+  just build
+  just docs
+
+@all: clean install lint test coverage docs
+  echo "All checks passed! ✅"
