@@ -6,6 +6,7 @@ use crate::utils::version_check;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use rayon::prelude::*;
 use std::collections::HashMap;
 use tracing::Level;
 
@@ -61,7 +62,7 @@ impl PyLogger {
     /// # Returns
     /// PyResult indicating success or error
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, show_filename=false, show_lineno=false, console_levels=None, time_levels=None, color_levels=None, storage_levels=None, color_callback=None, auto_sink=true, auto_sink_levels=None))]
+    #[pyo3(signature = (level="INFO", color=true, level_colors=None, json=false, pretty_json=false, console=true, show_time=true, show_module=true, show_function=true, show_filename=false, show_lineno=false, console_levels=None, time_levels=None, color_levels=None, storage_levels=None, color_callback=None, auto_sink=true, auto_sink_levels=None, log_compact=false))]
     pub fn configure(
         &self,
         py: Python<'_>,
@@ -83,6 +84,7 @@ impl PyLogger {
         color_callback: Option<Py<PyAny>>,
         auto_sink: bool,
         auto_sink_levels: Option<Py<PyAny>>,
+        log_compact: bool,
     ) -> PyResult<()> {
         // Validate log level parameter
         validate_level(level)?;
@@ -109,6 +111,7 @@ impl PyLogger {
             storage_lvls,
             colors,
             color_callback,
+            log_compact,
         )?;
 
         // Process auto_sink_levels if provided
@@ -326,7 +329,7 @@ impl PyLogger {
         // This allows tests to start with a clean state
         self.configure(
             py, "INFO", false, None, false, false, true, true, true, false, false, false, None,
-            None, None, None, None, false, None,
+            None, None, None, None, false, None, false,
         )
     }
 
@@ -838,8 +841,9 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn trace(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::TRACE, msg, kwargs, None);
+    pub fn trace(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::TRACE, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at DEBUG level.
@@ -848,8 +852,9 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn debug(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::DEBUG, msg, kwargs, None);
+    pub fn debug(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::DEBUG, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at INFO level.
@@ -858,8 +863,10 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn info(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::INFO, msg, kwargs, None);
+    pub fn info(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        // Get sys.stdout for Jupyter/Colab compatibility
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::INFO, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at SUCCESS level (mapped to INFO in tracing).
@@ -868,8 +875,9 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn success(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::INFO, msg, kwargs, None);
+    pub fn success(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::INFO, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at WARNING level.
@@ -878,8 +886,9 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn warning(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::WARN, msg, kwargs, None);
+    pub fn warning(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::WARN, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at ERROR level.
@@ -888,8 +897,9 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn error(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message(Level::ERROR, msg, kwargs, None);
+    pub fn error(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message(Level::ERROR, msg, kwargs, py_stdout.as_ref());
     }
 
     /// Log a message at CRITICAL level (mapped to ERROR in tracing).
@@ -901,8 +911,15 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn critical(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message_with_level_override(Level::ERROR, msg, kwargs, None, Some("CRITICAL"));
+    pub fn critical(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message_with_level_override(
+            Level::ERROR,
+            msg,
+            kwargs,
+            py_stdout.as_ref(),
+            Some("CRITICAL"),
+        );
     }
 
     /// Log a message at FAIL level (mapped to ERROR in tracing).
@@ -914,8 +931,15 @@ impl PyLogger {
     /// * `msg` - Log message
     /// * `kwargs` - Optional key-value context fields
     #[pyo3(signature = (msg, **kwargs))]
-    pub fn fail(&self, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
-        backend::log_message_with_level_override(Level::ERROR, msg, kwargs, None, Some("FAIL"));
+    pub fn fail(&self, py: Python<'_>, msg: &str, kwargs: Option<&Bound<'_, PyDict>>) {
+        let py_stdout = py.import("sys").and_then(|sys| sys.getattr("stdout")).ok();
+        backend::log_message_with_level_override(
+            Level::ERROR,
+            msg,
+            kwargs,
+            py_stdout.as_ref(),
+            Some("FAIL"),
+        );
     }
 
     /// Log a message at a custom or aliased level.
@@ -1094,6 +1118,7 @@ impl PyLogger {
     ///
     /// Returns a dictionary mapping sink IDs to their log file contents.
     /// Only includes file sinks (console sinks are skipped).
+    /// Uses parallel I/O for improved performance when reading multiple files.
     ///
     /// # Returns
     /// HashMap where keys are sink IDs and values are log file contents
@@ -1108,17 +1133,24 @@ impl PyLogger {
     ///     print(f"Sink {sink_id}: {content}")
     /// ```
     pub fn read_all(&self) -> PyResult<HashMap<usize, String>> {
-        let all_contents = with_state(|s| {
-            let mut contents = HashMap::new();
-            for (&id, sink) in s.sinks.iter() {
-                if let Some(ref path) = sink.path
-                    && let Ok(content) = std::fs::read_to_string(path)
-                {
-                    contents.insert(id, content);
-                }
-            }
-            contents
+        // Collect sink info first (must be done sequentially due to state lock)
+        let sink_paths: Vec<(usize, String)> = with_state(|s| {
+            s.sinks
+                .iter()
+                .filter_map(|(&id, sink)| sink.path.as_ref().map(|path| (id, path.to_string())))
+                .collect()
         });
+
+        // Read files in parallel for better performance
+        let all_contents: HashMap<usize, String> = sink_paths
+            .par_iter()
+            .filter_map(|(id, path)| {
+                std::fs::read_to_string(path)
+                    .ok()
+                    .map(|content| (*id, content))
+            })
+            .collect();
+
         Ok(all_contents)
     }
 

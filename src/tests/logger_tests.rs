@@ -17,7 +17,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -31,7 +31,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "DEBUG", true, None, false, false, true, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -45,7 +45,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INVALID", true, None, false, false, true, true, true, true, false, false,
-                None, None, None, None, None, true, None,
+                None, None, None, None, None, true, None, false,
             );
             assert!(result.is_err());
         });
@@ -59,7 +59,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", false, None, false, false, true, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -73,7 +73,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, true, false, true, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -87,7 +87,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, true, true, true, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -101,7 +101,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, false, true, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -115,7 +115,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, false, true, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -129,7 +129,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, true, false, true, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -143,7 +143,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, true, true, false, false, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -157,7 +157,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, true, true, true, true, false, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -171,7 +171,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "INFO", true, None, false, false, true, true, true, true, false, true, None,
-                None, None, None, None, true, None,
+                None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });
@@ -185,7 +185,7 @@ mod logging_tests {
             let logger = create_test_logger();
             let result = logger.configure(
                 py, "DEBUG", false, None, true, false, false, false, false, false, true, true,
-                None, None, None, None, None, true, None,
+                None, None, None, None, None, true, None, false,
             );
             assert!(result.is_ok());
         });

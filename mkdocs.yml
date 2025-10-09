@@ -120,6 +120,7 @@ nav:
   - Examples:
     - examples/index.md
     - Basic Console Logging: examples/basic-console.md
+    - Jupyter & Colab Notebooks: examples/jupyter-colab.md
     - Color Callback Styling: examples/color-callback.md
     - Colored Logging: examples/colored-logging.md
     - Per-Level Controls: examples/per-level-controls.md
@@ -136,6 +137,7 @@ nav:
   - Guides:
     - Getting Started: guides/getting-started.md
     - Configuration: guides/configuration.md
+    - log_compact Parameter: guides/log-compact.md
     - Error Handling: guides/error-handling.md
     - Version Checking: guides/version-checking.md
     - Troubleshooting: guides/troubleshooting.md

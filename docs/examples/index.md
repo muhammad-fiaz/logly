@@ -15,6 +15,7 @@ Welcome to the Logly examples! This section contains comprehensive, runnable exa
 
 - **[Basic Console Logging](basic-console.md)** - Start here! Simple console output with colors and formatting
 - **[Colored Logging](colored-logging.md)** - Default colors, custom colors, and FAIL level (NEW v0.1.5)
+- **[Jupyter & Colab Notebooks](jupyter-colab.md)** - 🆕 Using Logly in interactive notebook environments
 - **[Per-Level Controls](per-level-controls.md)** - Control console output, timestamps, and colors per log level
 - **[Template String Formatting](template-strings.md)** - Custom log message formatting with placeholders
 

@@ -47,7 +47,8 @@ class TestErrorMessages:
         error_msg = str(exc_info.value)
         assert "Invalid size limit" in error_msg
         assert "https://github.com/muhammad-fiaz/logly" in error_msg
-        assert "Expected format: '500B', '5KB', '10MB', '1GB'" in error_msg
+        # Updated to match new error message format
+        assert "Supported formats:" in error_msg or "Expected format:" in error_msg
 
     def test_valid_levels_accepted(self):
         """Test that all valid log levels are accepted."""

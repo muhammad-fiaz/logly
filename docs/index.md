@@ -26,6 +26,15 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 !!! warning "Active Development"
     Logly is actively developed. Performance continues to improve with each release.
 
+!!! success "Jupyter/Colab Support - Guaranteed Output"
+    **NEW:** Logly now works seamlessly in Jupyter Notebooks and Google Colab with **robust fallback mechanism**! 
+    
+    - ✅ Logs display correctly in notebook output cells (Python's sys.stdout)
+    - ✅ **Always visible**: Automatic fallback to Rust println! if Python stdout fails
+    - ✅ Works in all environments - notebooks, terminals, servers, and edge cases
+    
+    See [Issue #76](https://github.com/muhammad-fiaz/logly/issues/76) and [Jupyter/Colab Examples](examples/jupyter-colab.md) for details.
+
 !!! note "Note"
     The Documentation is up-to-date with the main branch so some features may be missing for the old releases on PyPI. also the docs are improving continuously. if you find any issues please report them on GitHub.
 

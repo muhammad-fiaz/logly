@@ -37,7 +37,8 @@ logger.configure(
     storage_levels: dict[str, bool] | None = None,
     color_callback: callable | None = None,
     auto_sink: bool = True,
-    auto_sink_levels: dict[str, str | dict[str, str]] | None = None
+    auto_sink_levels: dict[str, str | dict[str, str]] | None = None,
+    log_compact: bool = False
 ) -> None
 ```
 
@@ -63,6 +64,7 @@ logger.configure(
 | `color_callback` | `callable \| None` | `None` | Custom color callback function with signature `(level: str, text: str) -> str`. When provided, overrides built-in ANSI coloring. Allows integration with external libraries like Rich, colorama, or termcolor for advanced coloring and styling |
 | `auto_sink` | `bool` | `True` | **NEW in v0.1.5**: Automatically create a console sink if no sinks exist. Since v0.1.5, `configure()` is called automatically on import, so when `auto_sink=True` (default), a console sink is created immediately when you import the logger. This enables "import and log" workflow with zero configuration. Set to `False` if you want full manual control over sinks. **Note**: `auto_sink` only affects console sinks - file sinks are NEVER created automatically and must be added explicitly with `logger.add(file_path)` |
 | `auto_sink_levels` | `dict[str, str \| dict[str, str]] \| None` | `None` | **NEW in v0.1.5**: Automatically configure per-level sinks using declarative configuration. Maps log level names to either sink type strings (`"console"`, `"file"`) or sink configuration dictionaries with `type` and `path` keys. See [Auto-Sink Levels Example](../examples/auto-sink-levels.md) for detailed usage |
+| `log_compact` | `bool` | `False` | Enable compact log format for Jupyter/Colab environments. When True, logs use a more condensed format suitable for notebook outputs with limited space. Reduces verbosity while maintaining readability |
 
 ### Color Configuration
 
@@ -550,12 +552,18 @@ logger.add(
 
 ### Parameters
 
+!!! info "Fixed Issue #77"
+    Retention now works correctly with `size_limit`. When you set `retention=5`, 
+    the library will keep exactly 5 files total (including the current one), 
+    not 5 old files plus the current one.
+    See [Issue #77](https://github.com/muhammad-fiaz/logly/issues/77) for details.
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `sink` | `str \| None` | `None` | `"console"` for stdout or file path for file output. Defaults to console. |
 | `rotation` | `str \| None` | `None` | Time-based rotation: `"daily"`, `"hourly"`, `"minutely"`, `"never"` |
-| `size_limit` | `str \| None` | `None` | Maximum file size: `"500B"`, `"5KB"`, `"10MB"`, `"1GB"` |
-| `retention` | `int \| None` | `None` | Number of rotated files to keep (older files auto-deleted) |
+| `size_limit` | `str \| None` | `None` | Maximum file size before rotation. Supports: `"100"` (bytes), `"500B"` or `"500b"`, `"5KB"` or `"5kb"`, `"10MB"` or `"10mb"`, `"1GB"` or `"1gb"`, `"2TB"` or `"2tb"`. Case-insensitive, short forms (`"5K"`, `"10M"`, `"1G"`) also supported. |
+| `retention` | `int \| None` | `None` | Number of total files to keep (including current). Works with both `rotation` and `size_limit`. Older files auto-deleted. |
 | `filter_min_level` | `str \| None` | `None` | Exact log level for this sink: `"INFO"`, `"ERROR"`, etc. Only messages with this exact level will be logged to this sink |
 | `filter_module` | `str \| None` | `None` | Only log from this module |
 | `filter_function` | `str \| None` | `None` | Only log from this function |
@@ -567,6 +575,108 @@ logger.add(
 | `date_enabled` | `bool` | `False` | Include timestamp in log output |
 | `format` | `str \| None` | `None` | Custom format string with placeholders like `"{level}"`, `"{message}"`, `"{time}"`, `"{extra}"`, or any extra field key |
 | `json` | `bool` | `False` | Format logs as JSON for this sink |
+
+### How Rotation, Retention, and Size Limit Work Together
+
+The `rotation`, `retention`, and `size_limit` parameters work together to provide flexible log file management. Here's how they interact:
+
+#### Size-Based Rotation Only
+
+When you specify `size_limit` without `rotation`, files rotate based on size alone:
+
+```python
+logger.add("logs/app.log", size_limit="5KB", retention=5)
+```
+
+**Behavior:**
+- New rotation file created when current file reaches 5KB
+- Keeps maximum of 5 total files (including current)
+- Oldest files auto-deleted when limit exceeded
+- Rotated files use timestamp naming: `app.2025-01-15_14-30-45.log`
+
+#### Time-Based Rotation Only
+
+When you specify `rotation` without `size_limit`, files rotate based on time:
+
+```python
+logger.add("logs/app.log", rotation="daily", retention=7)
+```
+
+**Behavior:**
+- New file created at each rotation period (daily at midnight)
+- Keeps maximum of 7 total files
+- Older files auto-deleted beyond retention
+- Rotated files use period naming: `app.2025-01-15.log`
+
+#### Combined Time and Size Rotation
+
+When both `rotation` and `size_limit` are specified, **BOTH conditions are checked** - file rotates on WHICHEVER comes first:
+
+```python
+logger.add("logs/app.log", rotation="daily", size_limit="100MB", retention=30)
+```
+
+**Behavior:**
+- Rotates when: time period changes OR file reaches 100MB (whichever first)
+- If size limit hit before midnight: creates `app.2025-01-15_14-30-45.log`
+- If midnight reached first: creates `app.2025-01-16.log`
+- Retention of 30 means keeps 30 most recent files total
+- Both rotation triggers respected
+
+#### Retention Behavior
+
+The `retention` parameter always works the same way regardless of rotation type:
+
+- **Counts total files** including the current active file
+- **Deletes oldest files** when total exceeds retention limit
+- **Works with both** time-based and size-based rotation
+- **No retention** (default): files accumulate indefinitely
+
+#### Common Patterns
+
+**High-Volume Logs with Size Limits:**
+```python
+# Rotate every 500MB, keep only last 10 files
+logger.add("logs/high_volume.log", size_limit="500MB", retention=10)
+```
+
+**Daily Logs with Size Safety:**
+```python
+# Rotate daily, but also if file exceeds 1GB
+logger.add("logs/app.log", rotation="daily", size_limit="1GB", retention=30)
+```
+
+**Development (Small Retention):**
+```python
+# Keep only 3 most recent files
+logger.add("logs/dev.log", size_limit="10MB", retention=3)
+```
+
+**Production (Large Retention):**
+```python
+# Keep 90 days of daily logs
+logger.add("logs/prod.log", rotation="daily", retention=90)
+```
+
+**Error Logs (Size + Filter):**
+```python
+# Errors only, rotate at 100MB, keep 50 files
+logger.add("logs/errors.log", 
+          filter_min_level="ERROR", 
+          size_limit="100MB", 
+          retention=50)
+```
+
+!!! warning "Retention Edge Cases"
+    - `retention=1`: Keeps only current file (deletes on rotation)
+    - `retention=None` (default): No limit, files accumulate
+    - Retention counts ALL matching files, not just rotated ones
+
+!!! tip "Fixes Issue #77"
+    Retention now correctly works with `size_limit`. When `retention=5` is set, 
+    the system maintains **exactly 5 total files** (including current), deleting 
+    the oldest when a new rotation is triggered.
+    See [Issue #77](https://github.com/muhammad-fiaz/logly/issues/77).
 
 ### Returns
 
@@ -664,6 +774,14 @@ logger.info("User action", user="alice", action="login", session_id="12345")
         size_limit="10MB",
         retention=5
     )
+    
+    # Various size formats (all case-insensitive):
+    logger.add("logs/small.log", size_limit="100")      # 100 bytes
+    logger.add("logs/tiny.log", size_limit="500B")      # 500 bytes
+    logger.add("logs/kb.log", size_limit="5kb")         # 5 kilobytes (lowercase)
+    logger.add("logs/mb.log", size_limit="10M")         # 10 megabytes (short form)
+    logger.add("logs/gb.log", size_limit="1gb")         # 1 gigabyte (lowercase)
+    logger.add("logs/huge.log", size_limit="2TB")       # 2 terabytes
     ```
 
 === "Combined Rotation"

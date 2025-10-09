@@ -168,6 +168,8 @@ pub struct LoggerState {
     pub show_filename: bool,
     /// Show line number information in console output
     pub show_lineno: bool,
+    /// Use compact logging for Jupyter/Colab compatibility
+    pub log_compact: bool,
     /// Per-level console output control (None = use global console_enabled)
     pub console_levels: AHashMap<String, bool>,
     /// Per-level time display control (None = use global show_time)
@@ -258,6 +260,7 @@ impl Default for LoggerState {
             show_function: true,
             show_filename: false,
             show_lineno: false,
+            log_compact: false,
             console_levels: AHashMap::new(),
             time_levels: AHashMap::new(),
             color_levels: AHashMap::new(),

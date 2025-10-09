@@ -27,6 +27,13 @@
 
 ---
 
+## 🎉 Recent Fixes
+
+- ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
+- ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
+
+---
+
 ## Overview
 
 **Logly** is a high-performance logging library for Python, powered by Rust. It combines the familiar Loguru-like API with the performance and safety guarantees of Rust.
@@ -235,9 +242,11 @@ logger.complete()
 logger.add("logs/app.log", rotation="daily", retention=30)  # Keep 30 days
 logger.add("logs/app.log", rotation="hourly", retention=24)  # Keep 24 hours
 
-# Size-based rotation
-logger.add("logs/app.log", size_limit="10MB", retention=5)  # Keep 5 files
-logger.add("logs/app.log", size_limit="100MB", retention=10)
+# Size-based rotation (supports B/b, KB/kb, MB/mb, GB/gb, TB/tb - case-insensitive)
+logger.add("logs/app.log", size_limit="10MB", retention=5)   # Keep 5 files
+logger.add("logs/app.log", size_limit="100mb", retention=10) # Lowercase works too
+logger.add("logs/tiny.log", size_limit="500b")               # Bytes with lowercase 'b'
+logger.add("logs/small.log", size_limit="5K")                # Short form (5 kilobytes)
 
 # Combined rotation
 logger.add("logs/app.log", rotation="daily", size_limit="50MB", retention=7)
