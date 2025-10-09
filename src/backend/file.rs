@@ -6,65 +6,8 @@ use std::sync::Arc;
 use chrono::Utc;
 use parking_lot::Mutex;
 
+use crate::backend::rotation::{parse_size_limit, rotation_from_str};
 use crate::utils::levels::Rotation;
-
-/// Parse rotation string to Rotation enum.
-///
-/// Converts string representations of rotation policies to the internal Rotation enum.
-/// Supported values: "daily", "hourly", "minutely", "never" (default).
-///
-/// # Arguments
-///
-/// * `rotation` - Optional string specifying the rotation policy
-///
-/// # Returns
-///
-/// The corresponding Rotation enum value
-pub fn rotation_from_str(rotation: Option<&str>) -> Rotation {
-    match rotation.unwrap_or("never") {
-        "daily" => Rotation::DAILY,
-        "hourly" => Rotation::HOURLY,
-        "minutely" => Rotation::MINUTELY,
-        _ => Rotation::NEVER,
-    }
-}
-
-/// Parse size strings like "5KB", "10MB", "1GB" into bytes
-pub fn parse_size_limit(size_str: Option<&str>) -> Option<u64> {
-    size_str.and_then(|s| {
-        let s = s.trim();
-        if s.is_empty() {
-            return None;
-        }
-
-        // Find where the number ends and unit begins
-        let mut num_end = 0;
-        for (i, c) in s.chars().enumerate() {
-            if !c.is_ascii_digit() {
-                num_end = i;
-                break;
-            }
-            num_end = i + 1; // Include this digit
-        }
-
-        if num_end == 0 {
-            return None; // No number found
-        }
-
-        let num_str = &s[..num_end];
-        let unit = s[num_end..].trim().to_uppercase();
-
-        let multiplier = match unit.as_str() {
-            "B" | "" => 1,
-            "KB" | "K" => 1024,
-            "MB" | "M" => 1024 * 1024,
-            "GB" | "G" => 1024 * 1024 * 1024,
-            _ => return None, // Invalid unit
-        };
-
-        num_str.parse::<u64>().ok().map(|n| n * multiplier)
-    })
-}
 
 /// A simple rolling writer that places the rotation timestamp before the file extension,
 /// e.g. `app.log` -> `app.2025-08-22.log` for daily rotation. This avoids appending
@@ -219,6 +162,9 @@ impl Write for SimpleRollingWriter {
 }
 
 /// Prune old rotated files based on retention count
+///
+/// Keeps only the specified number of most recent files (including the current one).
+/// Fixes: https://github.com/muhammad-fiaz/logly/issues/77
 fn prune_old_files(
     dir: &Path,
     base: &Path,
@@ -239,9 +185,7 @@ fn prune_old_files(
             Err(_) => continue,
         };
         let path = entry.path();
-        if path == current_path {
-            continue;
-        }
+        // Include current file in the count to properly limit total files
         if !path.is_file() {
             continue;
         }
@@ -268,13 +212,21 @@ fn prune_old_files(
             .metadata()
             .and_then(|m| m.modified())
             .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-        candidates.push((modified, path));
+        candidates.push((modified, path.clone()));
     }
+
+    // Sort by modification time (oldest first)
+    candidates.sort_by_key(|(t, _)| *t);
+
+    // Keep only the most recent 'keep' files
+    // Delete oldest files if we have more than 'keep'
     if candidates.len() > keep {
-        candidates.sort_by_key(|(t, _)| *t);
-        let to_delete = candidates.len().saturating_sub(keep);
+        let to_delete = candidates.len() - keep;
         for (_, p) in candidates.into_iter().take(to_delete) {
-            let _ = fs::remove_file(p);
+            // Don't delete the current file
+            if p != current_path {
+                let _ = fs::remove_file(p);
+            }
         }
     }
     Ok(())
@@ -340,32 +292,6 @@ mod tests {
     use std::fs;
     use std::io::Read;
     use tempfile::TempDir;
-
-    #[test]
-    fn test_rotation_from_str() {
-        assert_eq!(rotation_from_str(Some("daily")), Rotation::DAILY);
-        assert_eq!(rotation_from_str(Some("hourly")), Rotation::HOURLY);
-        assert_eq!(rotation_from_str(Some("minutely")), Rotation::MINUTELY);
-        assert_eq!(rotation_from_str(Some("never")), Rotation::NEVER);
-        assert_eq!(rotation_from_str(Some("invalid")), Rotation::NEVER);
-        assert_eq!(rotation_from_str(None), Rotation::NEVER);
-    }
-
-    #[test]
-    fn test_parse_size_limit() {
-        assert_eq!(parse_size_limit(Some("1024")), Some(1024));
-        assert_eq!(parse_size_limit(Some("1KB")), Some(1024));
-        assert_eq!(parse_size_limit(Some("1MB")), Some(1024 * 1024));
-        assert_eq!(parse_size_limit(Some("1GB")), Some(1024 * 1024 * 1024));
-        assert_eq!(parse_size_limit(Some("2K")), Some(2048));
-        assert_eq!(parse_size_limit(Some("3M")), Some(3 * 1024 * 1024));
-        assert_eq!(parse_size_limit(Some("4G")), Some(4 * 1024 * 1024 * 1024));
-        assert_eq!(parse_size_limit(Some("5B")), Some(5));
-        assert_eq!(parse_size_limit(Some("")), None);
-        assert_eq!(parse_size_limit(Some("invalid")), None);
-        assert_eq!(parse_size_limit(Some("KB")), None);
-        assert_eq!(parse_size_limit(None), None);
-    }
 
     #[test]
     fn test_period_string() {

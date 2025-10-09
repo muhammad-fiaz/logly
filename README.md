@@ -27,6 +27,42 @@
 
 ---
 
+<details>
+<summary>📋 Table of Contents</summary>
+
+- [Overview](#overview)
+  - [🚀 Core Features](#-core-features)
+  - [📝 Logging Capabilities](#-logging-capabilities)
+  - [🎯 Output Management](#-output-management)
+  - [🔧 File Management](#-file-management)
+  - [🔍 Advanced Filtering](#-advanced-filtering)
+  - [📞 Callbacks \& Extensions](#-callbacks--extensions)
+  - [🎉 Recent Fixes](#-recent-fixes)
+- [Installation](#installation)
+  - [From PyPI (Recommended)](#from-pypi-recommended)
+  - [From Source (Development)](#from-source-development)
+- [Platform Support](#platform-support)
+- [Quick Start](#quick-start)
+  - [Advanced Usage](#advanced-usage)
+- [Advanced Features](#advanced-features)
+  - [1. File Rotation \& Retention](#1-file-rotation--retention)
+  - [2. Per-Sink Filtering](#2-per-sink-filtering)
+  - [3. Structured JSON Logging](#3-structured-json-logging)
+  - [4. Async Callbacks](#4-async-callbacks)
+  - [5. Per-Level Control](#5-per-level-control)
+  - [6. Custom Formatting](#6-custom-formatting)
+- [Testing \& Quality](#testing--quality)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+  - [Want to contribute?](#want-to-contribute)
+- [Changelog](#changelog)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
+</details>
+
+---
+
 ## Overview
 
 **Logly** is a high-performance logging library for Python, powered by Rust. It combines the familiar Loguru-like API with the performance and safety guarantees of Rust.
@@ -39,10 +75,9 @@ Built with a modular Rust backend using PyO3/Maturin, Logly provides fast loggin
 
 > 📍 NOTE: The Main Branch Contains the latest features and improvements for upcoming releases. For stable production use, consider using the latest tagged release. because you may find an non existing feature or a bug in older releases.
 
-> 📝 **Note on Loguru**: Logly is not the same as Loguru. Logly is only inspired by Loguru's design, but all features and functionality are completely different. Logly is built with Rust for performance and safety, while Loguru is a pure Python library.
 
-### 🎯 Why Logly?
-
+<details>
+<summary>🎯 Why Logly?</summary>
 
 Logly offers a comprehensive set of logging features designed for modern Python applications:
 
@@ -87,8 +122,17 @@ Logly offers a comprehensive set of logging features designed for modern Python 
 - **Custom Formatting**: Flexible template-based formatting with custom fields
 - **Color Styling**: Rich color support for console output and callback processing
 - **Extensibility**: Plugin architecture for custom sinks and processors and more...
+
+</details>
+
 ---
 
+### 🎉 Recent Fixes
+
+- ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
+- ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
+
+---
 ## Installation
 
 ### From PyPI (Recommended)
@@ -133,7 +177,7 @@ Logly supports Python 3.10+ and is available for multiple platforms. The minimum
 
 ## Quick Start
 
-**NEW in v0.1.5:** Start logging immediately - no configuration needed!
+**NEW in v0.1.5+:** Start logging immediately - no configuration needed!
 
 ```python
 from logly import logger
@@ -235,9 +279,11 @@ logger.complete()
 logger.add("logs/app.log", rotation="daily", retention=30)  # Keep 30 days
 logger.add("logs/app.log", rotation="hourly", retention=24)  # Keep 24 hours
 
-# Size-based rotation
-logger.add("logs/app.log", size_limit="10MB", retention=5)  # Keep 5 files
-logger.add("logs/app.log", size_limit="100MB", retention=10)
+# Size-based rotation (supports B/b, KB/kb, MB/mb, GB/gb, TB/tb - case-insensitive)
+logger.add("logs/app.log", size_limit="10MB", retention=5)   # Keep 5 files
+logger.add("logs/app.log", size_limit="100mb", retention=10) # Lowercase works too
+logger.add("logs/tiny.log", size_limit="500b")               # Bytes with lowercase 'b'
+logger.add("logs/small.log", size_limit="5K")                # Short form (5 kilobytes)
 
 # Combined rotation
 logger.add("logs/app.log", rotation="daily", size_limit="50MB", retention=7)
@@ -401,6 +447,8 @@ Special thanks to:
 - **PyO3**: For seamless Python-Rust integration
 - **Maturin**: For simplifying the build process
 - **All contributors**: For valuable feedback and contributions
+
+> 📝 **Note on Loguru**: Logly is not the same as Loguru. Logly is only inspired by Loguru's design, but all features and functionality are completely different. Logly is built with Rust for performance and safety, while Loguru is a pure Python library.
 
 ---
 

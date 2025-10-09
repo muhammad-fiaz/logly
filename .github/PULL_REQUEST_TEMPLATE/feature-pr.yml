@@ -1,0 +1,174 @@
+---
+name: Feature Pull Request
+description: Submit a pull request for a new feature
+title: "[FEATURE] "
+labels: ["feature", "triage"]
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: Provide a brief summary of the new feature.
+      placeholder: A clear and concise description of what this feature does.
+    validations:
+      required: true
+
+  - type: input
+    id: issue-url
+    attributes:
+      label: Related Issue URL
+      description: Link to the GitHub issue this feature addresses
+      placeholder: https://github.com/muhammad-fiaz/logly/issues/ISSUE_NUMBER
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Solved
+      description: What problem does this feature solve?
+      placeholder: |
+        - What user problem is being addressed?
+        - What use case is now enabled?
+        - Why is this feature valuable?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Implementation
+      description: How was this feature implemented?
+      placeholder: |
+        - Technical approach
+        - API design decisions
+        - Architecture considerations
+        - Trade-offs made
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-changes
+    attributes:
+      label: API Changes
+      description: What new APIs or changes to existing APIs are introduced?
+      placeholder: |
+        - New functions/classes
+        - Modified signatures
+        - Breaking changes
+        - Migration path
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: documentation
+    attributes:
+      label: Documentation Checklist
+      description: Please confirm documentation has been updated
+      options:
+        - label: "API documentation updated in docs/"
+          required: true
+        - label: "User guide updated with new feature"
+          required: true
+        - label: "Examples added to cookbook"
+          required: true
+        - label: "Breaking changes documented in migration guide"
+          required: true
+        - label: "README updated if needed"
+          required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing
+      description: How was this feature tested?
+      placeholder: |
+        - Unit tests for new functionality
+        - Integration tests
+        - Manual testing scenarios
+        - Edge cases covered
+        - Performance testing
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Logly Version
+      description: What version of Logly includes this feature?
+      placeholder: e.g., 0.1.4
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: code-quality
+    attributes:
+      label: Code Quality Checklist
+      description: Please confirm the following
+      options:
+        - label: "cargo fmt has been run"
+          required: true
+        - label: "mypy passes with no errors"
+          required: true
+        - label: "pylint and clippy pass with no warnings"
+          required: true
+        - label: "cargo test and pytest pass"
+          required: true
+        - label: "uv run ruff format has been applied"
+          required: true
+        - label: "All new functions/classes have docstrings"
+          required: true
+        - label: "No unnecessary changes included"
+          required: true
+
+  - type: checkboxes
+    id: ai-usage
+    attributes:
+      label: AI Usage Disclosure
+      description: Please disclose AI tool usage
+      options:
+        - label: "I have used AI tools (GitHub Copilot, ChatGPT, etc.) to assist with this implementation"
+        - label: "No AI tools were used in this implementation"
+      validations:
+        required: true
+
+  - type: textarea
+    id: reviewers
+    attributes:
+      label: Reviewers
+      description: "@mention the person or team responsible for reviewing this PR"
+      placeholder: "@reviewer1 @reviewer2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes (if any)
+      description: Does this feature introduce any breaking changes?
+      placeholder: |
+        If yes, describe them and provide migration guidance:
+        - Breaking change 1
+        - Migration steps...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Provide code examples showing how to use this feature.
+      placeholder: |
+        ```python
+        # Example usage
+        ```
+
+  - type: textarea
+    id: additional-notes
+    attributes:
+      label: Additional Notes
+      description: Any additional information or context reviewers should be aware of.
+      placeholder: |
+        - Future enhancements
+        - Performance considerations
+        - Security implications
+        - Related features

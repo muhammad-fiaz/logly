@@ -1,12 +1,21 @@
 ---
 title: Quick Start - Logly Python Logging Tutorial
 description: Get started with Logly logging library in 5 minutes. Learn basic setup, configuration, and core features for Python applications.
-keywords: python, logging, tutorial, quickstart, setup, configuration, logly
+keywords: python, logging, tutorial, quickstart, setup, configuration, logly, jupyter, colab, notebook
 ---
 
 # Quick Start
 
 Get started with Logly in 5 minutes!
+
+!!! success "Jupyter/Colab Support"
+    **NEW:** Logly now works seamlessly in Jupyter Notebooks and Google Colab with **guaranteed output display**! 
+    
+    - ✅ Logs display correctly in notebook output cells
+    - ✅ **Robust fallback**: If Python stdout fails, Rust println! ensures logs always appear
+    - ✅ Works in all environments: notebooks, terminals, and edge cases
+    
+    See [Issue #76](https://github.com/muhammad-fiaz/logly/issues/76) and [Jupyter/Colab Guide](examples/jupyter-colab.md) for details.
 
 ---
 
@@ -497,6 +506,13 @@ logger.add("logs/app.log", size_limit="10MB", retention=5)
 
 # Combine time and size rotation
 logger.add("logs/app.log", rotation="daily", size_limit="500MB", retention=7)
+
+# Various size formats (case-insensitive):
+logger.add("logs/tiny.log", size_limit="100")       # 100 bytes
+logger.add("logs/small.log", size_limit="500b")     # 500 bytes (lowercase)
+logger.add("logs/medium.log", size_limit="5kb")     # 5 kilobytes (lowercase)
+logger.add("logs/large.log", size_limit="10M")      # 10 megabytes (short form)
+logger.add("logs/huge.log", size_limit="1gb")       # 1 gigabyte (lowercase)
 ```
 
 **Output:**
@@ -649,7 +665,7 @@ if logger.is_sink_enabled(debug_log_id):
 - **User Preferences:** Toggle console output based on settings
 - **Testing:** Control output destinations without reconfiguration
 
-**See Also:** [Utilities API Reference](api-reference/utilities.md#enable_sink) for complete documentation.
+**See Also:** [Utilities API Reference](api-reference/utilities.md#loggerenable_sink) for complete documentation.
 
 ---
 

@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -67,98 +68,113 @@ pub fn search_file<P: AsRef<Path>>(
     let start = options.start_line.unwrap_or(1);
     let end = options.end_line.unwrap_or(all_lines.len());
 
-    // Search through lines
-    for (idx, line) in all_lines.iter().enumerate() {
+    // Use parallel iteration for better performance on large files
+    // Collect matches with their indices for later sorting
+    let matches: Vec<(usize, String, String)> = all_lines
+        .par_iter()
+        .enumerate()
+        .filter_map(|(idx, line)| {
+            let line_num = idx + 1;
+
+            // Check line range filter
+            if line_num < start || line_num > end {
+                return None;
+            }
+
+            // Check level filter
+            if let Some(ref level) = options.level_filter {
+                let line_upper = line.to_uppercase();
+                if !line_upper.contains(&level.to_uppercase()) {
+                    return None;
+                }
+            }
+
+            // Check if line matches pattern
+            let matches = if let Some(ref re) = regex_matcher {
+                re.is_match(line)
+            } else if options.case_sensitive {
+                line.contains(pattern)
+            } else {
+                line.to_lowercase().contains(&pattern.to_lowercase())
+            };
+
+            // Apply invert_match (like grep -v)
+            let should_include = if options.invert_match {
+                !matches
+            } else {
+                matches
+            };
+
+            if should_include {
+                // Extract matched text
+                let matched_text = if let Some(ref re) = regex_matcher {
+                    re.find(line)
+                        .map(|m| m.as_str().to_string())
+                        .unwrap_or_else(|| pattern.to_string())
+                } else {
+                    // For non-regex searches, find the actual substring in the line
+                    if options.case_sensitive {
+                        // Case-sensitive: find exact match
+                        line.find(pattern)
+                            .map(|pos| &line[pos..pos + pattern.len()])
+                            .unwrap_or(pattern)
+                    } else {
+                        // Case-insensitive: find the match preserving original case
+                        let pattern_lower = pattern.to_lowercase();
+                        let line_lower = line.to_lowercase();
+                        line_lower
+                            .find(&pattern_lower)
+                            .map(|pos| &line[pos..pos + pattern.len()])
+                            .unwrap_or(pattern)
+                    }
+                    .to_string()
+                };
+
+                Some((idx, line.clone(), matched_text))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Process matches to add context and build final results
+    // This part stays sequential as it requires ordered access to all_lines
+    for (idx, content, matched_text) in matches {
         let line_num = idx + 1;
 
-        // Check line range filter
-        if line_num < start || line_num > end {
-            continue;
-        }
-
-        // Check level filter
-        if let Some(ref level) = options.level_filter {
-            let line_upper = line.to_uppercase();
-            if !line_upper.contains(&level.to_uppercase()) {
-                continue;
-            }
-        }
-
-        // Check if line matches pattern
-        let matches = if let Some(ref re) = regex_matcher {
-            re.is_match(line)
-        } else if options.case_sensitive {
-            line.contains(pattern)
+        // Get context lines
+        let context_before = if let Some(n) = options.context_before {
+            let start_idx = idx.saturating_sub(n);
+            all_lines[start_idx..idx].to_vec()
         } else {
-            line.to_lowercase().contains(&pattern.to_lowercase())
+            Vec::new()
         };
 
-        // Apply invert_match (like grep -v)
-        let should_include = if options.invert_match {
-            !matches
+        let context_after = if let Some(n) = options.context_after {
+            let end_idx = std::cmp::min(idx + 1 + n, all_lines.len());
+            all_lines[idx + 1..end_idx].to_vec()
         } else {
-            matches
+            Vec::new()
         };
 
-        if should_include {
-            // Extract matched text
-            let matched_text = if let Some(ref re) = regex_matcher {
-                re.find(line)
-                    .map(|m| m.as_str().to_string())
-                    .unwrap_or_else(|| pattern.to_string())
-            } else {
-                // For non-regex searches, find the actual substring in the line
-                if options.case_sensitive {
-                    // Case-sensitive: find exact match
-                    line.find(pattern)
-                        .map(|pos| &line[pos..pos + pattern.len()])
-                        .unwrap_or(pattern)
-                } else {
-                    // Case-insensitive: find the match preserving original case
-                    let pattern_lower = pattern.to_lowercase();
-                    let line_lower = line.to_lowercase();
-                    line_lower
-                        .find(&pattern_lower)
-                        .map(|pos| &line[pos..pos + pattern.len()])
-                        .unwrap_or(pattern)
-                }
-                .to_string()
-            };
+        results.push(SearchResult {
+            line_number: line_num,
+            content,
+            matched_text,
+            context_before,
+            context_after,
+        });
 
-            // Get context lines
-            let context_before = if let Some(n) = options.context_before {
-                let start_idx = idx.saturating_sub(n);
-                all_lines[start_idx..idx].to_vec()
-            } else {
-                Vec::new()
-            };
+        // Check first_only
+        if options.first_only {
+            break;
+        }
 
-            let context_after = if let Some(n) = options.context_after {
-                let end_idx = std::cmp::min(idx + 1 + n, all_lines.len());
-                all_lines[idx + 1..end_idx].to_vec()
-            } else {
-                Vec::new()
-            };
-
-            results.push(SearchResult {
-                line_number: line_num,
-                content: line.clone(),
-                matched_text,
-                context_before,
-                context_after,
-            });
-
-            // Check first_only
-            if options.first_only {
-                break;
-            }
-
-            // Check max_results
-            if let Some(max) = options.max_results
-                && results.len() >= max
-            {
-                break;
-            }
+        // Check max_results
+        if let Some(max) = options.max_results
+            && results.len() >= max
+        {
+            break;
         }
     }
 

@@ -105,6 +105,51 @@ body:
         - Performance impact
         - Workarounds you've tried
 
+  - type: dropdown
+    id: solution-interest
+    attributes:
+      label: Solution Interest
+      description: Are you interested in providing a solution for this bug?
+      options:
+        - "No, I just want to report the issue"
+        - "Yes, I can help fix this bug"
+        - "Maybe, I'd like to contribute but need guidance"
+        - "Not sure yet"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What kind of questions do you have about this issue?
+      multiple: true
+      options:
+        - "How does this affect my code?"
+        - "When will this be fixed?"
+        - "What are the workarounds?"
+        - "Can I help test the fix?"
+        - "I need clarification on the expected behavior"
+        - "Performance impact questions"
+        - "Compatibility questions"
+        - "Other questions"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-questions
+    attributes:
+      label: Additional Questions
+      description: Any specific questions you have about this bug or its impact.
+      placeholder: |
+        - How does this affect my current implementation?
+        - Are there any immediate workarounds I can use?
+        - What should I expect in terms of timeline?
+        - Do you need any additional information from me?
+        - Any other questions or concerns?
+    validations:
+      required: false
+
   - type: checkboxes
     id: checklist
     attributes:

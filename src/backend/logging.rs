@@ -444,9 +444,8 @@ pub fn configure_with_colors(
     storage_levels: Option<AHashMap<String, bool>>,
     level_colors: Option<AHashMap<String, String>>,
     color_callback: Option<Py<PyAny>>,
+    _log_compact: bool,
 ) -> PyResult<()> {
-    let lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
-
     // Validate all provided colors before modifying state
     if let Some(ref colors) = level_colors {
         for (level_name, color_value) in colors {
@@ -459,8 +458,11 @@ pub fn configure_with_colors(
         }
     }
 
+    let _lvl = to_level(level).ok_or_else(|| PyValueError::new_err("invalid level"))?;
+
     state::with_state(|s| {
-        s.level_filter = to_filter(lvl);
+        // Validate all provided colors before modifying state
+
         s.color = color;
         s.color_callback = color_callback;
         s.format_json = json;
@@ -716,9 +718,9 @@ mod tests {
             None,
             None,
             level_colors,
-            None,
+            None,  // color_callback
+            false, // log_compact
         );
-
         assert!(result.is_ok());
 
         // Verify configuration
@@ -755,9 +757,9 @@ mod tests {
             None,
             None,
             None,
-            None,
+            None,  // color_callback
+            false, // log_compact
         );
-
         assert!(result.is_err());
     }
 
@@ -791,8 +793,8 @@ mod tests {
                 None,
                 None,
                 Some(callback_py),
+                false, // log_compact
             );
-
             assert!(result.is_ok());
 
             // Verify callback was stored

@@ -77,6 +77,51 @@ body:
         - Performance issues
         - Environment details
 
+  - type: dropdown
+    id: solution-interest
+    attributes:
+      label: Solution Interest
+      description: Are you interested in providing a solution or just need help?
+      options:
+        - "I just need help/guidance"
+        - "I want to contribute a solution"
+        - "I might contribute but need guidance first"
+        - "Not sure yet"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What type of help do you need?
+      multiple: true
+      options:
+        - "How-to questions"
+        - "Troubleshooting help"
+        - "Best practices guidance"
+        - "API usage questions"
+        - "Configuration help"
+        - "Performance questions"
+        - "Integration questions"
+        - "Other questions"
+    validations:
+      required: false
+
+  - type: textarea
+    id: specific-questions
+    attributes:
+      label: Specific Questions
+      description: What are your specific questions or what help do you need?
+      placeholder: |
+        - What specific aspect are you struggling with?
+        - What have you tried that didn't work?
+        - What outcome are you hoping to achieve?
+        - Are there any constraints or requirements?
+        - Any other specific questions?
+    validations:
+      required: false
+
   - type: checkboxes
     id: checklist
     attributes:

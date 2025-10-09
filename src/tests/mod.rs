@@ -1,4 +1,6 @@
+mod jupyter_stdout_tests;
 mod logger_tests;
+mod retention_tests;
 mod search;
 mod txt_format_tests;
 

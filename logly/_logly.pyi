@@ -24,6 +24,15 @@ class PyLogger:
     """
 
     def __init__(self, auto_update_check: bool = True) -> None:
+        """Create a new PyLogger instance.
+
+        **Recent Fixes:**
+        - Jupyter/Colab: Logs now display in notebooks via Python's sys.stdout.
+          See: https://github.com/muhammad-fiaz/logly/issues/76
+
+        Args:
+            auto_update_check: Enable automatic version checking (default: True).
+        """
         """Initialize a new PyLogger instance.
 
         Args:
@@ -54,10 +63,19 @@ class PyLogger:
     ) -> int:
         """Add a logging sink (output destination).
 
+        **Fixed Issues:**
+        - Retention now works correctly with size_limit to limit total log files.
+          See: https://github.com/muhammad-fiaz/logly/issues/77
+
         Args:
             sink: Path to log file or "console" for stdout.
             rotation: Time-based rotation policy ("daily", "hourly", "minutely").
-            size_limit: Maximum file size before rotation (e.g., "5KB", "10MB", "1GB").
+            size_limit: Maximum file size before rotation. Supports case-insensitive formats:
+                       - Bytes: "100" (number only), "100B", "100b"
+                       - Kilobytes: "5KB", "5kb", "5K", "5k"
+                       - Megabytes: "10MB", "10mb", "10M", "10m"
+                       - Gigabytes: "1GB", "1gb", "1G", "1g"
+                       - Terabytes: "2TB", "2tb", "2T", "2t"
             filter_min_level: Exact log level for this sink ("TRACE", "DEBUG", "INFO",
                             "SUCCESS", "WARNING", "ERROR", "CRITICAL", "FAIL").
                             Only messages with this exact level will be logged.
@@ -69,6 +87,8 @@ class PyLogger:
             max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
             date_style: Date format ("rfc3339", "local", "utc").
             date_enabled: Include timestamp in log output (default: False).
+            retention: Number of rotated files to keep (including current). Works with
+                      both rotation and size_limit. Older files auto-deleted.
             retention: Number of rotated files to keep (older files auto-deleted).
             format: Custom format string with placeholders like "{level}", "{message}", "{time}", "{extra}", or any extra field key. Placeholders are case-insensitive and extra fields not used in the template are automatically appended.
             json: Enable JSON output format (default: False).

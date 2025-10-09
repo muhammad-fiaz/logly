@@ -4,6 +4,11 @@ Logly provides a simple and efficient logging API with a Rust backend for optima
 It supports structured logging, file output, asynchronous processing, and flexible configuration
 to meet the needs of modern Python applications.
 
+**Recent Fixes:**
+- Jupyter/Colab notebook support: Logs now display correctly in notebooks.
+  See: https://github.com/muhammad-fiaz/logly/issues/76
+- File retention: Fixed to properly limit total log files with size_limit.
+  See: https://github.com/muhammad-fiaz/logly/issues/77
 
 Example:
     >>> from logly import logger
@@ -84,11 +89,21 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
     ) -> int:
         """Add a logging sink (output destination).
 
+        **Fixed Issues:**
+        - Retention now works correctly with size_limit to limit total log files.
+          See: https://github.com/muhammad-fiaz/logly/issues/77
+
         Args:
             sink: Path to log file or "console" for stdout. Defaults to console.
             rotation: Time-based rotation policy. Options: "daily", "hourly", "minutely".
-            size_limit: Size-based rotation limit (e.g., "5KB", "10MB", "1GB").
-            retention: Number of rotated files to keep. Older files are deleted.
+            size_limit: Size-based rotation limit. Supports case-insensitive formats:
+                       - Bytes: "100" (number only), "100B", "100b"
+                       - Kilobytes: "5KB", "5kb", "5K", "5k"
+                       - Megabytes: "10MB", "10mb", "10M", "10m"
+                       - Gigabytes: "1GB", "1gb", "1G", "1g"
+                       - Terabytes: "2TB", "2tb", "2T", "2t"
+            retention: Number of rotated files to keep (including current). Older files are deleted.
+                      Works with both rotation and size_limit policies.
             filter_min_level: Minimum log level for this sink. Options: "TRACE", "DEBUG",
                             "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL", "FAIL".
             filter_module: Only log messages from this module name.

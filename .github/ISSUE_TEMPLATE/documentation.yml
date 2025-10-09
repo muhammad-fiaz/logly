@@ -65,6 +65,50 @@ body:
         - Screenshots of confusing sections
         - Links to related documentation
 
+  - type: dropdown
+    id: contribution-interest
+    attributes:
+      label: Contribution Interest
+      description: Are you interested in helping fix this documentation issue?
+      options:
+        - "No, I just want to report the issue"
+        - "Yes, I can help fix this documentation"
+        - "Maybe, I'd like to contribute but need guidance"
+        - "Not sure yet"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What kind of questions do you have about this documentation issue?
+      multiple: true
+      options:
+        - "How should this be documented?"
+        - "What information is missing?"
+        - "When will this be fixed?"
+        - "Can I help improve the documentation?"
+        - "Clarity questions"
+        - "Accuracy questions"
+        - "Other questions"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-questions
+    attributes:
+      label: Additional Questions
+      description: Any specific questions you have about this documentation issue.
+      placeholder: |
+        - What would be the best way to document this?
+        - Are there specific examples that would help?
+        - How does this relate to other documentation?
+        - Do you need any additional information from me?
+        - Any other questions or concerns?
+    validations:
+      required: false
+
   - type: checkboxes
     id: checklist
     attributes:

@@ -87,6 +87,50 @@ body:
         - Performance requirements
         - Compatibility considerations
 
+  - type: dropdown
+    id: implementation-interest
+    attributes:
+      label: Implementation Interest
+      description: Are you interested in implementing this feature yourself?
+      options:
+        - "No, I just want to suggest the feature"
+        - "Yes, I can implement this feature"
+        - "Maybe, I'd like to contribute but need guidance"
+        - "Not sure yet"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What kind of questions do you have about this feature?
+      multiple: true
+      options:
+        - "How would this feature work?"
+        - "What would the API look like?"
+        - "Timeline for implementation?"
+        - "Can I help design this feature?"
+        - "Technical feasibility questions"
+        - "Integration questions"
+        - "Other questions"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-questions
+    attributes:
+      label: Additional Questions
+      description: Any specific questions you have about this feature request.
+      placeholder: |
+        - How would this integrate with existing functionality?
+        - Are there any technical constraints I'm not considering?
+        - What would be the migration path for existing users?
+        - Do you need any additional information from me?
+        - Any other questions or concerns?
+    validations:
+      required: false
+
   - type: checkboxes
     id: checklist
     attributes:

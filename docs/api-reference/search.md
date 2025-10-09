@@ -1,3 +1,9 @@
+---
+title: Search API - Logly Python Logging
+description: Logly search API reference. Learn how to search log files with advanced filtering, regex patterns, and performance-optimized Rust-powered search.
+keywords: python, logging, search, api, regex, filtering, patterns, performance, logly
+---
+
 # Log Search Functionality
 
 ## Overview
