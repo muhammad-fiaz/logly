@@ -17,7 +17,7 @@ Get started with Logly in 5 minutes!
     - ✅ **InterpreterPoolExecutor**: True parallelism with isolated logger instances
     - ✅ **Template Strings**: Note that Python 3.14's t-strings are different from Logly's format strings
     
-    See the [Python 3.14 Support Guide](../guides/python-3.14-support.md) for comprehensive examples!
+    See the [Python 3.14 Support Guide](guides/python-3.14-support.md) for comprehensive examples!
 
 !!! success "Jupyter/Colab Support"
     **NEW:** Logly now works seamlessly in Jupyter Notebooks and Google Colab with **guaranteed output display**! 
