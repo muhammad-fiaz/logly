@@ -8,6 +8,17 @@ keywords: python, logging, tutorial, quickstart, setup, configuration, logly, ju
 
 Get started with Logly in 5 minutes!
 
+!!! info "Python 3.14 Support"
+    **NEW in v0.1.6:** Logly now fully supports Python 3.14! 🎉
+    
+    - ✅ **Deferred Annotations** (PEP 649): Use type hints without forward references
+    - ✅ **UUID7**: Time-sortable UUIDs for request tracking
+    - ✅ **Improved Pathlib**: Enhanced file operations with `.info`, `.copy()`, `.move()`
+    - ✅ **InterpreterPoolExecutor**: True parallelism with isolated logger instances
+    - ✅ **Template Strings**: Note that Python 3.14's t-strings are different from Logly's format strings
+    
+    See the [Python 3.14 Support Guide](../guides/python-3.14-support.md) for comprehensive examples!
+
 !!! success "Jupyter/Colab Support"
     **NEW:** Logly now works seamlessly in Jupyter Notebooks and Google Colab with **guaranteed output display**! 
     

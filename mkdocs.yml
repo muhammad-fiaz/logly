@@ -137,6 +137,7 @@ nav:
   - Guides:
     - Getting Started: guides/getting-started.md
     - Configuration: guides/configuration.md
+    - Python 3.14 Support: guides/python-3.14-support.md
     - log_compact Parameter: guides/log-compact.md
     - Error Handling: guides/error-handling.md
     - Version Checking: guides/version-checking.md

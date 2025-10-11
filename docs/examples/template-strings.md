@@ -1,19 +1,27 @@
 ---
 title: Template String Formatting - Logly Examples
 description: Template string formatting example showing how to use format placeholders in Logly for custom log output, including custom time format specifications.
-keywords: python, logging, example, template, format, placeholders, custom, time format, datetime, logly
+keywords: python, logging, example, template, format, placeholders, custom, time format, datetime, logly, python 3.14
 ---
 
 # Template String Formatting
 
 This example demonstrates how to use Logly's template string formatting feature to customize log output with placeholders. Template strings allow you to control exactly how your logs appear.
 
+!!! info "Python 3.14 Template Strings vs. Logly Format Strings"
+    **Important**: Python 3.14 introduces template strings (t-strings) with `t"..."` syntax for creating `Template` objects. This is **different** from Logly's format strings:
+    
+    - **Python 3.14 t-strings**: `t"Hello {name}"` creates a `Template` object for general templating
+    - **Logly format strings**: `"{time:YYYY-MM-DD} | {level} | {message}"` for log formatting
+    
+    Logly uses its own format system optimized for logging with time patterns, levels, and automatic field handling. See [Python 3.14 Support Guide](../guides/python-3.14-support.md) for details.
+
 ## Overview
 
 Template strings support placeholders that are replaced with actual log data:
 
 - **Built-in placeholders**: `{time}`, `{level}`, `{message}`
-- **Time format specs** (v0.1.6+): `{time:YYYY-MM-DD HH:mm:ss}` - Custom timestamp formatting
+- **Time format specs** (v0.1.6+): `{time:YYYY-MM-DD HH:mm:ss}` - Custom timestamp formatting (Loguru-style)
 - **Extra field placeholders**: `{module}`, `{function}`, `{filename}`, `{lineno}`, `{any_custom_field}`
 - **Special placeholders**: `{extra}` (all remaining fields as key=value pairs)
 
@@ -196,7 +204,7 @@ logger.add("readable.log",
 
 1. **Console vs File**: Use simpler formats for console, detailed for files
 2. **Include {extra}**: Use `{extra}` placeholder to explicitly capture all context fields
-3. **Consistent width**: Use `{level:8}` for aligned output (note: format specs don't support width yet)
+3. **Consistent width**: Use `{level:8}` for aligned output (note: width specs not yet implemented)
 4. **Time formats**: Choose appropriate time format for your use case:
    - `HH:mm:ss` for console (quick reference)
    - `YYYY-MM-DD HH:mm:ss.SSS` for logs (precise timestamps)
@@ -204,8 +212,58 @@ logger.add("readable.log",
 5. **Performance**: Simpler formats are slightly faster to process
 6. **Auto-append behavior**: Without `{extra}`, custom templates won't auto-append extra fields (v0.1.6+)
 
+## Python 3.14 Considerations
+
+If you're using Python 3.14, be aware of the distinction between language features and Logly features:
+
+### Python 3.14 Template Strings (NOT used in Logly)
+
+```python
+from string.templatelib import Template
+
+# This is Python 3.14's NEW template string feature
+name = "Alice"
+age = 30
+tmpl: Template = t"Hello {name}, you are {age} years old"
+
+# Template object properties
+print(tmpl.strings)        # ('Hello ', ', you are ', ' years old')
+print(tmpl.interpolations)  # (name, age)
+print(str(tmpl))           # 'Hello Alice, you are 30 years old'
+```
+
+### Logly Format Strings (Used for logging)
+
+```python
+from logly import logger
+
+# This is Logly's format string system (similar to Loguru)
+logger.add(
+    "app.log",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message} | {extra}"
+)
+
+logger.info("User action", username="Alice", age=30)
+# Output: 2025-10-11 13:45:32.123 | INFO | User action | username=Alice | age=30
+```
+
+### Key Differences
+
+| Feature | Python 3.14 t-strings | Logly Format Strings |
+|---------|----------------------|---------------------|
+| Syntax | `t"text {var}"` | `"text {placeholder}"` |
+| Purpose | General templating | Log formatting |
+| Returns | `Template` object | Formatted log string |
+| Time Formats | Not supported | `{time:YYYY-MM-DD}` etc. |
+| Log Levels | Not supported | `{level}` |
+| Auto-append | Not supported | Extra fields auto-append |
+| Use Case | App templates, SQL, etc. | Logging only |
+
+For more details on using Python 3.14 with Logly, see the [Python 3.14 Support Guide](../guides/python-3.14-support.md).
+
 ## See Also
 
+- [Python 3.14 Support Guide](../guides/python-3.14-support.md) - Comprehensive Python 3.14 features with Logly
 - [Configuration API](../api-reference/configuration.md#format-placeholders) - Complete placeholder reference
 - [Multi-Sink Setup](multi-sink.md) - Using different formats for different outputs
 - [File Operations](../api-reference/file-operations.md) - Advanced file handling

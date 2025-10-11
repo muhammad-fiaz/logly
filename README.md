@@ -39,7 +39,7 @@
   - [🔧 File Management](#-file-management)
   - [🔍 Advanced Filtering](#-advanced-filtering)
   - [📞 Callbacks \& Extensions](#-callbacks--extensions)
-  - [🎉 Recent Fixes](#-recent-fixes)
+  - [🎉 Recent Changes](#-recent-changes)
 - [Installation](#installation)
   - [From PyPI (Recommended)](#from-pypi-recommended)
   - [From Source (Development)](#from-source-development)
@@ -129,12 +129,19 @@ Logly offers a comprehensive set of logging features designed for modern Python 
 
 ---
 
-### 🎉 Recent Fixes
+### 🎉 Recent Changes
 
-- ✅ **Time Format Specifications** - Custom time formatting with Loguru-style patterns (v0.1.6+)
-- ✅ **Python 3.14 Support** ([#83](https://github.com/muhammad-fiaz/logly/issues/83)) - Full compatibility with Python 3.14 (v0.1.6+)
+**NEW in v0.1.6:**
+- ✅ **Python 3.14 Support** ([#83](https://github.com/muhammad-fiaz/logly/issues/83)) - Full compatibility with Python 3.14's latest features
+- ✅ **Time Format Specifications** ([#79](https://github.com/muhammad-fiaz/logly/issues/79)) - Custom time formatting with Loguru-style patterns (`{time:YYYY-MM-DD HH:mm:ss}`)
+- ✅ **Internal Debugging Mode** - New `internal_debug=True` parameter for troubleshooting and bug reports
+- ✅ **Enhanced Documentation** - Comprehensive Python 3.14 guide, template string examples, and improved API reference
+
+**Recent Fixes:**
 - ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
 - ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
+
+> 🎯 **Python 3.14 Users**: Check out the [Python 3.14 Support Guide](https://muhammad-fiaz.github.io/logly/guides/python-3.14-support/) to learn how to use new features like deferred annotations, UUID7, improved pathlib, and InterpreterPoolExecutor with Logly!
 
 ---
 ## Installation
@@ -173,11 +180,13 @@ Logly supports Python 3.10+ and is available for multiple platforms. The minimum
 | 3.14          | ✅     | ✅   | ✅   |
 
 **Notes:**
-- Python 3.14 support added in v0.1.6+
+- **Python 3.14 support** added in v0.1.6+ with full compatibility for new features
+- Pre-built wheels available for all platforms ([view on PyPI](https://pypi.org/project/logly/#files))
 - All major Linux distributions are supported
 - Both Intel and Apple Silicon macOS are supported
 - Windows 10 and later versions are supported
-- Pre-built wheels are available for all platforms ([view on PyPI](https://pypi.org/project/logly/#files))
+
+> 💡 **Python 3.14 Features**: Logly v0.1.6+ supports Python 3.14's deferred annotations, UUID7, improved pathlib, and InterpreterPoolExecutor. See the [Python 3.14 Support Guide](https://muhammad-fiaz.github.io/logly/guides/python-3.14-support/) for examples.
 
 ---
 
