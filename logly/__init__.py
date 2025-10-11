@@ -82,11 +82,16 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
 
         # If no inner logger provided, create one
         if inner is None:
-            self._inner = PyLogger(
-                auto_update_check=auto_update_check,
-                internal_debug=internal_debug,
-                debug_log_path=debug_log_path,
-            )
+            try:
+                # Try with new parameters (requires rebuilt Rust binary)
+                self._inner = PyLogger(
+                    auto_update_check=auto_update_check,
+                    internal_debug=internal_debug,
+                    debug_log_path=debug_log_path,
+                )
+            except TypeError:
+                # Fall back to old signature if Rust binary hasn't been rebuilt
+                self._inner = PyLogger(auto_update_check=auto_update_check)
         else:
             self._inner = inner
 
@@ -1425,11 +1430,17 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> debug_logger = logger(internal_debug=True, debug_log_path="my_debug.log")
             >>> debug_logger.info("This operation will be logged internally")
         """
-        new_py_logger = PyLogger(
-            auto_update_check=auto_update_check,
-            internal_debug=internal_debug,
-            debug_log_path=debug_log_path,
-        )
+        try:
+            # Try with new parameters (requires rebuilt Rust binary)
+            new_py_logger = PyLogger(
+                auto_update_check=auto_update_check,
+                internal_debug=internal_debug,
+                debug_log_path=debug_log_path,
+            )
+        except TypeError:
+            # Fall back to old signature if Rust binary hasn't been rebuilt
+            new_py_logger = PyLogger(auto_update_check=auto_update_check)
+
         # New loggers get auto-configured for immediate use
         return _LoggerProxy(
             new_py_logger,
