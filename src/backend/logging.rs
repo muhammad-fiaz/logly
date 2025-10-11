@@ -127,7 +127,8 @@ pub fn log_message_with_level_override(
     let pairs = extra.map(|d| dict_to_pairs(d)).unwrap_or_default();
 
     // Create log record data for callbacks
-    let timestamp_rfc3339 = Utc::now().to_rfc3339();
+    let timestamp_utc = Utc::now();
+    let timestamp_rfc3339 = timestamp_utc.to_rfc3339();
     let timestamp_local = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let level_str = level_override.unwrap_or(level_to_str(level)).to_string();
     let message = msg.to_string();
@@ -289,13 +290,7 @@ pub fn log_message_with_level_override(
                     s.show_filename,
                     s.show_lineno,
                 );
-                format_with_template(
-                    format_str,
-                    &timestamp_rfc3339,
-                    &level_str,
-                    msg,
-                    &filtered_pairs,
-                )
+                format_with_template(format_str, &timestamp_utc, &level_str, msg, &filtered_pairs)
             } else if is_console && (s.format_json || s.pretty_json) {
                 // JSON formatting for console output
                 let filtered_pairs = filter_caller_info(

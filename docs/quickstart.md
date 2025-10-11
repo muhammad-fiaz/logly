@@ -476,6 +476,84 @@ logger.info("User logged in", user="alice", ip="192.168.1.1")
 
 ---
 
+## Custom Time Formatting
+
+!!! success "NEW in v0.1.6+"
+    **Time Format Specifications** are now supported! Customize timestamp display using Loguru-style format patterns.
+
+### Basic Time Formatting
+
+```python
+from logly import logger
+
+# Add file sink with custom time format
+logger.add(
+    "logs/app.log",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+)
+
+logger.info("Server started")
+```
+
+**Output:**
+```
+2025-10-11 13:46:27 | INFO | Server started
+```
+
+### Common Time Format Patterns
+
+```python
+# Date-only format
+logger.add("console", format="{time:YYYY-MM-DD} [{level}] {message}")
+# Output: 2025-10-11 [INFO] User logged in
+
+# Date and time with milliseconds
+logger.add("console", format="{time:YYYY-MM-DD HH:mm:ss.SSS} {message}")
+# Output: 2025-10-11 13:46:27.324 Database query completed
+
+# ISO 8601 format
+logger.add("console", format="{time:YYYY-MM-DDTHH:mm:ss} {level} {message}")
+# Output: 2025-10-11T13:46:27 INFO Request processed
+
+# Month names
+logger.add("console", format="{time:MMMM DD, YYYY} - {message}")
+# Output: October 11, 2025 - System initialized
+
+# 12-hour format with AM/PM
+logger.add("console", format="{time:hh:mm:ss A} {message}")
+# Output: 01:46:27 PM Application ready
+```
+
+### Supported Format Patterns (v0.1.6+)
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `YYYY` | 4-digit year | 2025 |
+| `YY` | 2-digit year | 25 |
+| `MMMM` | Full month name | October |
+| `MMM` | Abbreviated month | Oct |
+| `MM` | 2-digit month | 10 |
+| `DD` | 2-digit day | 11 |
+| `dddd` | Full weekday name | Monday |
+| `ddd` | Abbreviated weekday | Mon |
+| `HH` | 24-hour format (00-23) | 13 |
+| `hh` | 12-hour format (01-12) | 01 |
+| `mm` | Minutes (00-59) | 46 |
+| `ss` | Seconds (00-59) | 27 |
+| `SSS` | Milliseconds | 324 |
+| `SS` | Centiseconds | 32 |
+| `SSSSSS` | Microseconds | 324000 |
+| `A` | Uppercase AM/PM | PM |
+| `a` | Lowercase am/pm | pm |
+| `ZZ` | Timezone offset | +0000 |
+| `Z` | Timezone offset with colon | +00:00 |
+| `zz` | Timezone name | UTC |
+| `X` | Unix timestamp | 1728647187 |
+
+For complete format pattern documentation, see [Template Strings Guide](examples/template-strings.md).
+
+---
+
 ## File Rotation
 
 ### Time-Based Rotation

@@ -131,6 +131,8 @@ Logly offers a comprehensive set of logging features designed for modern Python 
 
 ### 🎉 Recent Fixes
 
+- ✅ **Time Format Specifications** - Custom time formatting with Loguru-style patterns (v0.1.6+)
+- ✅ **Python 3.14 Support** ([#83](https://github.com/muhammad-fiaz/logly/issues/83)) - Full compatibility with Python 3.14 (v0.1.6+)
 - ✅ **Jupyter/Colab Support** ([#76](https://github.com/muhammad-fiaz/logly/issues/76)) - Logs now display correctly in notebook environments
 - ✅ **File Retention** ([#77](https://github.com/muhammad-fiaz/logly/issues/77)) - Retention now properly limits total log files with size_limit
 
@@ -168,8 +170,10 @@ Logly supports Python 3.10+ and is available for multiple platforms. The minimum
 | 3.11          | ✅     | ✅   | ✅   |
 | 3.12          | ✅     | ✅   | ✅   |
 | 3.13          | ✅     | ✅   | ✅   |
+| 3.14          | ✅     | ✅   | ✅   |
 
 **Notes:**
+- Python 3.14 support added in v0.1.6+
 - All major Linux distributions are supported
 - Both Intel and Apple Silicon macOS are supported
 - Windows 10 and later versions are supported
@@ -379,7 +383,42 @@ logger.add(
     "logs/json-like.log",
     format='{{"timestamp": "{time}", "level": "{level}", "msg": "{message}"}}'
 )
+
+# **NEW in v0.1.6:** Time Format Specifications
+# Customize time format using Loguru-style patterns
+logger.add("console", format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}")
+# Output: 2025-10-11 13:46:27 | INFO | Application started
+
+# Date-only format
+logger.add("logs/daily.log", format="{time:YYYY-MM-DD} [{level}] {message}")
+# Output: 2025-10-11 [INFO] User logged in
+
+# Milliseconds precision
+logger.add("logs/precise.log", format="{time:HH:mm:ss.SSS} {message}")
+# Output: 13:46:27.324 Database query completed
+
+# ISO 8601 format
+logger.add("logs/api.log", format="{time:YYYY-MM-DDTHH:mm:ss} {level} {message}")
+# Output: 2025-10-11T13:46:27 INFO Request processed
+
+# Month names
+logger.add("logs/verbose.log", format="{time:MMMM DD, YYYY} - {message}")
+# Output: October 11, 2025 - System initialized
 ```
+
+**Supported Time Format Patterns** (v0.1.6+):
+- **Year**: `YYYY` (2025), `YY` (25)
+- **Month**: `MM` (10), `MMM` (Oct), `MMMM` (October)
+- **Day**: `DD` (11), `ddd` (Mon), `dddd` (Monday)
+- **Hour**: `HH` (13, 24-hour), `hh` (01, 12-hour)
+- **Minute**: `mm` (46)
+- **Second**: `ss` (27)
+- **Millisecond**: `SSS` (324), `SS` (32), `SSSSSS` (324000 microseconds)
+- **AM/PM**: `A` (PM), `a` (pm)
+- **Timezone**: `ZZ` (+0000), `Z` (+00:00), `zz` (UTC)
+- **Unix Timestamp**: `X` (1728647187)
+
+For complete format pattern reference, see [Template Strings Documentation](https://muhammad-fiaz.github.io/logly/examples/template-strings/).
 
 For complete feature documentation, see the [API Reference](https://muhammad-fiaz.github.io/logly/api-reference/).
 
