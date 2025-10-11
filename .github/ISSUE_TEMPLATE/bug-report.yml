@@ -105,6 +105,37 @@ body:
         - Performance impact
         - Workarounds you've tried
 
+  - type: textarea
+    id: debug-logs
+    attributes:
+      label: Internal Debug Logs (Optional but Highly Recommended)
+      description: |
+        Enable internal debugging to capture detailed diagnostic information.
+        This helps us understand what Logly is doing internally and resolve your issue faster.
+        
+        **How to enable:**
+        ```python
+        from logly import logger
+        debug_logger = logger(internal_debug=True, debug_log_path="logly_debug.log")
+        # ... your code that reproduces the issue ...
+        ```
+        
+        Then paste the contents of `logly_debug.log` below, or attach the file to this issue.
+      placeholder: |
+        Paste your debug log contents here...
+        
+        Or drag and drop the logly_debug.log file into this text box.
+        
+        Debug logs include:
+        - Logger initialization details
+        - Configuration changes
+        - Sink operations (add, remove, enable, disable)
+        - Log operation details
+        - Internal errors and warnings
+      render: shell
+    validations:
+      required: false
+
   - type: dropdown
     id: solution-interest
     attributes:

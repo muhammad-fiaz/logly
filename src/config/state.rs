@@ -217,6 +217,14 @@ pub struct LoggerState {
     /// Registered callback functions that run asynchronously on each log
     pub callbacks: Vec<std::sync::Arc<Py<PyAny>>>,
 
+    // Internal debugging for logly development and troubleshooting
+    /// Enable internal debug mode to capture all logly operations
+    pub internal_debug: bool,
+    /// Path to store internal debug logs
+    pub debug_log_path: Option<String>,
+    /// Writer for internal debug logs
+    pub debug_writer: Option<Arc<Mutex<Box<dyn Write + Send>>>>,
+
     // Backward compatibility fields (deprecated, will be removed in 1.0)
     /// Legacy file path (use sinks instead)
     pub file_path: Option<String>,
@@ -278,6 +286,11 @@ impl Default for LoggerState {
             sample_rate: None,
             capture_caller: false,
             callbacks: Vec::new(),
+
+            // Internal debugging
+            internal_debug: false,
+            debug_log_path: None,
+            debug_writer: None,
 
             // Backward compatibility (deprecated)
             file_path: None,

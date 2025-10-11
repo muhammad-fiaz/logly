@@ -24,12 +24,41 @@ impl PyLogger {
     ///
     /// # Arguments
     /// * `auto_update_check` - Enable automatic version checking on startup (default: true)
+    /// * `internal_debug` - Enable internal debug logging for troubleshooting (default: false)
+    /// * `debug_log_path` - Path to store internal debug logs (default: "logly_debug.log")
     ///
     /// # Returns
     /// A new PyLogger with default settings
     #[new]
-    #[pyo3(signature = (auto_update_check = true))]
-    pub fn new(auto_update_check: bool) -> Self {
+    #[pyo3(signature = (auto_update_check = true, internal_debug = false, debug_log_path = None))]
+    pub fn new(
+        auto_update_check: bool,
+        internal_debug: bool,
+        debug_log_path: Option<String>,
+    ) -> Self {
+        use crate::config::state::with_state;
+        use crate::utils::debug::debug_info;
+
+        // Set debug mode before any other operations
+        with_state(|state| {
+            state.internal_debug = internal_debug;
+            state.debug_log_path = debug_log_path.or_else(|| {
+                if internal_debug {
+                    Some("logly_debug.log".to_string())
+                } else {
+                    None
+                }
+            });
+        });
+
+        debug_info(
+            "init",
+            &format!(
+                "PyLogger initialized (auto_update_check={}, internal_debug={})",
+                auto_update_check, internal_debug
+            ),
+        );
+
         if auto_update_check {
             version_check::check_version_async();
         }
@@ -86,6 +115,14 @@ impl PyLogger {
         auto_sink_levels: Option<Py<PyAny>>,
         log_compact: bool,
     ) -> PyResult<()> {
+        use crate::utils::debug::{debug_config, debug_info};
+
+        debug_info("configure", "Starting configuration");
+        debug_config("level", level);
+        debug_config("color", &color.to_string());
+        debug_config("json", &json.to_string());
+        debug_config("console", &console.to_string());
+
         // Validate log level parameter
         validate_level(level)?;
 
@@ -377,10 +414,14 @@ impl PyLogger {
         json: bool,
     ) -> PyResult<usize> {
         use crate::config::state::{RotationPolicy, SinkConfig};
+        use crate::utils::debug::{debug_info, debug_sink};
+
+        debug_info("add", &format!("Adding sink: {}", sink));
 
         // Validate filter_min_level if provided
         if let Some(ref level) = filter_min_level {
             validate_level(level)?;
+            debug_info("add", &format!("Filter level: {}", level));
         }
 
         // Validate rotation parameter
@@ -479,6 +520,15 @@ impl PyLogger {
             s.sinks.insert(id, sink_config);
             id
         });
+
+        debug_sink(
+            "add",
+            Some(handler_id),
+            &format!(
+                "Sink added successfully (async={}, json={})",
+                async_write, json
+            ),
+        );
 
         // Create file writer for this sink if it's not console
         if sink != "console" {

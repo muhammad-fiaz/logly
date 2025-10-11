@@ -299,9 +299,9 @@ mod tests {
         // Check that it has the HH:mm:ss structure
         let parts: Vec<&str> = result.split(':').collect();
         assert_eq!(parts.len(), 3, "Should have 3 colon-separated parts");
-        assert!(parts[0].len() >= 1, "Hour should have at least 1 digit");
-        assert!(parts[1].len() >= 1, "Minute should have at least 1 digit");
-        assert!(parts[2].len() >= 1, "Second should have at least 1 digit");
+        assert!(!parts[0].is_empty(), "Hour should have at least 1 digit");
+        assert!(!parts[1].is_empty(), "Minute should have at least 1 digit");
+        assert!(!parts[2].is_empty(), "Second should have at least 1 digit");
 
         // Test what loguru_to_chrono_format produces
         let chrono_format = loguru_to_chrono_format("HH:mm:ss");

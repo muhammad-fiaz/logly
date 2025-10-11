@@ -155,6 +155,94 @@ direct_logger.configure(level="INFO", color=True)
 
 ---
 
+## Internal Debugging
+
+**NEW Feature:** Logly provides an internal debugging mode to help troubleshoot logging issues and report bugs effectively.
+
+### When to Use Internal Debugging
+
+Enable internal debugging when:
+- 🐛 **Reporting Issues**: You're experiencing unexpected behavior and need to share diagnostic information
+- 🔍 **Troubleshooting**: You want to understand what Logly is doing internally
+- 📋 **Configuration Auditing**: You need to verify all operations and settings
+
+### Enabling Debug Mode
+
+```python
+from logly import logger
+
+# Method 1: Enable during initialization (recommended for new loggers)
+debug_logger = logger(
+    internal_debug=True,
+    debug_log_path="logly_debug.log"  # Optional, defaults to "logly_debug.log"
+)
+
+# Now all internal operations are logged
+debug_logger.info("This is logged normally")
+# Internal debug log captures: sink operations, config changes, etc.
+```
+
+### What Gets Logged
+
+When internal debugging is enabled, Logly captures:
+
+- ✅ **Initialization**: Logger startup and configuration
+- ✅ **Configuration Changes**: All calls to `configure()` with parameters
+- ✅ **Sink Operations**: Adding, removing, enabling/disabling sinks
+- ✅ **Log Operations**: Each log call (with truncated message preview)
+- ✅ **Errors & Warnings**: Internal errors and warning conditions
+- ✅ **File Operations**: Rotation, compression, cleanup events
+
+### Debug Log Format
+
+Debug logs use a special format for clarity:
+
+```
+[2025-01-15T10:30:15.123456+00:00] [LOGLY-INFO] [init] Logger initialized with default settings
+[2025-01-15T10:30:15.234567+00:00] [LOGLY-INFO] [configure] level=INFO
+[2025-01-15T10:30:15.345678+00:00] [LOGLY-INFO] [configure] color=true
+[2025-01-15T10:30:15.456789+00:00] [LOGLY-INFO] [add] Adding sink: console
+[2025-01-15T10:30:15.567890+00:00] [LOGLY-INFO] [sink] Sink created: id=1, path=console
+```
+
+### Using Debug Logs for Bug Reports
+
+When reporting issues on GitHub:
+
+1. **Enable internal debugging**:
+   ```python
+   from logly import logger
+   
+   # Create a logger with debug mode enabled
+   debug_logger = logger(internal_debug=True, debug_log_path="logly_debug.log")
+   ```
+
+2. **Reproduce the issue**:
+   ```python
+   # Your code that causes the problem
+   debug_logger.add("test.log", rotation="daily")
+   debug_logger.info("Test message")
+   ```
+
+3. **Attach the debug log** to your GitHub issue:
+   - Copy the contents of `logly_debug.log`
+   - Paste it in the "Debug Logs" section of the issue template
+   - This helps maintainers diagnose the problem quickly
+
+!!! warning "Performance Impact"
+    Internal debugging adds minimal overhead but creates an additional file. Disable it in production by not passing `internal_debug=True` when creating the logger (it's disabled by default).
+
+!!! tip "Custom Debug Log Path"
+    Store debug logs anywhere:
+    ```python
+    debug_logger = logger(
+        internal_debug=True,
+        debug_log_path="logs/debug/logly_internal_2025-01-15.log"
+    )
+    ```
+
+---
+
 ## Complete Example
 
 Here's a complete working example:

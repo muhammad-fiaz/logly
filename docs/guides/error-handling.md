@@ -199,6 +199,37 @@ If you encounter an error that you believe is a bug in Logly:
 2. Verify your configuration against the valid options shown in the error
 3. If the error seems incorrect, report it at [github.com/muhammad-fiaz/logly/issues](https://github.com/muhammad-fiaz/logly/issues)
 
+**Enable internal debugging for bug reports:**
+
+```python
+from logly import logger
+
+# Create a debug-enabled logger
+debug_logger = logger(
+    internal_debug=True,
+    debug_log_path="logly_debug.log"
+)
+
+# Reproduce the issue
+try:
+    # Your code that triggers the error
+    debug_logger.configure(level="INVALID")
+except Exception as e:
+    print(f"Error occurred: {e}")
+    print("Debug log saved to: logly_debug.log")
+    print("Please attach this file when reporting the issue")
+```
+
+When reporting bugs, **always attach the debug log file** (`logly_debug.log`). It contains:
+
+- Logger initialization details
+- Configuration parameters
+- Sink operations
+- Internal errors and warnings
+- Complete operation timeline
+
+This diagnostic information helps maintainers reproduce and fix issues much faster.
+
 ## Exception Hierarchy
 
 Logly uses Python's standard exception types:
