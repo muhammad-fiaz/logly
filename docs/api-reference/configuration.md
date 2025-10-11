@@ -573,7 +573,7 @@ logger.add(
 | `max_buffered_lines` | `int` | `1000` | Maximum number of buffered lines before blocking |
 | `date_style` | `str \| None` | `None` | Timestamp format: `"rfc3339"`, `"local"`, `"utc"` |
 | `date_enabled` | `bool` | `False` | Include timestamp in log output |
-| `format` | `str \| None` | `None` | Custom format string with placeholders like `"{level}"`, `"{message}"`, `"{time}"`, `"{extra}"`, or any extra field key |
+| `format` | `str \| None` | `None` | **NEW in v0.1.6+**: Custom format string with placeholders like `"{level}"`, `"{message}"`, `"{time}"`, `"{extra}"`, or any extra field key. **Time Format Specifications** are now supported: use `{time:FORMAT}` to customize timestamp display with Loguru-style patterns (e.g., `{time:YYYY-MM-DD HH:mm:ss}`). Supported patterns: `YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `MMMM`, `MMM`, `dddd`, `ddd`, `hh`, `A`, `a`, `ZZ`, `Z`, `zz`, `X`. See [Template Strings Documentation](../examples/template-strings.md) for complete pattern reference |
 | `json` | `bool` | `False` | Format logs as JSON for this sink |
 
 ### How Rotation, Retention, and Size Limit Work Together
@@ -732,7 +732,31 @@ logger.add("logs/structured.log",
 
 logger.info("User action", user="alice", action="login", session_id="12345")
 # Output: {"timestamp": "2023-01-01T12:00:00Z", "level": "INFO", "message": "User action", "extra": user=alice | action=login | session_id=12345}
+
+# **NEW in v0.1.6+**: Time Format Specifications
+# Customize timestamp display using Loguru-style patterns
+logger.add("console", format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}")
+# Output: 2025-10-11 13:46:27 | INFO | User logged in
+
+# Date-only format
+logger.add("logs/daily.log", format="{time:YYYY-MM-DD} [{level}] {message}")
+# Output: 2025-10-11 [INFO] Request processed
+
+# Milliseconds precision
+logger.add("logs/precise.log", format="{time:HH:mm:ss.SSS} {level} {message}")
+# Output: 13:46:27.324 INFO Database query completed
+
+# ISO 8601 format
+logger.add("logs/api.log", format="{time:YYYY-MM-DDTHH:mm:ss} {level} {message}")
+# Output: 2025-10-11T13:46:27 INFO API request
+
+# Month names and 12-hour time
+logger.add("console", format="{time:MMMM DD, YYYY hh:mm:ss A} - {message}")
+# Output: October 11, 2025 01:46:27 PM - System initialized
 ```
+
+**Supported Time Format Patterns** (v0.1.6+):
+See [Template Strings Documentation](../examples/template-strings.md) for complete pattern reference including `YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `MMMM`, `MMM`, `dddd`, `ddd`, `hh`, `A`, `a`, `ZZ`, `Z`, `zz`, `X`.
 
 ### Examples
 

@@ -44,15 +44,30 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
     the high-performance Rust implementation for optimal logging performance.
     """
 
-    def __init__(self, inner: PyLogger, auto_configure: bool = True) -> None:
+    def __init__(
+        self,
+        inner: PyLogger | None = None,
+        *,
+        auto_update_check: bool = True,
+        auto_configure: bool = True,
+        internal_debug: bool = False,
+        debug_log_path: str | None = None,
+    ) -> None:
         """Initialize the logger proxy with a PyLogger instance.
 
         Args:
-            inner: The underlying PyLogger instance from the Rust backend.
+            inner: The underlying PyLogger instance from the Rust backend. If None,
+                  a new PyLogger will be created with the specified parameters.
+            auto_update_check: Enable automatic version checking (default: True).
+                              Only used when inner=None.
             auto_configure: Automatically configure with defaults for immediate use (default: True).
                           This ensures users can start logging immediately without calling configure().
+            internal_debug: Enable internal debug logging for troubleshooting (default: False).
+                           When enabled, all logly operations are logged to a debug file.
+            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
+                           Only used when internal_debug=True.
         """
-        self._inner = inner
+        self._inner: PyLogger
         # bound context values attached to this proxy
         self._bound: dict[str, object] = {}
         # enabled/disabled switch
@@ -61,6 +76,27 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         self._levels: dict[str, str] = {}
         # track if we auto-created a console sink (for cleanup when auto_sink=False)
         self._auto_created_console_sink: int | None = None
+        # internal debug settings (stored for later use)
+        self._internal_debug: bool = internal_debug
+        self._debug_log_path: str | None = debug_log_path
+
+        # If no inner logger provided, create one
+        if inner is None:
+            try:
+                # Try with new parameters (requires rebuilt Rust binary)
+                self._inner = PyLogger(
+                    auto_update_check=auto_update_check,
+                    internal_debug=internal_debug,
+                    debug_log_path=debug_log_path,
+                )
+            except TypeError:
+                # Fall back to old signature if Rust binary hasn't been rebuilt
+                self._inner = PyLogger(auto_update_check=auto_update_check)
+        else:
+            self._inner = inner
+
+        # At this point, self._inner is guaranteed to be a PyLogger
+        assert self._inner is not None
 
         # Auto-configure on initialization so users can log immediately
         # This creates the default console sink (auto_sink=True by default)
@@ -1360,11 +1396,23 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
         """
         return self._inner.remove_callback(callback_id)
 
-    def __call__(self, auto_update_check: bool = True) -> _LoggerProxy:
+    def __call__(
+        self,
+        auto_update_check: bool = True,
+        auto_configure: bool = True,
+        internal_debug: bool = False,
+        debug_log_path: str | None = None,
+    ) -> _LoggerProxy:
         """Create a new logger instance with custom initialization options.
 
         Args:
             auto_update_check: Enable automatic version checking on startup. Defaults to True.
+            auto_configure: Automatically configure with defaults for immediate use (default: True).
+                          This ensures users can start logging immediately without calling configure().
+            internal_debug: Enable internal debug logging for troubleshooting (default: False).
+                           When enabled, all logly operations are logged to a debug file.
+            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
+                           Only used when internal_debug=True.
 
         Returns:
             A new _LoggerProxy instance with the specified configuration.
@@ -1377,13 +1425,32 @@ class _LoggerProxy:  # pylint: disable=too-many-public-methods
             >>> # Create logger without auto-update checks
             >>> custom_logger = logger(auto_update_check=False)
             >>> custom_logger.configure(level="INFO")
+            >>>
+            >>> # Create logger with internal debugging enabled
+            >>> debug_logger = logger(internal_debug=True, debug_log_path="my_debug.log")
+            >>> debug_logger.info("This operation will be logged internally")
         """
-        new_py_logger = PyLogger(auto_update_check)
+        try:
+            # Try with new parameters (requires rebuilt Rust binary)
+            new_py_logger = PyLogger(
+                auto_update_check=auto_update_check,
+                internal_debug=internal_debug,
+                debug_log_path=debug_log_path,
+            )
+        except TypeError:
+            # Fall back to old signature if Rust binary hasn't been rebuilt
+            new_py_logger = PyLogger(auto_update_check=auto_update_check)
+
         # New loggers get auto-configured for immediate use
-        return _LoggerProxy(new_py_logger, auto_configure=True)
+        return _LoggerProxy(
+            new_py_logger,
+            auto_configure=auto_configure,
+            internal_debug=internal_debug,
+            debug_log_path=debug_log_path,
+        )
 
 
-logger = _LoggerProxy(_rust_logger)
+logger = _LoggerProxy(inner=_rust_logger)
 
 __all__ = [
     "PyLogger",

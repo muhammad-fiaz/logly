@@ -23,7 +23,13 @@ class PyLogger:
     optimal performance.
     """
 
-    def __init__(self, auto_update_check: bool = True) -> None:
+    def __init__(
+        self,
+        auto_update_check: bool = True,
+        auto_configure: bool = True,
+        internal_debug: bool = False,
+        debug_log_path: str | None = None,
+    ) -> None:
         """Create a new PyLogger instance.
 
         **Recent Fixes:**
@@ -32,11 +38,13 @@ class PyLogger:
 
         Args:
             auto_update_check: Enable automatic version checking (default: True).
-        """
-        """Initialize a new PyLogger instance.
-
-        Args:
-            auto_update_check: Enable automatic version checking on startup. Defaults to True.
+            auto_configure: Automatically create a console sink if no sinks exist (default: True).
+                            This ensures users can start logging immediately without calling configure().
+            internal_debug: Enable internal debug logging for troubleshooting (default: False).
+                           When enabled, all logly internal operations are logged to a debug file.
+                           Use this when reporting issues or debugging logly behavior.
+            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
+                           Only used when internal_debug=True.
 
         Creates a logger with default configuration (INFO level, colored console output).
         """
@@ -118,6 +126,7 @@ class PyLogger:
         color_callback: Callable[[str, str], str] | None = ...,
         auto_sink: bool = ...,
         auto_sink_levels: dict[str, str | dict[str, object]] | None = ...,
+        log_compact: bool = ...,
     ) -> None:
         """Configure global logger settings.
 
@@ -155,6 +164,11 @@ class PyLogger:
                              - str: Simple file path (e.g., "logs/debug.log")
                              - dict: Advanced config with rotation, retention, json, etc.
                              Example: {"DEBUG": "logs/debug.log", "ERROR": {"path": "logs/error.log", "rotation": "daily"}}
+            log_compact: Enable compact logging for better Jupyter/Colab compatibility (default: False).
+            internal_debug: Enable internal debug logging for troubleshooting (default: False).
+                           When enabled, all logly operations are logged to a debug file.
+            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
+                           Only used when internal_debug=True.
         """
         ...
 
@@ -671,11 +685,22 @@ class PyLogger:
         """
         ...
 
-    def __call__(self, auto_update_check: bool = True) -> PyLogger:
+    def __call__(
+        self,
+        auto_update_check: bool = True,
+        internal_debug: bool = False,
+        debug_log_path: str | None = None,
+        auto_configure: bool = True,
+    ) -> PyLogger:
         """Create a new logger instance with custom initialization options.
 
         Args:
             auto_update_check: Enable automatic version checking on startup. Defaults to True.
+            internal_debug: Enable internal debug logging for troubleshooting. Defaults to False.
+            debug_log_path: Path to the debug log file. Defaults to "logly_debug.log".
+            auto_configure: Automatically create a console sink if no sinks exist (default: True).
+                            This ensures users can start logging immediately without calling configure().
+
 
         Returns:
             A new PyLogger instance with the specified configuration.
@@ -687,7 +712,9 @@ class PyLogger:
             >>>
             >>> # Create logger without auto-update checks
             >>> custom_logger = logger(auto_update_check=False)
-            >>> custom_logger.configure(level="INFO")
+            >>>
+            >>> # Create logger with internal debugging enabled
+            >>> debug_logger = logger(internal_debug=True, debug_log_path="my_debug.log")
         """
         ...
 

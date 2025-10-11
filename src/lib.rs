@@ -20,7 +20,7 @@ pub use logger::PyLogger;
 fn _logly(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<logger::PyLogger>()?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    let py_logger = Py::new(py, logger::PyLogger::new(true))?;
+    let py_logger = Py::new(py, logger::PyLogger::new(true, false, None))?;
     m.add("logger", py_logger)?;
     Ok(())
 }

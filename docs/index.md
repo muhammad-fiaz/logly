@@ -56,7 +56,9 @@ Logly combines the simplicity of Python with the performance and safety of Rust,
 - 📋 **Structured JSON**: Native JSON support with custom fields and pretty printing
 - 🎨 **Colored Levels**: Automatic color mapping (TRACE=cyan, SUCCESS=green, WARNING=yellow, FAIL=magenta, etc.)
 - ⚙️ **Per-Level Controls**: Fine-grained control over console output, timestamps, colors, and storage
-- 🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
+- ⌛ **Time Format Specs** (NEW in v0.1.6): Customize timestamps with Loguru-style patterns like `{time:YYYY-MM-DD HH:mm:ss}`
+- 🐍 **Python 3.14 Support** (NEW in v0.1.6): Full compatibility with Python 3.14
+- �🔧 **Smart Rotation**: Time-based (daily/hourly/minutely) and size-based rotation
 - 🗜️ **Compression**: Built-in gzip and zstd compression for rotated files
 - 🎯 **Multi-Sink**: Multiple outputs with independent filtering and formatting
 - 🔍 **Rich Filtering**: Filter by level, module, or function name

@@ -2504,11 +2504,19 @@ Create independent logger instances with different configurations.
 from logly import logger, PyLogger
 
 # Method 1: Using callable syntax (recommended)
-custom_logger = logger(auto_update_check=False)
+custom_logger = logger(
+    auto_update_check=False,
+    internal_debug=True,
+    debug_log_path="my_debug.log"
+)
 custom_logger.configure(level="DEBUG", color=False)
 
 # Method 2: Using PyLogger directly
-direct_logger = PyLogger(auto_update_check=False)
+direct_logger = PyLogger(
+    auto_update_check=False,
+    internal_debug=True,
+    debug_log_path="direct_debug.log"
+)
 direct_logger.configure(level="DEBUG", color=False)
 ```
 
@@ -2516,13 +2524,16 @@ direct_logger.configure(level="DEBUG", color=False)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `auto_update_check` | `bool` | `True` | Enable automatic PyPI version check on startup. |
+| `auto_update_check` | `bool` | `True` | Enable automatic PyPI version check on startup. Set to `False` for air-gapped environments or to reduce startup time. |
+| `internal_debug` | `bool` | `False` | Enable internal debug logging for troubleshooting. When `True`, all internal operations are logged to help diagnose issues. |
+| `debug_log_path` | `str \| None` | `"logly_debug.log"` | Path to store internal debug logs. Only used when `internal_debug=True`. Useful for bug reports and troubleshooting. |
 
 #### Use Cases
 
 - 🔧 **Multiple Configs:** Different loggers for different components
 - 🧪 **Testing:** Isolated logger per test
 - 🚫 **No Version Check:** Disable for air-gapped environments
+- 🐛 **Bug Reporting:** Enable `internal_debug` when reporting issues
 
 ---
 

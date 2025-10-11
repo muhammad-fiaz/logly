@@ -27,13 +27,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-        continue-on-error: ${{ matrix.python-version == '3.14' }}
-
-      - name: Skip Python 3.14 if not supported
-        if: matrix.python-version == '3.14' && failure()
-        run: |
-          echo "Python 3.14 is not supported on this runner, skipping..."
-          exit 0
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable

@@ -2,7 +2,7 @@ use crate::logger::PyLogger;
 use pyo3::prelude::*;
 
 fn create_test_logger() -> PyLogger {
-    PyLogger::new(true)
+    PyLogger::new(true, false, None)
 }
 
 #[cfg(test)]

@@ -8,6 +8,53 @@ keywords: python, logging, guide, configuration, advanced, sinks, formats, optim
 
 This guide covers advanced configuration options for Logly, including sink configuration, custom formats, performance tuning, and environment-specific setups.
 
+## Logger Initialization
+
+### Creating Logger Instances
+
+Logly provides multiple ways to create logger instances with custom initialization options:
+
+```python
+from logly import logger, PyLogger
+
+# Method 1: Use the global logger instance (default settings)
+logger.info("Using default global logger")
+
+# Method 2: Create custom logger via callable interface (recommended)
+custom_logger = logger(
+    auto_update_check=False,      # Disable version checking
+    internal_debug=True,           # Enable debug logging
+    debug_log_path="my_debug.log"  # Custom debug log path
+)
+
+# Method 3: Create PyLogger directly (advanced)
+direct_logger = PyLogger(
+    auto_update_check=False,
+    internal_debug=True,
+    debug_log_path="direct_debug.log"
+)
+```
+
+### Initialization Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `auto_update_check` | `bool` | `True` | Enable automatic PyPI version check on startup. Disable for air-gapped environments or faster startup. |
+| `internal_debug` | `bool` | `False` | Enable internal debug logging for troubleshooting. Logs all operations to help diagnose issues. |
+| `debug_log_path` | `str \| None` | `"logly_debug.log"` | Path to store internal debug logs. Only used when `internal_debug=True`. |
+
+### When to Use Internal Debugging
+
+Enable `internal_debug=True` when:
+
+- 🐛 **Reporting bugs** to the Logly issue tracker
+- 🔍 **Troubleshooting** unexpected behavior
+- 📋 **Auditing** logger operations and configuration
+- 🧪 **Development** to understand internal operations
+
+!!! tip "Bug Reports"
+    When reporting issues on GitHub, always attach the debug log file. It contains valuable diagnostic information that helps maintainers resolve your issue faster.
+
 ## Configuration Structure
 
 Logly configuration consists of:

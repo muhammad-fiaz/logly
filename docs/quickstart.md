@@ -8,6 +8,17 @@ keywords: python, logging, tutorial, quickstart, setup, configuration, logly, ju
 
 Get started with Logly in 5 minutes!
 
+!!! info "Python 3.14 Support"
+    **NEW in v0.1.6:** Logly now fully supports Python 3.14! 🎉
+    
+    - ✅ **Deferred Annotations** (PEP 649): Use type hints without forward references
+    - ✅ **UUID7**: Time-sortable UUIDs for request tracking
+    - ✅ **Improved Pathlib**: Enhanced file operations with `.info`, `.copy()`, `.move()`
+    - ✅ **InterpreterPoolExecutor**: True parallelism with isolated logger instances
+    - ✅ **Template Strings**: Note that Python 3.14's t-strings are different from Logly's format strings
+    
+    See the [Python 3.14 Support Guide](../guides/python-3.14-support.md) for comprehensive examples!
+
 !!! success "Jupyter/Colab Support"
     **NEW:** Logly now works seamlessly in Jupyter Notebooks and Google Colab with **guaranteed output display**! 
     
@@ -152,6 +163,94 @@ direct_logger.configure(level="INFO", color=True)
 
 !!! tip "Default Behavior"
     The global `logger` instance (imported as `from logly import logger`) has auto-update checks enabled by default.
+
+---
+
+## Internal Debugging
+
+**NEW Feature:** Logly provides an internal debugging mode to help troubleshoot logging issues and report bugs effectively.
+
+### When to Use Internal Debugging
+
+Enable internal debugging when:
+- 🐛 **Reporting Issues**: You're experiencing unexpected behavior and need to share diagnostic information
+- 🔍 **Troubleshooting**: You want to understand what Logly is doing internally
+- 📋 **Configuration Auditing**: You need to verify all operations and settings
+
+### Enabling Debug Mode
+
+```python
+from logly import logger
+
+# Method 1: Enable during initialization (recommended for new loggers)
+debug_logger = logger(
+    internal_debug=True,
+    debug_log_path="logly_debug.log"  # Optional, defaults to "logly_debug.log"
+)
+
+# Now all internal operations are logged
+debug_logger.info("This is logged normally")
+# Internal debug log captures: sink operations, config changes, etc.
+```
+
+### What Gets Logged
+
+When internal debugging is enabled, Logly captures:
+
+- ✅ **Initialization**: Logger startup and configuration
+- ✅ **Configuration Changes**: All calls to `configure()` with parameters
+- ✅ **Sink Operations**: Adding, removing, enabling/disabling sinks
+- ✅ **Log Operations**: Each log call (with truncated message preview)
+- ✅ **Errors & Warnings**: Internal errors and warning conditions
+- ✅ **File Operations**: Rotation, compression, cleanup events
+
+### Debug Log Format
+
+Debug logs use a special format for clarity:
+
+```
+[2025-01-15T10:30:15.123456+00:00] [LOGLY-INFO] [init] Logger initialized with default settings
+[2025-01-15T10:30:15.234567+00:00] [LOGLY-INFO] [configure] level=INFO
+[2025-01-15T10:30:15.345678+00:00] [LOGLY-INFO] [configure] color=true
+[2025-01-15T10:30:15.456789+00:00] [LOGLY-INFO] [add] Adding sink: console
+[2025-01-15T10:30:15.567890+00:00] [LOGLY-INFO] [sink] Sink created: id=1, path=console
+```
+
+### Using Debug Logs for Bug Reports
+
+When reporting issues on GitHub:
+
+1. **Enable internal debugging**:
+   ```python
+   from logly import logger
+   
+   # Create a logger with debug mode enabled
+   debug_logger = logger(internal_debug=True, debug_log_path="logly_debug.log")
+   ```
+
+2. **Reproduce the issue**:
+   ```python
+   # Your code that causes the problem
+   debug_logger.add("test.log", rotation="daily")
+   debug_logger.info("Test message")
+   ```
+
+3. **Attach the debug log** to your GitHub issue:
+   - Copy the contents of `logly_debug.log`
+   - Paste it in the "Debug Logs" section of the issue template
+   - This helps maintainers diagnose the problem quickly
+
+!!! warning "Performance Impact"
+    Internal debugging adds minimal overhead but creates an additional file. Disable it in production by not passing `internal_debug=True` when creating the logger (it's disabled by default).
+
+!!! tip "Custom Debug Log Path"
+    Store debug logs anywhere:
+    ```python
+    debug_logger = logger(
+        internal_debug=True,
+        debug_log_path="logs/debug/logly_internal_2025-01-15.log"
+    )
+    ```
 
 ---
 
@@ -473,6 +572,84 @@ logger.info("User logged in", user="alice", ip="192.168.1.1")
   }
 }
 ```
+
+---
+
+## Custom Time Formatting
+
+!!! success "NEW in v0.1.6+"
+    **Time Format Specifications** are now supported! Customize timestamp display using Loguru-style format patterns.
+
+### Basic Time Formatting
+
+```python
+from logly import logger
+
+# Add file sink with custom time format
+logger.add(
+    "logs/app.log",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+)
+
+logger.info("Server started")
+```
+
+**Output:**
+```
+2025-10-11 13:46:27 | INFO | Server started
+```
+
+### Common Time Format Patterns
+
+```python
+# Date-only format
+logger.add("console", format="{time:YYYY-MM-DD} [{level}] {message}")
+# Output: 2025-10-11 [INFO] User logged in
+
+# Date and time with milliseconds
+logger.add("console", format="{time:YYYY-MM-DD HH:mm:ss.SSS} {message}")
+# Output: 2025-10-11 13:46:27.324 Database query completed
+
+# ISO 8601 format
+logger.add("console", format="{time:YYYY-MM-DDTHH:mm:ss} {level} {message}")
+# Output: 2025-10-11T13:46:27 INFO Request processed
+
+# Month names
+logger.add("console", format="{time:MMMM DD, YYYY} - {message}")
+# Output: October 11, 2025 - System initialized
+
+# 12-hour format with AM/PM
+logger.add("console", format="{time:hh:mm:ss A} {message}")
+# Output: 01:46:27 PM Application ready
+```
+
+### Supported Format Patterns (v0.1.6+)
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `YYYY` | 4-digit year | 2025 |
+| `YY` | 2-digit year | 25 |
+| `MMMM` | Full month name | October |
+| `MMM` | Abbreviated month | Oct |
+| `MM` | 2-digit month | 10 |
+| `DD` | 2-digit day | 11 |
+| `dddd` | Full weekday name | Monday |
+| `ddd` | Abbreviated weekday | Mon |
+| `HH` | 24-hour format (00-23) | 13 |
+| `hh` | 12-hour format (01-12) | 01 |
+| `mm` | Minutes (00-59) | 46 |
+| `ss` | Seconds (00-59) | 27 |
+| `SSS` | Milliseconds | 324 |
+| `SS` | Centiseconds | 32 |
+| `SSSSSS` | Microseconds | 324000 |
+| `A` | Uppercase AM/PM | PM |
+| `a` | Lowercase am/pm | pm |
+| `ZZ` | Timezone offset | +0000 |
+| `Z` | Timezone offset with colon | +00:00 |
+| `zz` | Timezone name | UTC |
+| `X` | Unix timestamp | 1728647187 |
+
+For complete format pattern documentation, see [Template Strings Guide](examples/template-strings.md).
 
 ---
 
