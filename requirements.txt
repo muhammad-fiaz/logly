@@ -101,7 +101,7 @@ matplotlib-inline==0.1.7
     # via
     #   ipykernel
     #   ipython
-maturin==1.9.1
+maturin==1.9.6
     # via logly (pyproject.toml:dev)
 mccabe==0.7.0
     # via pylint
