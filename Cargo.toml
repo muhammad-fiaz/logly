@@ -29,7 +29,7 @@ arc-swap = "1.7.1"
 once_cell = "1.21.3"
 regex = "1.11.3"
 rayon = "1.11.0"
-ureq = { version = "3.1.2", default-features = false, features = ["rustls"] }
+ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
 
 [features]
 default = []
