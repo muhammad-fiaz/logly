@@ -81,7 +81,7 @@ A major update for **Logly** is coming soon!
 
 This release will include:
 
-* Fixes for several known issues ( #94, #99)
+* Fixes for several known issues ( [#94](https://github.com/muhammad-fiaz/logly/issues/94) and [#99](https://github.com/muhammad-fiaz/logly/issues/99))
 * Performance improvements
 * Internal refactoring from *tracing* and major structural updates for improved performance
 
