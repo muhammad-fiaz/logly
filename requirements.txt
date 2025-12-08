@@ -250,7 +250,7 @@ twine==6.2.0
     # via logly (pyproject.toml:dev)
 typing-extensions==4.15.0
     # via mypy
-urllib3==2.5.0
+urllib3==2.6.0
     # via
     #   requests
     #   twine
