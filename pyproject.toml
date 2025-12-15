@@ -49,7 +49,7 @@ dev = [
   "mypy[faster-cache]==1.16.1",
   "pre-commit==4.2.0",
   "pylint>=3.3.8",
-  "pytest==8.4.1",
+  "pytest==8.4.2",
   "pytest-cov==6.2.1",
   "rich>=14.1.0",
   "ruff==0.12.3",

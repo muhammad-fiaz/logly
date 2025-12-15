@@ -184,7 +184,7 @@ pylint==3.3.8
     # via logly (pyproject.toml:dev)
 pymdown-extensions==10.16.1
     # via mkdocs-material
-pytest==8.4.1
+pytest==8.4.2
     # via
     #   logly (pyproject.toml:dev)
     #   pytest-cov
