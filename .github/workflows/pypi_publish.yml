@@ -30,7 +30,7 @@ jobs:
           sccache: 'true'
           manylinux: auto
       - name: Upload wheel
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -59,7 +59,7 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: 'true'
       - name: Upload wheel
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -86,7 +86,7 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: 'true'
       - name: Upload wheel
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -108,7 +108,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
@@ -131,7 +131,7 @@ jobs:
       - name: Publish to PyPI
         run: uv publish dist/*
       - name: Upload wheels to GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
         env:
