@@ -2,7 +2,7 @@ name: PyPi Publish
 on:
   release:
     types:
-    - published
+      - published
 permissions:
   contents: read
 jobs:
@@ -11,9 +11,10 @@ jobs:
     strategy:
       matrix:
         target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -27,7 +28,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter --compatibility off
-          sccache: 'true'
+          sccache: "true"
           manylinux: auto
       - name: Upload wheel
         uses: actions/upload-artifact@v7
@@ -39,9 +40,10 @@ jobs:
     strategy:
       matrix:
         target: [x64, x86]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -57,7 +59,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter --compatibility off
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
@@ -68,9 +70,10 @@ jobs:
     strategy:
       matrix:
         target: [x86_64, aarch64]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -84,7 +87,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter --compatibility off
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
@@ -93,7 +96,7 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
