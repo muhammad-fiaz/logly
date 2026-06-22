@@ -117,6 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      contents: write
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [linux, windows, macos, sdist]
     steps:
@@ -129,3 +130,9 @@ jobs:
         uses: astral-sh/setup-uv@v8.1.0
       - name: Publish to PyPI
         run: uv publish dist/*
+      - name: Upload wheels to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
