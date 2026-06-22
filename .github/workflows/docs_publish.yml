@@ -32,18 +32,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Debug Repository
-        run: |
-          pwd
-          ls -la
-          ls -la docs
-          cat docs/package.json
-
-      - name: Clean state
-        run: |
-          rm -rf docs/node_modules
-          rm -f docs/package-lock.json
-
       - name: Install dependencies
         run: |
           cd docs
