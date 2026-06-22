@@ -5,7 +5,7 @@
     "": {
       "name": "docs-site",
       "devDependencies": {
-        "vitepress": "latest",
+        "vitepress": "^1.6.4",
       },
     },
   },
