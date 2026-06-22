@@ -32,19 +32,27 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Clean state
-        working-directory: ./docs
+      - name: Debug Repository
         run: |
-          rm -f package-lock.json bun.lockb
-          rm -rf node_modules
+          pwd
+          ls -la
+          ls -la docs
+          cat docs/package.json
+
+      - name: Clean state
+        run: |
+          rm -rf docs/node_modules
+          rm -f docs/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./docs
-        run: bun install
+        run: |
+          cd docs
+          bun install
 
       - name: Build with VitePress
-        working-directory: ./docs
-        run: bun run docs:build
+        run: |
+          cd docs
+          bun run docs:build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
