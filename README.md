@@ -14,7 +14,7 @@
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
 
-<p><em>A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.</em></p>
+<p><em>A Rust-powered, high-performance logging library for Python.</em></p>
 
 <b><a href="https://muhammad-fiaz.github.io/logly/">Documentation</a> |
 <a href="https://muhammad-fiaz.github.io/logly/api-reference/logger/">API Reference</a> |
@@ -23,12 +23,10 @@
 
 </div>
 
-> [!TIP]
-> Logly includes every feature you'd expect from a mature logging library like Loguru, plus additional features like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations -- all without compromising speed. The entire core engine is written in Rust with zero unsafe code.
 
 A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
 
-> **Logly v0.2.0** is a refactor from v0.1.6 with a rebuilt Rust engine, improved APIs, and new features. See the [documentation](https://muhammad-fiaz.github.io/logly/) for details. This project is under active development. Contributions are welcome!
+> **Logly v0.2.0** is a major rewrite of v0.1.6, featuring a rebuilt Rust-powered core, improved APIs, and new features. See the documentation for details. This project is under active development. If you encounter any issues, bugs, or have feature requests, please open an issue on GitHub. Contributions are welcome!
 
 **If you love `logly`, make sure to give it a star!**
 
@@ -95,6 +93,9 @@ logger.fatal("Fatal system failure!")
 
 logger.complete()
 ```
+
+> [!TIP]
+> Logly includes every feature you'd expect from a mature logging library like Loguru, plus additional features like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations -- all without compromising speed. The entire core engine is written in Rust with zero unsafe code.
 
 ---
 

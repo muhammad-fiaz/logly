@@ -1,6 +1,6 @@
 ---
 layout: home
-title: Logly - Rust-Powered Logging for Python
+title: A Rust-powered, high-performance logging library for Python
 description: A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
 
 hero:
