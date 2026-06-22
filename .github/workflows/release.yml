@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Update Release Body
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           body: |
             ${{ github.event.release.body }}
