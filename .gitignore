@@ -153,3 +153,5 @@ test_results/
 .basedpyright/
 
 *.json
+!**/package.json
+
