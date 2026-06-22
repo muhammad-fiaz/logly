@@ -37,8 +37,8 @@ logger.remove(sink_id)
 ```
 
 ::: tip File modes
-- `w` — overwrite on startup (default)
-- `a` — append to existing file
+- `w` - overwrite on startup (default)
+- `a` - append to existing file
 :::
 
 ## Custom Opener

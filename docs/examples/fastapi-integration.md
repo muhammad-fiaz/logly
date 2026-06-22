@@ -17,4 +17,4 @@ Use Logly's FastAPI middleware to automatically log every request with method, p
 
 - Add `LoglyMiddleware` to your `FastAPI` app to intercept all requests and responses.
 - The middleware enriches each log entry with HTTP method, URL path, response status, and execution time.
-- Use `logger.info()` inside your route handlers as usual — Logly merges handler and middleware logs seamlessly.
+- Use `logger.info()` inside your route handlers as usual - Logly merges handler and middleware logs seamlessly.

@@ -3,11 +3,14 @@ import { defineConfig } from "vitepress";
 export const SITE_URL = "https://muhammad-fiaz.github.io/logly";
 export const SITE_NAME = "Logly";
 export const SITE_DESCRIPTION =
-  "A high-performance, Rust-powered logging library for Python with structured logging, flexible sinks, and modern developer-friendly APIs.";
+  "A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.";
 
-export const GA_ID = "G-XXXXXXXXXX";
-export const GTM_ID = "GTM-XXXXXXXXXX";
-export const ADSENSE_CLIENT_ID = "ca-pub-XXXXXXXXXX";
+// Google Analytics and Google Tag Manager IDs
+export const GA_ID = "G-6BVYCRK57P";
+export const GTM_ID = "GTM-P4M9T8ZR";
+
+// Google AdSense Client ID
+export const ADSENSE_CLIENT_ID = "ca-pub-2040560600290490";
 
 export const KEYWORDS =
   "logly, python, logging, rust, performance, structured-logging, fastapi, django, flask, high-performance, developer-tools, pyo3";
@@ -25,7 +28,10 @@ export default defineConfig({
   },
 
   head: [
-    ["meta", { name: "viewport", content: "width=device-width, initial-scale=1.0" }],
+    [
+      "meta",
+      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+    ],
     ["meta", { name: "google-adsense-account", content: ADSENSE_CLIENT_ID }],
     ["meta", { name: "title", content: SITE_NAME }],
     ["meta", { name: "description", content: SITE_DESCRIPTION }],
@@ -44,7 +50,13 @@ export default defineConfig({
     ["meta", { property: "og:image", content: `${SITE_URL}/cover.png` }],
     ["meta", { property: "og:image:width", content: "1200" }],
     ["meta", { property: "og:image:height", content: "630" }],
-    ["meta", { property: "og:image:alt", content: "Logly - Rust-Powered Logging for Python" }],
+    [
+      "meta",
+      {
+        property: "og:image:alt",
+        content: "Logly - Rust-Powered Logging for Python",
+      },
+    ],
     ["meta", { property: "og:site_name", content: SITE_NAME }],
     ["meta", { property: "og:locale", content: "en_US" }],
 
@@ -61,16 +73,45 @@ export default defineConfig({
 
     // Favicons
     ["link", { rel: "icon", href: "/logly/favicon.ico", sizes: "48x48" }],
-    ["link", { rel: "icon", href: "/logly/favicon-32x32.png", type: "image/png", sizes: "32x32" }],
-    ["link", { rel: "icon", href: "/logly/favicon-16x16.png", type: "image/png", sizes: "16x16" }],
-    ["link", { rel: "apple-touch-icon", href: "/logly/apple-touch-icon.png", sizes: "180x180" }],
+    [
+      "link",
+      {
+        rel: "icon",
+        href: "/logly/favicon-32x32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+    ],
+    [
+      "link",
+      {
+        rel: "icon",
+        href: "/logly/favicon-16x16.png",
+        type: "image/png",
+        sizes: "16x16",
+      },
+    ],
+    [
+      "link",
+      {
+        rel: "apple-touch-icon",
+        href: "/logly/apple-touch-icon.png",
+        sizes: "180x180",
+      },
+    ],
     ["link", { rel: "manifest", href: "/logly/site.webmanifest" }],
 
     // Theme color
     ["meta", { name: "theme-color", content: "#4f46e5" }],
 
     // Google Analytics
-    ["script", { async: "", src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` }],
+    [
+      "script",
+      {
+        async: "",
+        src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`,
+      },
+    ],
     [
       "script",
       {},
@@ -117,14 +158,26 @@ gtag('config', '${GA_ID}');`,
     pageData.frontmatter.head ??= [];
     pageData.frontmatter.head.push(
       ["link", { rel: "canonical", href: canonicalUrl }],
-      ["meta", { property: "og:title", content: `${pageTitle} | ${SITE_NAME}` }],
+      [
+        "meta",
+        { property: "og:title", content: `${pageTitle} | ${SITE_NAME}` },
+      ],
       ["meta", { property: "og:url", content: canonicalUrl }],
     );
 
     if (pageData.frontmatter.description) {
       pageData.frontmatter.head.push(
-        ["meta", { property: "og:description", content: pageData.frontmatter.description }],
-        ["meta", { name: "description", content: pageData.frontmatter.description }],
+        [
+          "meta",
+          {
+            property: "og:description",
+            content: pageData.frontmatter.description,
+          },
+        ],
+        [
+          "meta",
+          { name: "description", content: pageData.frontmatter.description },
+        ],
       );
     }
 
@@ -186,9 +239,10 @@ gtag('config', '${GA_ID}');`,
       });
     } else {
       const pathParts = String(pageData.relativePath).split("/");
-      const section = pathParts.length > 1
-        ? pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1)
-        : "Documentation";
+      const section =
+        pathParts.length > 1
+          ? pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1)
+          : "Documentation";
 
       Object.assign(primarySchema, {
         headline: pageTitle,
@@ -205,12 +259,17 @@ gtag('config', '${GA_ID}');`,
     ];
 
     if (!isHome) {
-      const pathParts = String(pageData.relativePath).replace(/\.md$/, "").split("/");
+      const pathParts = String(pageData.relativePath)
+        .replace(/\.md$/, "")
+        .split("/");
       let currentPath = SITE_URL;
 
       pathParts.forEach((part, index) => {
         currentPath += `/${part}`;
-        const name = part.split("-").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ");
+        const name = part
+          .split("-")
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(" ");
         breadcrumbs.push({
           "@type": "ListItem",
           position: index + 2,
@@ -258,6 +317,14 @@ gtag('config', '${GA_ID}');`,
           text: "Core Concepts",
           items: [
             { text: "Sinks", link: "/guides/sinks" },
+            {
+              text: "Console & Output Control",
+              link: "/guides/console-output",
+            },
+            {
+              text: "Source Location & Timestamps",
+              link: "/guides/source-location-timestamps",
+            },
             { text: "Formatting", link: "/guides/formatting" },
             { text: "Filtering", link: "/guides/filtering" },
             { text: "Context Binding", link: "/guides/context-binding" },
@@ -268,7 +335,10 @@ gtag('config', '${GA_ID}');`,
         {
           text: "File Management",
           items: [
-            { text: "Rotation, Retention & Compression", link: "/guides/rotation-retention-compression" },
+            {
+              text: "Rotation, Retention & Compression",
+              link: "/guides/rotation-retention-compression",
+            },
             { text: "File Logging", link: "/guides/file-logging" },
           ],
         },
@@ -304,7 +374,10 @@ gtag('config', '${GA_ID}');`,
             { text: "Color Markup", link: "/guides/color-markup" },
             { text: "Custom Colors", link: "/guides/custom-colors" },
             { text: "Logging Handlers", link: "/guides/logging-handlers" },
-            { text: "Environment Variables", link: "/guides/environment-variables" },
+            {
+              text: "Environment Variables",
+              link: "/guides/environment-variables",
+            },
           ],
         },
         {
@@ -312,16 +385,17 @@ gtag('config', '${GA_ID}');`,
           items: [
             { text: "Troubleshooting", link: "/guides/troubleshooting" },
             { text: "FAQ", link: "/guides/faq" },
-            { text: "Switching from Other Libraries", link: "/guides/switching-from-other-libraries" },
+            {
+              text: "Switching from Other Libraries",
+              link: "/guides/switching-from-other-libraries",
+            },
           ],
         },
       ],
       "/integrations/": [
         {
           text: "Integrations",
-          items: [
-            { text: "Overview", link: "/integrations/" },
-          ],
+          items: [{ text: "Overview", link: "/integrations/" }],
         },
         {
           text: "Frameworks & Libraries",
@@ -396,7 +470,10 @@ gtag('config', '${GA_ID}');`,
             { text: "Compression", link: "/examples/compression" },
             { text: "Context Binding", link: "/examples/context-binding" },
             { text: "Custom Levels", link: "/examples/custom-levels" },
-            { text: "Exception Handling", link: "/examples/exception-handling" },
+            {
+              text: "Exception Handling",
+              link: "/examples/exception-handling",
+            },
             { text: "Filtering", link: "/examples/filtering" },
             { text: "Formatting", link: "/examples/formatting" },
             { text: "Concurrency", link: "/examples/concurrency" },
@@ -405,10 +482,19 @@ gtag('config', '${GA_ID}');`,
             { text: "Enable/Disable", link: "/examples/enable-disable" },
             { text: "Production Config", link: "/examples/production-config" },
             { text: "Integrations", link: "/examples/integrations" },
-            { text: "Django Integration", link: "/examples/django-integration" },
-            { text: "FastAPI Integration", link: "/examples/fastapi-integration" },
+            {
+              text: "Django Integration",
+              link: "/examples/django-integration",
+            },
+            {
+              text: "FastAPI Integration",
+              link: "/examples/fastapi-integration",
+            },
             { text: "Rich Integration", link: "/examples/rich-integration" },
-            { text: "Stdlib Integration", link: "/examples/stdlib-integration" },
+            {
+              text: "Stdlib Integration",
+              link: "/examples/stdlib-integration",
+            },
           ],
         },
       ],
@@ -420,7 +506,7 @@ gtag('config', '${GA_ID}');`,
 
     footer: {
       message: "Released under the MIT License.",
-      copyright: `Copyright © 2025-${new Date().getFullYear()} Muhammad Fiaz`,
+      copyright: `Copyright © 2023-${new Date().getFullYear()} Muhammad Fiaz`,
     },
 
     search: {

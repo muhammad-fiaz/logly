@@ -32,7 +32,6 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
-import sys
 from typing import Any
 
 if sys.version_info >= (3, 11):
@@ -172,7 +171,52 @@ class Logger:
         The sink can be a file path (str/Path), a file-like object with
         ``.write()``, a callable, a coroutine function, or a ``logging.Handler``.
 
-        Returns an integer handler ID that can be passed to ``remove()``.
+        Args:
+            sink: Destination for log messages. Can be:
+                - ``"stderr"`` or ``"stdout"`` for console output
+                - A file path string or ``Path`` object
+                - Any object with a ``.write()`` method
+                - A callable ``Callable[[str], Any]``
+                - A coroutine function (async sink)
+                - A ``logging.Handler`` instance
+            level: Minimum log level for this sink (default ``"DEBUG"``).
+            format: Format template string or callable. Uses tokens like
+                ``{time}``, ``{level}``, ``{message}``, ``{file}``, ``{line}``,
+                ``{function}``, ``{extra[key]}``.
+            rotation: Rotation policy. Accepts size strings (``"10 MB"``),
+                time strings (``"daily"``, ``"hourly"``), clock strings
+                (``"00:00"``), weekday names (``"monday"``), or ``None``.
+            retention: Retention policy. Accepts count (``7``), time strings
+                (``"30 days"``), or ``None``.
+            compression: Compression codec (``"gzip"``, ``"zip"``, ``"bz2"``,
+                ``"xz"``, ``"zstd"``, or ``None``).
+            enqueue: If ``True``, dispatch through a background worker.
+            colorize: ANSI color override. ``None`` = auto-detect,
+                ``True`` = force on, ``False`` = force off.
+            backtrace: If ``True``, include backtrace on exceptions.
+            diagnose: If ``True``, include diagnostic info on exceptions.
+            filter: Filter rule. Can be a string (prefix), callable, or
+                mapping of extra field values.
+            serialize: If ``True``, output as JSON.
+            pretty_json: Pretty JSON configuration (``True``, or
+                ``PrettyJsonConfig`` instance).
+            patch: Callable that mutates the record dict before dispatch.
+            encoding: File encoding (default ``"utf-8"``).
+            delay: If ``True``, delay file opening until first write.
+            context: Multiprocessing context for queue-based sinks.
+            catch: If ``True``, catch sink errors silently.
+            mode: File mode (``"a"`` for append, ``"w"`` for overwrite).
+            buffering: File buffering level.
+            loop: Event loop for async sinks.
+            opener: Custom file opener.
+
+        Returns:
+            Integer handler ID for use with :meth:`remove`.
+
+        Example::
+
+            logger.add("app.log", level="INFO", rotation="daily")
+            logger.add("stderr", colorize=True)
         """
         _ = (backtrace, diagnose, context, buffering, opener, kwargs)
 
@@ -367,8 +411,31 @@ class Logger:
     ) -> _CatchContext:
         """Return a decorator/context manager that logs caught exceptions.
 
-        The ``exception`` parameter specifies which exception types to catch.
-        If ``None``, catches all ``Exception`` subclasses.
+        Works as both a context manager and a decorator. When an exception
+        occurs, it is logged at the specified level and optionally re-raised.
+
+        Args:
+            exception: Exception type(s) to catch. If ``None``, catches all
+                ``Exception`` subclasses.
+            level: Log level for caught exceptions (default ``"ERROR"``).
+            reraise: If ``True``, re-raise the exception after logging.
+            onerror: Callback invoked with the caught exception.
+            exclude: Exception type(s) to skip (re-raise without logging).
+            default: Return value when used as decorator and exception occurs.
+
+        Returns:
+            A ``_CatchContext`` that works as decorator and context manager.
+
+        Example::
+
+            # As context manager
+            with logger.catch():
+                risky_operation()
+
+            # As decorator
+            @logger.catch(reraise=True)
+            def critical_function():
+                raise ValueError("Error")
         """
         return _CatchContext(
             self,

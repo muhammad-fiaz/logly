@@ -28,7 +28,7 @@ logger.log("CUSTOM", "Message at custom level")
 - `*args`: Format string arguments
 - `**kwargs`: Additional context fields
 
-**Returns:** `dict[str, object] | None` — record dict if `opt(record=True)`, else `None`
+**Returns:** `dict[str, object] | None` - record dict if `opt(record=True)`, else `None`
 
 ---
 
@@ -127,7 +127,7 @@ logger.critical("System memory exhausted")
 Log at FATAL level (numeric 70).
 
 ```python
-logger.fatal("Unrecoverable error — shutting down")
+logger.fatal("Unrecoverable error - shutting down")
 ```
 
 ---
@@ -155,7 +155,7 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sink` | `str \| Path \| Callable \| object` | — | File path, callable, or sink object |
+| `sink` | `str \| Path \| Callable \| object` | | File path, callable, or sink object |
 | `level` | `str` | `"INFO"` | Minimum log level for this sink |
 | `format` | `str \| None` | `None` | Custom format string |
 | `rotation` | `str \| int \| None` | `None` | Rotation policy (e.g., `"daily"`, `"10 MB"`) |
@@ -178,7 +178,7 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 | `loop` | `AbstractEventLoop \| None` | `None` | Event loop for async sinks |
 | `opener` | `Callable \| None` | `None` | Custom file opener |
 
-**Returns:** `str` — sink ID for use with `remove()`
+**Returns:** `str` - sink ID for use with `remove()`
 
 ---
 
@@ -233,7 +233,7 @@ logger.level("AUDIT", no=35, color="<green><bold>", icon="🔒")
 - `color` (`str | None`): ANSI color markup
 - `icon` (`str | None`): Level icon
 
-**Returns:** `tuple[str, int, str | None]` — `(name, numeric_value, color)`
+**Returns:** `tuple[str, int, str | None]` - `(name, numeric_value, color)`
 
 ---
 
@@ -292,31 +292,31 @@ logger.root_dir("/var/log/myapp")
 Configure logging behavior for subsequent calls.
 
 ```python
-# Record mode — return the record dict
+# Record mode - return the record dict
 record = logger.opt(record=True).info("Hello")
 
-# Lazy evaluation — defer string formatting
+# Lazy evaluation - defer string formatting
 logger.opt(lazy=True).info("Expensive: {data}", data=compute())
 
-# Raw mode — skip format processing
+# Raw mode - skip format processing
 logger.opt(raw=True).info("Raw message: {time}")
 
-# Exception mode — include exception info
+# Exception mode - include exception info
 logger.opt(exception=True).info("Failed")
 
-# Colors mode — enable ANSI color in message
+# Colors mode - enable ANSI color in message
 logger.opt(colors=True).info("<green>Success!</green>")
 
-# Depth mode — capture caller info from N frames up
+# Depth mode - capture caller info from N frames up
 logger.opt(depth=2).info("Called from caller")
 
-# Backtrace — include backtrace on exception
+# Backtrace - include backtrace on exception
 logger.opt(backtrace=True).info("Error context")
 
-# Diagnose — include variable values on exception
+# Diagnose - include variable values on exception
 logger.opt(diagnose=True).info("Debug context")
 
-# Capture — capture context from specified keys
+# Capture - capture context from specified keys
 logger.opt(capture=["user_id"]).info("User action")
 ```
 
@@ -347,7 +347,7 @@ user_logger.info("Action performed")
 # Output includes: user_id=12345 request_id=abc
 ```
 
-**Returns:** `Self` — new logger with bound context
+**Returns:** `Self` - new logger with bound context
 
 ---
 
@@ -363,7 +363,7 @@ patched.info("Running in production")
 **Parameters:**
 - `patcher` (`Callable[[dict], None]`): Function that modifies the record dict
 
-**Returns:** `Self` — new logger with patcher applied
+**Returns:** `Self` - new logger with patcher applied
 
 ---
 
@@ -443,13 +443,13 @@ entries = logger.parse(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `path` | `str \| Path` | — | Log file path |
+| `path` | `str \| Path` | | Log file path |
 | `pattern` | `str \| None` | `None` | Regex pattern with named groups |
 | `cast` | `dict \| None` | `None` | Type casting rules |
 | `chunk` | `int` | `65536` | Read chunk size |
 | `encoding` | `str` | `"utf-8"` | File encoding |
 
-**Returns:** `list[dict]` — parsed log entries
+**Returns:** `list[dict]` - parsed log entries
 
 ## Properties
 

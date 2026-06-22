@@ -16,7 +16,7 @@ from logly import logger
 LOG_DIR = os.environ.get("LOG_DIR", "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# Application logs — daily rotation, 30-day retention, gzip
+# Application logs - daily rotation, 30-day retention, gzip
 logger.add(
     f"{LOG_DIR}/app.log",
     level="INFO",
@@ -28,7 +28,7 @@ logger.add(
     format="{time} | {level} | {name}:{function}:{line} - {message}",
 )
 
-# Error logs — separate file, 90-day retention
+# Error logs - separate file, 90-day retention
 logger.add(
     f"{LOG_DIR}/errors.log",
     level="ERROR",
@@ -38,7 +38,7 @@ logger.add(
     enqueue=True,
 )
 
-# Debug logs — size-based, 3 copies
+# Debug logs - size-based, 3 copies
 logger.add(
     f"{LOG_DIR}/debug.log",
     level="DEBUG",

@@ -5,7 +5,7 @@ description: Send log entries to HTTP endpoints.
 
 # HTTP
 
-`HttpHandler` sends log entries to any HTTP endpoint. Uses the Python standard library (`urllib.request`) — no extra dependencies required.
+`HttpHandler` sends log entries to any HTTP endpoint. Uses the Python standard library (`urllib.request`) - no extra dependencies required.
 
 ## Installation
 

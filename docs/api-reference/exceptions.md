@@ -201,9 +201,9 @@ from logly.exceptions import RotationError, CompressionError
 try:
     logger.add("app.log", rotation="daily", compression="gzip")
 except RotationError:
-    print("Rotation failed — check rotation policy")
+    print("Rotation failed - check rotation policy")
 except CompressionError:
-    print("Compression failed — check codec availability")
+    print("Compression failed - check codec availability")
 ```
 
 ### Error Callback

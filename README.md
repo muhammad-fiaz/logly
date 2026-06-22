@@ -12,10 +12,7 @@
 <a href="https://github.com/muhammad-fiaz/logly/releases"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly" alt="GitHub release"></a>
 <a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://codecov.io/gh/muhammad-fiaz/logly/graph/badge.svg?token=1G3MU8SDX1" alt="codecov"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml/badge.svg" alt="Deploy Documentation"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml/badge.svg?event=release" alt="Publish Python distributions" /></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/release_drafter.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/release_drafter.yml/badge.svg" alt="Release Drafter"></a>
 
 <p><em>A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.</em></p>
 
@@ -26,153 +23,57 @@
 
 </div>
 
-A production-grade, high-performance logging library for Python, powered by a Rust-native engine built with PyO3. Designed with a clean, intuitive, and developer-friendly API, featuring a completely independent, from-scratch Rust implementation.
+> [!TIP]
+> Logly includes every feature you'd expect from a mature logging library like Loguru, plus additional features like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations -- all without compromising speed. The entire core engine is written in Rust with zero unsafe code.
 
-> [!NOTE]
-> **Logly v0.2.0** — A refactor of Logly from v0.1.6 with a rebuilt Rust-native engine, improved APIs, and new features. See the [documentation](https://muhammad-fiaz.github.io/logly/) for details. This project is under active development — contributions are welcome!
+A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
+
+> **Logly v0.2.0** is a refactor from v0.1.6 with a rebuilt Rust engine, improved APIs, and new features. See the [documentation](https://muhammad-fiaz.github.io/logly/) for details. This project is under active development. Contributions are welcome!
 
 **If you love `logly`, make sure to give it a star!**
 
 ---
 
-<details>
-<summary><strong>Table of Contents</strong> (click to expand)</summary>
+## Features
 
-- [Prerequisites](#prerequisites)
-- [Supported Platforms](#supported-platforms)
-- [Installation](#installation)
-- [Quick Start](#quick Start)
-- [Usage Examples](#usage-examples)
-  - [Console Logging](#console-logging)
-  - [File Logging](#file-logging)
-  - [File Rotation](#file-rotation)
-  - [JSON Logging](#json-logging)
-  - [Context Binding](#context-binding)
-  - [Custom Log Levels](#custom-log-levels)
-  - [Multiple Sinks](#multiple-sinks)
-  - [Filtering](#filtering)
-  - [Custom Formatters](#custom-formatters)
-  - [Patching Records](#patching-records)
-  - [Exception Catching](#exception-catching)
-  - [Lazy Evaluation](#lazy-evaluation)
-  - [Enable/Disable](#enabledisable)
-  - [Stdlib Logging Integration](#stdlib-logging-integration)
-  - [FastAPI Integration](#fastapi-integration)
-  - [Django Integration](#django-integration)
-  - [Rich Console Integration](#rich-console-integration)
-  - [Production Configuration](#production-configuration)
-- [Configuration](#configuration)
-  - [Pydantic Configuration](#pydantic-configuration)
-- [Log Levels](#log-levels)
-- [Architecture](#architecture)
-- [Performance](#performance)
-- [Building](#building)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
-- [Links](#links)
+| Feature | Description |
+|---------|-------------|
+| **Rust-native engine** | High-performance logging via PyO3 with zero unsafe Rust |
+| **10 built-in levels** | TRACE, DEBUG, INFO, NOTICE, SUCCESS, WARNING, ERROR, FAIL, CRITICAL, FATAL |
+| **Custom levels** | Define your own levels with custom priorities and colors |
+| **Multiple sinks** | Console, file, callable, and network outputs simultaneously |
+| **File rotation** | Time-based and size-based rotation with retention policies |
+| **Compression** | gzip, zip, bz2, xz, zstd support out of the box |
+| **JSON logging** | Structured JSON output for storage and analysis |
+| **Context binding** | Attach persistent key-value pairs to logs |
+| **Exception catching** | `catch()` decorator and context manager |
+| **Background workers** | Non-blocking writes with `enqueue=True` |
+| **30+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more |
 
-</details>
-
-----
-
-<details>
-<summary><strong>Features of Logly</strong> (click to expand)</summary>
-
-| Feature | Description | Documentation |
-|---------|-------------|---------------|
-| **Simple & Clean API** | User-friendly logging interface (`logger.info()`, `logger.error()`, etc.) | [Docs](https://muhammad-fiaz.github.io/logly/getting-started/) |
-| **10 Log Levels** | TRACE, DEBUG, INFO, NOTICE, SUCCESS, WARNING, ERROR, FAIL, CRITICAL, FATAL | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-levels/) |
-| **Custom Levels** | Define your own log levels with custom priorities and colors | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-levels/) |
-| **Multiple Sinks** | Console, file, and custom callable outputs simultaneously | [Docs](https://muhammad-fiaz.github.io/logly/guides/sinks/) |
-| **File Rotation** | Time-based (daily, hourly) and size-based rotation | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
-| **Retention Policies** | Count-based or age-based log file retention | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
-| **Compression** | Built-in support for gzip, zip, bz2, xz compression | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
-| **JSON Logging** | Structured JSON output for file storage and analysis | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
-| **Custom Formats** | Customizable log message format templates | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
-| **Context Binding** | Attach persistent key-value pairs to logs | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
-| **Scoped Contexts** | Create child loggers with bound context that persists across calls | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
-| **Record Patching** | Modify log records before they reach sinks | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
-| **Exception Catching** | `catch()` decorator and context manager for exception logging | [Docs](https://muhammad-fiaz.github.io/logly/guides/exception-handling/) |
-| **Lazy Evaluation** | `opt()` for deferred exception capturing and lazy message evaluation | [Docs](https://muhammad-fiaz.github.io/logly/guides/exception-handling/) |
-| **Per-Sink Filtering** | Configure filters on each sink independently | [Docs](https://muhammad-fiaz.github.io/logly/guides/filtering/) |
-| **Thread-Safe** | Safe concurrent logging from multiple threads | [Docs](https://muhammad-fiaz.github.io/logly/guides/concurrency/) |
-| **Background Workers** | Optional enqueue mode for non-blocking writes | [Docs](https://muhammad-fiaz.github.io/logly/guides/concurrency/) |
-| **Stdlib Integration** | Seamless integration with Python's `logging` module | [Docs](https://muhammad-fiaz.github.io/logly/guides/stdlib-logging/) |
-| **FastAPI Integration** | Request-scoped logging middleware for FastAPI | [Docs](https://muhammad-fiaz.github.io/logly/guides/fastapi/) |
-| **Django Integration** | Custom logging handler and middleware for Django | [Docs](https://muhammad-fiaz.github.io/logly/guides/django/) |
-| **Rich Console** | Rich-formatted console output integration | [Docs](https://muhammad-fiaz.github.io/logly/guides/rich-console/) |
-| **Custom Colors** | ANSI-based custom colors for all levels (works without Rich) | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom_colors/) |
-| **ANSI Colors** | Whole-line colorized console output | [Docs](https://muhammad-fiaz.github.io/logly/guides/sinks/) |
-| **Pydantic Config** | Type-safe configuration models with validation | [Docs](https://muhammad-fiaz.github.io/logly/api-reference/models/) |
-| **Rust Engine** | High-performance native engine built with PyO3 | [Docs](https://muhammad-fiaz.github.io/logly/architecture/) |
-| **Telemetry** | OpenTelemetry, StatsD, and Prometheus metrics integration | [Docs](https://muhammad-fiaz.github.io/logly/guides/telemetry/) |
-
-</details>
-
-----
-
-<details>
-<summary><strong>Prerequisites & Supported Platforms</strong> (click to expand)</summary>
-
-<br>
-
-## Prerequisites
-
-Before installing Logly, ensure you have the following:
-
-| Requirement | Version | Notes |
-|-------------|---------|-------|
-| **Python** | 3.10+ | Download from [python.org](https://www.python.org/downloads/) |
-| **Operating System** | Windows 10+, Linux, macOS | Cross-platform support |
-| **Rust** | Latest stable | Required for building from source (not needed for pip install) |
-
-> Verify your Python installation by running `python --version` in your terminal.
-
----
-
-## Supported Platforms
-
-Logly supports a wide range of platforms:
-
-| Platform | Architectures | Status |
-|----------|---------------|--------|
-| **Windows** | x86_64 | Full support |
-| **Linux** | x86_64, aarch64 | Full support |
-| **macOS** | x86_64, aarch64 (Apple Silicon) | Full support |
-
-Pre-built wheels are available on PyPI for all supported platforms.
-
-</details>
+For full details, see the [documentation](https://muhammad-fiaz.github.io/logly/).
 
 ---
 
 ## Installation
 
-### Method 1: PyPI (Recommended)
+::: code-group
 
-The easiest way to install Logly:
-
-```bash
+```bash [pip]
 pip install logly
 ```
 
-Or with [uv](https://github.com/astral-sh/uv) (recommended):
-
-```bash
+```bash [uv]
 uv add logly
 ```
 
-### Method 2: Building from Source
-
-Clone the repository and build:
-
-```bash
+```bash [From Source]
 git clone https://github.com/muhammad-fiaz/logly.git
 cd logly
 uv sync
 uv run maturin develop
 ```
+
+:::
 
 ---
 
@@ -181,9 +82,8 @@ uv run maturin develop
 ```python
 from logly import logger
 
-# Log at different levels
-logger.trace("Detailed trace information")
-logger.debug("Debug information")
+logger.trace("Detailed trace")
+logger.debug("Debug info")
 logger.info("Application started")
 logger.notice("Notice message")
 logger.success("Operation completed!")
@@ -193,7 +93,6 @@ logger.fail("Operation failed")
 logger.critical("Critical system error!")
 logger.fatal("Fatal system failure!")
 
-# Flush to ensure output is written
 logger.complete()
 ```
 
@@ -201,66 +100,21 @@ logger.complete()
 
 ## Usage Examples
 
-### Console Logging
-
-```python
-from logly import logger
-
-# Default console sink (stderr)
-logger.info("Hello from Logly!")
-
-# Add stdout sink
-sink_id = logger.add("stdout", level="DEBUG")
-logger.debug("This goes to stdout")
-logger.remove(sink_id)
-```
-
 ### File Logging
 
 ```python
 from logly import logger
 
-# Add file sink
-sink_id = logger.add("app.log", level="DEBUG", format="{time} | {level} | {message}")
-logger.info("Logging to file!")
-logger.complete()
-logger.remove(sink_id)
-```
-
-### File Rotation
-
-```python
-from logly import logger
-
-# Daily rotation with 7-day retention
-sink_id = logger.add(
-    "logs/daily.log",
+logger.add(
+    "logs/app.log",
+    level="INFO",
     rotation="daily",
-    retention=7,
+    retention="30 days",
     compression="gzip",
 )
 
-logger.info("This log will be rotated daily")
+logger.info("Application started")
 logger.complete()
-logger.remove(sink_id)
-
-# Size-based rotation (10MB limit)
-sink_id = logger.add("logs/app.log", rotation="10 MB", retention=5)
-logger.info("This log will be rotated when file reaches 10MB")
-logger.complete()
-logger.remove(sink_id)
-```
-
-### JSON Logging
-
-```python
-from logly import logger
-
-sink_id = logger.add("app.json", serialize=True, rotation="daily")
-logger.info("JSON formatted log")
-logger.complete()
-logger.remove(sink_id)
-# Output: {"text": "2026-06-21T12:00:00 | INFO | JSON formatted log", "record": {...}}
 ```
 
 ### Context Binding
@@ -268,108 +122,9 @@ logger.remove(sink_id)
 ```python
 from logly import logger
 
-# Bind context fields
-bound_logger = logger.bind(user_id="12345", request_id="abc-789")
-bound_logger.info("User logged in")
+user_logger = logger.bind(user_id="12345", request_id="abc-789")
+user_logger.info("User logged in")
 # Output includes: user_id=12345 request_id=abc-789
-
-# Contextualize with context manager
-with logger.contextualize(session_id="xyz-000"):
-    logger.info("Inside session context")
-    logger.info("Still in context")
-# Context restored after block
-```
-
-### Custom Log Levels
-
-```python
-from logly import logger
-
-# Register a custom level
-logger.level("AUDIT", no=25, color="<magenta>")
-
-# Use custom level
-logger.log("AUDIT", "User action recorded")
-logger.opt(exception=True).audit("Auditing with exception info")
-```
-
-### Multiple Sinks
-
-```python
-from logly import logger
-
-# Console output
-logger.add("stderr", level="INFO")
-
-# Application logs
-logger.add("app.log", level="DEBUG", rotation="daily")
-
-# Error-only file
-logger.add("errors.log", level="ERROR")
-
-# JSON output
-logger.add("structured.json", serialize=True, level="WARNING")
-```
-
-### Filtering
-
-```python
-from logly import logger
-
-# Level filter (minimum level)
-sink_id = logger.add("filtered.log", level="WARNING")
-
-# Callable filter
-def my_filter(record):
-    return "important" in record["message"]
-
-sink_id = logger.add("filtered.log", filter=my_filter)
-
-# Prefix filter
-sink_id = logger.add("app.log", filter={"name": "myapp."})
-
-# Mapping filter
-sink_id = logger.add(
-    "filtered.log",
-    filter={"name": "myapp.", "extra.status": "active"},
-)
-```
-
-### Custom Formatters
-
-```python
-from logly import logger
-
-# Template format
-sink_id = logger.add(
-    "formatted.log",
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {name}:{function}:{line} - {message}",
-)
-
-# Callable formatter
-def my_formatter(record):
-    return f"[{record['time'].timestamp()}] {record['level'].name}: {record['message']}"
-
-sink_id = logger.add("custom.log", format=my_formatter)
-```
-
-### Patching Records
-
-```python
-from logly import logger
-
-# Global patcher
-def add_version(record):
-    record["extra"]["version"] = "1.0.0"
-
-logger.add("app.log", patch=add_version)
-logger.info("With version")
-# Output includes: version=1.0.0
-
-# Scoped patcher
-with logger.contextualize(service="api"):
-    logger.info("Request processed")
-    # Output includes: service=api
 ```
 
 ### Exception Catching
@@ -377,22 +132,24 @@ with logger.contextualize(service="api"):
 ```python
 from logly import logger
 
-# Context manager
 with logger.catch():
-    risky_function()
+    risky_operation()
 
-# Decorator
-@logger.catch()
-def risky_function():
-    raise ValueError("Something went wrong")
+# With options
+with logger.catch(exclude=ValueError, onerror=lambda e: print(f"Failed: {e}")):
+    dangerous_call()
+```
 
-# With custom level and message
-with logger.catch(level="CRITICAL", message="Database failure"):
-    database.connect()
+### Multiple Sinks
 
-# Re-raise exception after logging
-with logger.catch(reraise=True):
-    risky_function()
+```python
+from logly import logger
+
+logger.add("app.log", level="DEBUG", rotation="daily")
+logger.add("errors.log", level="ERROR", retention="90 days")
+logger.add("stdout", level="INFO", colorize=True)
+
+logger.info("All three sinks receive this")
 ```
 
 ### Lazy Evaluation
@@ -400,181 +157,27 @@ with logger.catch(reraise=True):
 ```python
 from logly import logger
 
-# Lazy message evaluation
-logger.opt(lazy=True).debug("User {} logged in", lambda: get_username())
-
-# Exception capture
-logger.opt(exception=True).error("Something failed")
+logger.opt(lazy=True).debug("Result: {}", lambda: expensive_computation())
 ```
 
-### Enable/Disable
-
-```python
-from logly import logger
-
-# Disable logging for a specific name
-logger.disable("myapp")
-logger.info("This won't appear")
-
-# Re-enable
-logger.enable("myapp")
-logger.info("This will appear")
-```
-
-### Stdlib Logging Integration
-
-```python
-import logging
-from logly.integrations.stdlib import InterceptHandler
-
-# Route stdlib logging through Logly
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
-logging.getLogger("uvicorn").info("Routed through Logly!")
-```
-
-### FastAPI Integration
-
-```python
-from fastapi import FastAPI
-from logly.integrations.fastapi import LoglyMiddleware
-
-app = FastAPI()
-app.add_middleware(LoglyMiddleware)
-```
-
-### Django Integration
-
-```python
-# settings.py
-LOGGING = {
-    "handlers": ["logly"],
-    "logly": {
-        "class": "logly.integrations.django.LoglyHandler",
-        "level": "INFO",
-    },
-}
-
-MIDDLEWARE = [
-    "logly.integrations.django.LoglyMiddleware",
-    # ... other middleware
-]
-```
-
-### Rich Console Integration
-
-```python
-from logly import logger
-from logly.integrations.rich import LoglyRichSink
-
-# Method 1: Using the Rich sink class
-sink_id = logger.add(LoglyRichSink(), colorize=True)
-logger.info("Rich-formatted output!")
-logger.complete()
-
-# Method 2: Using Rich's Console.print directly
-from rich.console import Console
-
-console = Console()
-logger.add(console.print, colorize=True, format="{message}")
-logger.info("Hello World")
-logger.success("Operation completed")
-logger.warning("Disk almost full")
-logger.error("Something failed")
-
-# Method 3: Rich tracebacks
-from rich.traceback import install
-
-install(show_locals=True)
-logger.exception("Unhandled exception")
-```
-
-### Custom Colors
-
-```python
-from logly import logger
-
-# Override built-in level colors
-logger.level("DEBUG", color="<blue><bold>")
-logger.level("WARNING", color="<yellow><bold>")
-
-# Register new levels with custom colors
-logger.level("SECURITY", no=45, color="<red><bold>")
-logger.level("PERF", no=10, color="<cyan><bold>")
-
-logger.add("colored.log", level="TRACE", colorize=True)
-
-logger.log("SECURITY", "Unauthorized access attempt")
-logger.log("PERF", "Request took 200ms")
-```
-
-### Production Configuration
-
-```python
-from logly import logger
-
-# Production-ready setup
-logger.add(
-    "logs/app.log",
-    level="INFO",
-    rotation="daily",
-    retention="30 days",
-    compression="gzip",
-    serialize=True,
-    enqueue=True,
-)
-
-# Error monitoring
-logger.add(
-    "logs/errors.log",
-    level="ERROR",
-    rotation="daily",
-    retention="90 days",
-)
-
-logger.info("Application started")
-logger.complete()
-```
-
----
-
-## Configuration
-
-### Pydantic Configuration
-
-```python
-from logly import logger
-from logly.models import SinkConfig, LoggerConfig, RotationPolicy, RetentionPolicy
-
-# Configure via Pydantic models
-config = LoggerConfig(
-    sinks=[
-        SinkConfig(
-            level="INFO",
-            format="{time} | {level} | {message}",
-            rotation=RotationPolicy(kind="daily"),
-            retention=RetentionPolicy(count=30),
-            compression="gzip",
-        )
-    ]
-)
-```
+For more examples, see the [documentation](https://muhammad-fiaz.github.io/logly/).
 
 ---
 
 ## Log Levels
 
-| Level    | Priority | Method              | Use Case                |
-| -------- | -------- | ------------------- | ----------------------- |
-| TRACE    | 5        | `logger.trace()`    | Very detailed debugging |
-| DEBUG    | 10       | `logger.debug()`    | Debugging information   |
-| INFO     | 20       | `logger.info()`     | General information     |
-| NOTICE   | 25       | `logger.notice()`   | Notice messages         |
-| SUCCESS  | 30       | `logger.success()`  | Successful operations   |
-| WARNING  | 40       | `logger.warning()`  | Warning messages        |
-| ERROR    | 50       | `logger.error()`    | Error conditions        |
-| FAIL     | 55       | `logger.fail()`     | Operation failures      |
-| CRITICAL | 60       | `logger.critical()` | Critical system errors  |
-| FATAL    | 70       | `logger.fatal()`    | Fatal system errors     |
+| Level | Priority | Method | Use Case |
+|-------|----------|--------|----------|
+| TRACE | 5 | `logger.trace()` | Very detailed debugging |
+| DEBUG | 10 | `logger.debug()` | Debugging information |
+| INFO | 20 | `logger.info()` | General information |
+| NOTICE | 25 | `logger.notice()` | Notice messages |
+| SUCCESS | 30 | `logger.success()` | Successful operations |
+| WARNING | 40 | `logger.warning()` | Warning messages |
+| ERROR | 50 | `logger.error()` | Error conditions |
+| FAIL | 55 | `logger.fail()` | Operation failures |
+| CRITICAL | 60 | `logger.critical()` | Critical system errors |
+| FATAL | 70 | `logger.fatal()` | Fatal system errors |
 
 ---
 
@@ -598,33 +201,19 @@ Logly is built as a modular Rust workspace with a thin PyO3 binding:
 | `context` | Bound context, scoped context, patchers |
 | `sink` | Sink trait and built-in implementations |
 | `core` | Logger engine dispatch |
-
----
-
-## Performance
-
-Logly's Rust engine provides near-zero overhead logging:
-
-- **Native dispatch**: Log calls route through PyO3 to a Rust `LoggerEngine`
-- **Efficient filtering**: Level checks happen in Rust before any Python overhead
-- **Background workers**: Optional `enqueue=True` for non-blocking writes
-- **Thread-safe**: `Mutex`-protected engine with graceful shutdown
+| `network` | HTTP, TCP, UDP, Syslog sinks |
+| `source` | Caller frame inspection |
 
 ---
 
 ## Building from Source
 
-### Prerequisites
-
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **Rust** | Latest stable (1.75+) | Compile the native engine |
+| **Rust** | Latest stable | Compile the native engine |
 | **Python** | 3.10+ | Runtime and build scripts |
 | **uv** | Latest | Package manager (recommended) |
 | **Maturin** | 1.x | Build backend for PyO3 wheels |
-| **MkDocs** | <2 | Documentation site (Material theme) |
-
-Install Rust via [rustup](https://rustup.rs/), then:
 
 ```bash
 # Install uv (if not already installed)
@@ -634,33 +223,21 @@ pip install uv
 uv run maturin develop
 
 # Run Python tests
-uv run pytest tests/ -v
+uv run pytest
 
 # Run Rust tests
 cargo test --workspace
 
 # Lint
 uv run ruff check .
-uv run ruff format --check .
 cargo clippy --workspace --all-targets -- -D warnings
-
-# Build documentation
-uv run mkdocs serve
 ```
 
 ---
 
 ## Documentation
 
-### Online Documentation
 Full documentation is available at: https://muhammad-fiaz.github.io/logly
-
-### Generating Local Documentation
-To generate documentation locally:
-
-```bash
-uv run mkdocs serve
-```
 
 ---
 
@@ -688,5 +265,3 @@ This project is licensed under the [MIT License](LICENSE).
 - **PyPI**: https://pypi.org/project/logly/
 - **Repository**: https://github.com/muhammad-fiaz/logly
 - **Issues**: https://github.com/muhammad-fiaz/logly/issues
-- **Zig Version**: https://github.com/muhammad-fiaz/logly.zig
-- **Rust Version**: https://github.com/muhammad-fiaz/logly-rs

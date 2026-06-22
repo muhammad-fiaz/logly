@@ -6,10 +6,10 @@ Provides type annotations for the ``logly`` package.
 from __future__ import annotations
 
 import re
+import sys
 from collections.abc import Callable, Generator, Mapping
 from pathlib import Path
 from types import TracebackType
-import sys
 from typing import Any
 
 if sys.version_info >= (3, 11):

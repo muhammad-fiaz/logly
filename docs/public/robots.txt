@@ -1,6 +1,4 @@
-# Robots rules for https://muhammad-fiaz.github.io/logly.zig
-# Allow all crawlers
 User-agent: *
-Disallow:
+Allow: /
 
-Sitemap: https://muhammad-fiaz.github.io/logly.zig/sitemap.xml
+Sitemap: https://muhammad-fiaz.github.io/logly/sitemap.xml

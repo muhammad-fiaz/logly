@@ -113,7 +113,7 @@ policy = CompressionPolicy(codec="none")
 
 | Codec | Extension | Description |
 |-------|-----------|-------------|
-| `"none"` | — | No compression |
+| `"none"` | | No compression |
 | `"gzip"` / `"gz"` | `.gz` | Gzip compression |
 | `"zip"` | `.zip` | Zip archive |
 | `"bz2"` | `.bz2` | Bzip2 compression |

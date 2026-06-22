@@ -25,7 +25,7 @@ Logly is a high-performance logging library for Python powered by a Rust-native 
 
 ### Is Logly production-ready?
 
-Yes. Logly is designed for production use with:
+Yes. Logly is built for high-performance, production-grade logging with:
 
 - Zero unsafe Rust code
 - Comprehensive test suite (185+ Rust tests, 247+ Python tests)

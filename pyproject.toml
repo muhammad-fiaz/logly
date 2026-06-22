@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "logly"
-description = "A high-performance Rust-powered logging library for Python with structured logging, flexible sinks, and modern developer-friendly APIs."
+description = "A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations."
 authors = [
   { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
 ]

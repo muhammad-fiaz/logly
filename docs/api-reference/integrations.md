@@ -5,7 +5,7 @@ description: Complete API reference for all Logly integrations
 
 # Integrations API
 
-All integrations are available as submodules of `logly.integrations`. Most use `importlib.util.find_spec` to check for optional dependencies — no installation required if you don't use them.
+All integrations are available as submodules of `logly.integrations`. Most use `importlib.util.find_spec` to check for optional dependencies - no installation required if you don't use them.
 
 ```python
 from logly.integrations import fastapi, django, flask
@@ -28,7 +28,7 @@ app.add_middleware(LoglyMiddleware, level="INFO")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `app` | `FastAPI` | — | FastAPI application |
+| `app` | `FastAPI` | | FastAPI application |
 | `level` | `str` | `"INFO"` | Minimum log level |
 | `format` | `str \| None` | `None` | Custom format string |
 | `backtrace` | `bool` | `False` | Include backtrace on exceptions |
@@ -101,7 +101,7 @@ Initialize the handler with a Flask app.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `app` | `Flask` | — | Flask application |
+| `app` | `Flask` | | Flask application |
 | `level` | `str` | `"INFO"` | Minimum log level |
 | `format` | `str \| None` | `None` | Custom format string |
 
@@ -123,7 +123,7 @@ app.add_middleware(LoglyMiddleware, level="INFO")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `app` | `Starlette` | — | Starlette application |
+| `app` | `Starlette` | | Starlette application |
 | `level` | `str` | `"INFO"` | Minimum log level |
 | `format` | `str \| None` | `None` | Custom format string |
 
@@ -294,7 +294,7 @@ config = get_log_config(level="INFO")
 | `level` | `str` | `"INFO"` | Minimum log level |
 | `format` | `str \| None` | `None` | Custom format string |
 
-**Returns:** `dict` — Uvicorn-compatible log config
+**Returns:** `dict` - Uvicorn-compatible log config
 
 ---
 
@@ -329,7 +329,7 @@ def my_task():
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `task_logger` | `Logger` | — | Celery task logger |
+| `task_logger` | `Logger` | | Celery task logger |
 | `level` | `str` | `"INFO"` | Minimum log level |
 
 ---
@@ -364,7 +364,7 @@ patch_engine(engine, level="INFO")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `engine` | `Engine` | — | SQLAlchemy engine |
+| `engine` | `Engine` | | SQLAlchemy engine |
 | `level` | `str` | `"INFO"` | Minimum log level |
 
 ---
@@ -433,7 +433,7 @@ logger.add(ElasticsearchSink(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `endpoint` | `str` | — | Elasticsearch endpoint |
+| `endpoint` | `str` | | Elasticsearch endpoint |
 | `index` | `str` | `"logly"` | Index name |
 | `timeout` | `int` | `30` | Request timeout (seconds) |
 | `username` | `str \| None` | `None` | Basic auth username |
@@ -461,7 +461,7 @@ logger.add(SentrySink(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dsn` | `str` | — | Sentry DSN |
+| `dsn` | `str` | | Sentry DSN |
 | `environment` | `str \| None` | `None` | Environment name |
 | `release` | `str \| None` | `None` | Release version |
 | `level` | `str` | `"WARNING"` | Minimum log level |
@@ -487,7 +487,7 @@ logger.add(RedisHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `url` | `str` | — | Redis connection URL |
+| `url` | `str` | | Redis connection URL |
 | `key` | `str` | `"logly:logs"` | Redis key |
 | `mode` | `str` | `"list"` | Storage mode: `"list"` or `"stream"` |
 | `timeout` | `int` | `5` | Connection timeout (seconds) |
@@ -513,7 +513,7 @@ logger.add(KafkaHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `bootstrap_servers` | `str` | — | Kafka broker addresses |
+| `bootstrap_servers` | `str` | | Kafka broker addresses |
 | `topic` | `str` | `"logly"` | Kafka topic |
 | `client_id` | `str \| None` | `None` | Client ID |
 | `acks` | `str \| int` | `"all"` | Acknowledgment mode |
@@ -540,8 +540,8 @@ logger.add(MongoHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `uri` | `str` | — | MongoDB connection URI |
-| `database` | `str` | — | Database name |
+| `uri` | `str` | | MongoDB connection URI |
+| `database` | `str` | | Database name |
 | `collection` | `str` | `"logs"` | Collection name |
 | `timeout` | `int` | `5` | Connection timeout (seconds) |
 
@@ -565,7 +565,7 @@ logger.add(PostgresHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dsn` | `str` | — | PostgreSQL connection string |
+| `dsn` | `str` | | PostgreSQL connection string |
 | `table` | `str` | `"logs"` | Table name |
 | `create_table` | `bool` | `True` | Auto-create table |
 
@@ -589,7 +589,7 @@ logger.add(DiscordHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `webhook_url` | `str` | — | Discord webhook URL |
+| `webhook_url` | `str` | | Discord webhook URL |
 | `timeout` | `int` | `10` | Request timeout (seconds) |
 | `username` | `str \| None` | `None` | Override username |
 | `avatar_url` | `str \| None` | `None` | Override avatar URL |
@@ -614,7 +614,7 @@ logger.add(SlackHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `webhook_url` | `str` | — | Slack webhook URL |
+| `webhook_url` | `str` | | Slack webhook URL |
 | `channel` | `str \| None` | `None` | Override channel |
 | `username` | `str` | `"Logly"` | Bot username |
 | `icon_emoji` | `str` | `":robot_face:"` | Bot icon emoji |
@@ -645,10 +645,10 @@ logger.add(EmailHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `smtp_host` | `str` | — | SMTP server host |
-| `smtp_port` | `int` | — | SMTP server port |
-| `from_addr` | `str` | — | Sender email address |
-| `to_addrs` | `list[str]` | — | Recipient email addresses |
+| `smtp_host` | `str` | | SMTP server host |
+| `smtp_port` | `int` | | SMTP server port |
+| `from_addr` | `str` | | Sender email address |
+| `to_addrs` | `list[str]` | | Recipient email addresses |
 | `username` | `str \| None` | `None` | SMTP username |
 | `password` | `str \| None` | `None` | SMTP password |
 | `use_tls` | `bool` | `True` | Use STARTTLS |
@@ -677,7 +677,7 @@ logger.add(HttpHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `url` | `str` | — | HTTP endpoint URL |
+| `url` | `str` | | HTTP endpoint URL |
 | `method` | `str` | `"POST"` | HTTP method |
 | `headers` | `dict \| None` | `None` | Request headers |
 | `timeout` | `int` | `10` | Request timeout (seconds) |
@@ -703,7 +703,7 @@ logger.add(LokiSink(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `endpoint` | `str` | — | Loki endpoint URL |
+| `endpoint` | `str` | | Loki endpoint URL |
 | `labels` | `dict` | `{}` | Default labels |
 | `timeout` | `int` | `10` | Request timeout (seconds) |
 | `username` | `str \| None` | `None` | Basic auth username |
@@ -750,7 +750,7 @@ logger.add(TelemetrySink(emit=send_to_collector))
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `emit` | `Callable` | — | Emission function |
+| `emit` | `Callable` | | Emission function |
 | `service_name` | `str` | `"logly"` | Service name |
 | `environment` | `str \| None` | `None` | Environment name |
 
@@ -770,7 +770,7 @@ logger.add(HttpJsonSink(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `endpoint` | `str` | — | HTTP endpoint URL |
+| `endpoint` | `str` | | HTTP endpoint URL |
 | `headers` | `dict \| None` | `None` | Request headers |
 | `timeout` | `int` | `10` | Request timeout (seconds) |
 
@@ -844,7 +844,7 @@ click_echo("Processing...", nl=True, err=True)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `message` | `str` | — | Message to display |
+| `message` | `str` | | Message to display |
 | `file` | `IO \| None` | `None` | Output stream |
 | `nl` | `bool` | `True` | Add newline |
 | `err` | `bool` | `False` | Output to stderr |
@@ -866,7 +866,7 @@ typer_echo("Processing...", nl=True, err=True)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `message` | `str` | — | Message to display |
+| `message` | `str` | | Message to display |
 | `file` | `IO \| None` | `None` | Output stream |
 | `nl` | `bool` | `True` | Add newline |
 | `err` | `bool` | `False` | Output to stderr |
@@ -892,7 +892,7 @@ logger.add(RabbitMQHandler(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `url` | `str` | — | RabbitMQ connection URL |
+| `url` | `str` | | RabbitMQ connection URL |
 | `queue` | `str` | `"logly"` | Queue name |
 | `exchange` | `str \| None` | `None` | Exchange name |
 | `routing_key` | `str \| None` | `None` | Routing key |

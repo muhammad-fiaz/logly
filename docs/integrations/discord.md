@@ -5,7 +5,7 @@ description: Send log entries to Discord webhooks.
 
 # Discord
 
-`DiscordHandler` sends log entries to a Discord channel via webhook. Uses the Python standard library (`urllib.request`) — no extra dependencies required.
+`DiscordHandler` sends log entries to a Discord channel via webhook. Uses the Python standard library (`urllib.request`) - no extra dependencies required.
 
 ## Installation
 

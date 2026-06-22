@@ -5,7 +5,7 @@ description: Guide to customizing log level colors in Logly with ANSI escape cod
 
 # Custom Colors
 
-Logly supports custom colors for all log levels using ANSI escape codes. No extra dependencies required — colors work natively in any terminal that supports ANSI.
+Logly supports custom colors for all log levels using ANSI escape codes. No extra dependencies required - colors work natively in any terminal that supports ANSI.
 
 ## Built-in Level Colors
 
@@ -70,7 +70,7 @@ logger.level("CRITICAL", color="<red><bold><underline>")
 
 ## Rich-Enhanced Colors
 
-If you have [Rich](https://rich.readthedocs.io/) installed, Logly uses Rich's color engine for richer rendering. Without Rich, standard ANSI codes are used — no functionality is lost.
+If you have [Rich](https://rich.readthedocs.io/) installed, Logly uses Rich's color engine for richer rendering. Without Rich, standard ANSI codes are used - no functionality is lost.
 
 ```bash
 # Install Rich for enhanced colors

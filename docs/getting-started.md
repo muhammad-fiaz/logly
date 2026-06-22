@@ -220,12 +220,16 @@ logger.add("app.log", enqueue=True)
 
 ## Next Steps
 
-- [Sinks](/guides/sinks) — Learn about all sink types
-- [Formatting](/guides/formatting) — Customize output format
-- [Filtering](/guides/filtering) — Control which messages pass through
-- [Context Binding](/guides/context-binding) — Attach metadata to logs
-- [Rotation & Retention](/guides/rotation-retention-compression) — Manage log files
-- [Integrations](/integrations/) — Connect to FastAPI, Django, Flask, and more
+- [Sinks](/guides/sinks) - Learn about all sink types
+- [Console & Output Control](/guides/console-output) - Enable/disable console and file output
+- [Source Location & Timestamps](/guides/source-location-timestamps) - Customize file info and timestamps
+- [Formatting](/guides/formatting) - Customize output format
+- [Filtering](/guides/filtering) - Control which messages pass through
+- [Context Binding](/guides/context-binding) - Attach metadata to logs
+- [Rotation & Retention](/guides/rotation-retention-compression) - Manage log files
+- [Custom Levels](/guides/custom-levels) - Register your own log levels
+- [Concurrency](/guides/concurrency) - Thread-safe background logging
+- [Integrations](/integrations/) - Connect to FastAPI, Django, Flask, and more
 
 ## Troubleshooting
 

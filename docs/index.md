@@ -1,12 +1,12 @@
 ---
 layout: home
 title: Logly - Rust-Powered Logging for Python
-description: A high-performance, Rust-powered logging library for Python with structured logging, flexible sinks, and modern developer-friendly APIs.
+description: A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
 
 hero:
   name: Logly
   text: Rust-Powered Logging for Python
-  tagline: A high-performance logging library built with PyO3 for maximum speed and memory safety.
+  tagline: A Rust-powered, high-performance logging library for Python.
   image:
     src: /logo.png
     alt: Logly
@@ -117,9 +117,9 @@ uv run maturin develop
 | **Zero unsafe Rust** | ✅ | N/A |
 
 ::: info Acknowledgment
-The API design of this project is inspired by [Loguru](https://github.com/Delgan/loguru) by Delgan. We are grateful for the design inspiration.
+The API design of this project is inspired by [Loguru](https://github.com/Delgan/loguru) by Delgan. Logly includes every feature you would expect from a mature logging library, plus additional capabilities like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations. We are grateful for the design inspiration.
 :::
 
-::: warning Active Development
-Logly is still evolving and improving. This project is under active development. If you encounter any issues, please feel free to [report them](https://github.com/muhammad-fiaz/logly/issues/new).
+::: note Active Development
+Logly is currently under active development and stabilizing. Due to this, performance benchmarks are not yet available. If you encounter any issues, please feel free to [report them](https://github.com/muhammad-fiaz/logly/issues/new).
 :::

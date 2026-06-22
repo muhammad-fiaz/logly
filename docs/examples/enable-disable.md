@@ -17,4 +17,4 @@ Logly lets you enable or disable logging for specific module names.
 
 - `logger.disable("name")` suppresses all log messages from sources matching that name.
 - `logger.enable("name")` re-enables logging for that source.
-- These calls are **additive** — disabling one name does not affect other names.
+- These calls are **additive** - disabling one name does not affect other names.

@@ -5,7 +5,7 @@ description: Grafana Loki push for log aggregation.
 
 # Loki
 
-`LokiSink` pushes log entries to Grafana Loki via HTTP. No extra dependencies — uses `urllib.request` from the standard library.
+`LokiSink` pushes log entries to Grafana Loki via HTTP. No extra dependencies - uses `urllib.request` from the standard library.
 
 ## Installation
 

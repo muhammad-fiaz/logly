@@ -5,7 +5,7 @@ description: Send log entries as emails via SMTP.
 
 # Email
 
-`EmailHandler` sends log entries as email messages via SMTP. Uses the Python standard library (`smtplib`) — no extra dependencies required.
+`EmailHandler` sends log entries as email messages via SMTP. Uses the Python standard library (`smtplib`) - no extra dependencies required.
 
 ## Installation
 

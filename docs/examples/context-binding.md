@@ -7,7 +7,7 @@ description: Attach persistent key-value pairs to log records.
 
 Bind metadata to loggers so every record carries contextual information.
 
-## `bind()` — Persistent Context
+## `bind()` - Persistent Context
 
 ```python
 from logly import logger
@@ -18,7 +18,7 @@ bound.info("User logged in")
 logger.complete()
 ```
 
-## `contextualize()` — Scoped Context
+## `contextualize()` - Scoped Context
 
 ```python
 from logly import logger
@@ -30,7 +30,7 @@ with logger.contextualize(session_id="xyz-000", env="prod"):
 logger.complete()
 ```
 
-## `patch()` — Record Modification
+## `patch()` - Record Modification
 
 ```python
 from logly import logger

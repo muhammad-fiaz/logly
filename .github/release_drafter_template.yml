@@ -2,80 +2,55 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 categories:
   - title: "Breaking Changes"
-    when:
-      - label:
-          - "breaking-change"
-          - "breaking"
-    collapse:
-      after: "Features"
+    labels:
+      - "breaking-change"
+      - "breaking"
   - title: "Features"
-    when:
-      - label:
-          - "enhancement"
-          - "feature"
-          - "new-feature"
-    collapse:
-      after: "Bug Fixes"
+    labels:
+      - "enhancement"
+      - "feature"
+      - "new-feature"
   - title: "Bug Fixes"
-    when:
-      - label:
-          - "bug"
-          - "fix"
-          - "bugfix"
-    collapse:
-      after: "Improvements"
+    labels:
+      - "bug"
+      - "fix"
+      - "bugfix"
   - title: "Improvements"
-    when:
-      - label:
-          - "improvement"
-          - "refactor"
-          - "performance"
-    collapse:
-      after: "Documentation"
+    labels:
+      - "improvement"
+      - "refactor"
+      - "performance"
   - title: "Documentation"
-    when:
-      - label:
-          - "documentation"
-          - "docs"
-          - "doc"
-    collapse:
-      after: "Dependencies"
+    labels:
+      - "documentation"
+      - "docs"
+      - "doc"
   - title: "Dependencies"
-    when:
-      - label:
-          - "dependencies"
-          - "deps"
-    collapse:
-      after: ""
-  - type: pre-exclude
-    when:
-      - label:
-          - "skip-changelog"
-          - "dependencies"
-  - type: version-resolver
-    semver-increment: "major"
-    when:
-      - label:
-          - "major"
-          - "breaking-change"
-          - "breaking"
-  - type: version-resolver
-    semver-increment: "minor"
-    when:
-      - label:
-          - "minor"
-          - "enhancement"
-          - "feature"
-          - "new-feature"
-  - type: version-resolver
-    semver-increment: "patch"
-    when:
-      - label:
-          - "patch"
-          - "bug"
-          - "fix"
-          - "bugfix"
-          - "dependencies"
+    labels:
+      - "dependencies"
+      - "deps"
+exclude-labels:
+  - "skip-changelog"
+version-resolver:
+  major:
+    labels:
+      - "major"
+      - "breaking-change"
+      - "breaking"
+  minor:
+    labels:
+      - "minor"
+      - "enhancement"
+      - "feature"
+      - "new-feature"
+  patch:
+    labels:
+      - "patch"
+      - "bug"
+      - "fix"
+      - "bugfix"
+      - "dependencies"
+  default: patch
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&'
 no-changes-template: "No changes since last release."
@@ -91,3 +66,5 @@ template: |
   ---
 
   **Full Changelog**: https://github.com/muhammad-fiaz/logly/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+  > Release notes are automatically updated with installation instructions and documentation links when the release is published.

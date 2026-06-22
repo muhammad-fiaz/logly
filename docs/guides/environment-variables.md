@@ -5,7 +5,7 @@ description: Control Logly behavior with environment variables
 
 # Environment Variables
 
-Logly supports environment variables to control initialization behavior.
+Logly supports environment variables to control initialization and configuration.
 
 ## LOGLY_AUTOINIT
 
@@ -13,7 +13,7 @@ Controls whether Logly automatically adds a stderr sink on import.
 
 ### Default Behavior
 
-By default, Logly adds a `stderr` sink with `level="DEBUG"` when the module is first imported. This ensures log messages are visible immediately without any configuration.
+By default, Logly adds a `stderr` sink with `level="DEBUG"` when the module is first imported:
 
 ```python
 from logly import logger
@@ -26,11 +26,7 @@ logger.info("This prints to stderr immediately")
 Set `LOGLY_AUTOINIT` to `false`, `0`, or `no` to prevent the automatic stderr sink:
 
 ```bash
-# Linux/macOS
 export LOGLY_AUTOINIT=false
-
-# Windows
-set LOGLY_AUTOINIT=false
 ```
 
 ```python
@@ -49,12 +45,43 @@ logger.info("This only goes to app.log")
 | `0` | No automatic sink |
 | `no` | No automatic sink |
 
-### Common Patterns
+## LOGLY_* Configuration Overrides
+
+These environment variables override default configuration values. The `LOGLY_` prefix is stripped and the remainder is lowercased.
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `LOGLY_LEVEL` | Default log level | `LOGLY_LEVEL=WARNING` |
+| `LOGLY_FORMAT` | Default format string | `LOGLY_FORMAT="{level} \| {message}"` |
+| `LOGLY_COLORIZE` | Enable/disable colors | `LOGLY_COLORIZE=NO` |
+| `LOGLY_SERIALIZE` | Enable/disable JSON output | `LOGLY_SERIALIZE=YES` |
+| `LOGLY_BACKTRACE` | Enable/disable backtrace | `LOGLY_BACKTRACE=YES` |
+| `LOGLY_DIAGNOSE` | Enable/disable diagnose mode | `LOGLY_DIAGNOSE=YES` |
+
+### Usage
+
+```bash
+# Disable colors
+export LOGLY_COLORIZE=NO
+
+# Force JSON output
+export LOGLY_SERIALIZE=YES
+
+# Set minimum level
+export LOGLY_LEVEL=WARNING
+```
+
+```python
+from logly import logger
+# Configuration applied from environment
+logger.info("This respects env overrides")
+```
+
+## Common Patterns
 
 **Development** (default):
 
 ```bash
-# Sinks: stderr at DEBUG level (automatic)
 export LOGLY_AUTOINIT=true
 ```
 

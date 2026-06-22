@@ -54,5 +54,5 @@ logger.add("app.log", rotation="10 MB", retention="7 days")
 ```
 
 ::: info Note
-If you're currently using Loguru, switching to Logly is straightforward — just change your imports.
+If you're currently using Loguru, switching to Logly is straightforward - just change your imports.
 :::
