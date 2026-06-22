@@ -26,6 +26,7 @@
 
 A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
 
+> [!IMPORTANT]
 > **Logly v0.2.0** is a major rewrite of v0.1.6, featuring a rebuilt Rust-powered core, improved APIs, and new features. See the documentation for details. This project is under active development. If you encounter any issues, bugs, or have feature requests, please open an issue on GitHub. Contributions are welcome!
 
 **If you love `logly`, make sure to give it a star!**
