@@ -1,56 +1,59 @@
-name-template: 'v$RESOLVED_VERSION 🌈'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 categories:
-  - title: '🚀 Features'
+  - title: "Breaking Changes"
     labels:
-      - 'feature'
-      - 'enhancement'
-  - title: '🐛 Bug Fixes'
+      - "breaking-change"
+      - "breaking"
+  - title: "Features"
     labels:
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-  - title: '📚 Documentation'
+      - "enhancement"
+      - "feature"
+      - "new-feature"
+  - title: "Bug Fixes"
     labels:
-      - 'documentation'
-      - 'docs'
-  - title: '🧰 Maintenance'
+      - "bug"
+      - "fix"
+      - "bugfix"
+  - title: "Improvements"
     labels:
-      - 'chore'
-      - 'maintenance'
-  - title: '🔧 CI/CD & Testing'
+      - "improvement"
+      - "refactor"
+      - "performance"
+  - title: "Documentation"
     labels:
-      - 'ci'
-      - 'testing'
-      - 'github-actions'
-  - title: '⬆️ Dependencies'
+      - "documentation"
+      - "docs"
+      - "doc"
+  - title: "Dependencies"
     labels:
-      - 'dependencies'
-      - 'deps'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
-change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+      - "dependencies"
+      - "deps"
+exclude-labels:
+  - "skip-changelog"
 version-resolver:
   major:
     labels:
-      - 'major'
-      - 'breaking-change'
+      - "major"
+      - "breaking-change"
+      - "breaking"
   minor:
     labels:
-      - 'minor'
-      - 'feature'
-      - 'enhancement'
+      - "minor"
+      - "enhancement"
+      - "feature"
+      - "new-feature"
   patch:
     labels:
-      - 'patch'
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-      - 'chore'
-      - 'documentation'
-      - 'ci'
-      - 'testing'
-      - 'dependencies'
+      - "patch"
+      - "bug"
+      - "fix"
+      - "bugfix"
+      - "dependencies"
   default: patch
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&'
+no-changes-template: "No changes since last release."
 template: |
   ## Changes
 
@@ -59,3 +62,9 @@ template: |
   ## Contributors
 
   $CONTRIBUTORS
+
+  ---
+
+  **Full Changelog**: https://github.com/muhammad-fiaz/logly/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+  > Release notes are automatically updated with installation instructions and documentation links when the release is published.

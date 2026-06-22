@@ -1,0 +1,14 @@
+[package]
+name = "format"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+chrono.workspace = true
+error.workspace = true
+levels.workspace = true
+record.workspace = true
+source.workspace = true

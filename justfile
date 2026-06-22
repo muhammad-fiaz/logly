@@ -1,6 +1,14 @@
 @_default:
   just --list
 
+@lint:
+  just --justfile {{justfile()}} check
+  just --justfile {{justfile()}} clippy
+  just --justfile {{justfile()}} fmt
+  just --justfile {{justfile()}} mypy
+  just --justfile {{justfile()}} ruff-check
+  just --justfile {{justfile()}} ruff-format
+
 @lock:
   uv lock
 
@@ -13,49 +21,19 @@
 @develop-release:
   uv run maturin develop -r --uv
 
-@install: develop
+@install:
+  uv run maturin develop --uv && \
   uv sync --frozen --all-extras
 
-@install-release: develop-release
+@install-release:
+  uv run maturin develop -r --uv && \
   uv sync --frozen --all-extras
-
-@build:
-  cargo build --release
-
-@release:
-  uv run maturin build --release
-
-@docs:
-  uv run mkdocs build
-
-@docs-serve:
-  uv run mkdocs serve
-
-@clean:
-  cargo clean
-  rm -rf target/
-  rm -rf dist/
-  rm -rf site/
-
-@lint:
-  echo "Running cargo check..."
-  just check
-  echo "Running cargo clippy..."
-  just clippy
-  echo "Running cargo fmt check..."
-  just fmt
-  echo "Running mypy..."
-  just mypy
-  echo "Running ruff check..."
-  just ruff-check
-  echo "Running ruff format check..."
-  just ruff-format
 
 @check:
-  cargo check
+  cargo check --workspace
 
 @clippy:
-  cargo clippy --all-targets
+  cargo clippy --workspace --all-targets -- -D warnings
 
 @fmt:
   cargo fmt --all -- --check
@@ -67,18 +45,17 @@
   uv run ruff check logly tests --fix
 
 @ruff-format:
-  uv run ruff format logly tests --check
+  uv run ruff format logly tests
 
 @test *args="":
+  cargo test --workspace
   uv run pytest {{args}}
 
-@coverage:
-  uv run pytest --cov=logly --cov-report=html --cov-report=term-missing
+@build:
+  uv run maturin build
 
-@ci: lint
-  just test
-  just build
-  just docs
+@docs-serve:
+  uv run mkdocs serve
 
-@all: clean install lint test coverage docs
-  echo "All checks passed! ✅"
+@docs-deploy:
+  uv run mkdocs gh-deploy

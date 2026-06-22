@@ -1,0 +1,104 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          uv sync --frozen
+          uv run maturin develop
+      - name: Run Tests
+        run: uv run pytest
+
+  update-release:
+    name: Update Release Description
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Update Release Body
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ${{ github.event.release.body }}
+
+            ---
+
+            ## Documentation
+
+            Full documentation: https://muhammad-fiaz.github.io/logly/
+
+            - [Getting Started](https://muhammad-fiaz.github.io/logly/getting-started/)
+            - [API Reference](https://muhammad-fiaz.github.io/logly/api-reference/logger/)
+            - [Guides](https://muhammad-fiaz.github.io/logly/guides/sinks)
+            - [Integrations](https://muhammad-fiaz.github.io/logly/integrations/)
+            - [Examples](https://muhammad-fiaz.github.io/logly/examples/basic-logging)
+
+            ## Installation
+
+            ### pip
+
+            ```bash
+            pip install logly==${{ github.event.release.tag_name }}
+            ```
+
+            ### uv
+
+            ```bash
+            uv add logly==${{ github.event.release.tag_name }}
+            ```
+
+            ### From Source
+
+            ```bash
+            git clone https://github.com/muhammad-fiaz/logly.git
+            cd logly
+            git checkout ${{ github.event.release.tag_name }}
+            uv sync
+            uv run maturin develop
+            ```
+
+            ## Quick Start
+
+            ```python
+            from logly import logger
+
+            logger.info("Hello from Logly!")
+            logger.add("app.log", rotation="daily", retention="30 days", compression="gzip")
+            logger.bind(user_id="12345").info("User logged in")
+
+            with logger.catch():
+                risky_operation()
+
+            logger.complete()
+            ```
+
+            ## Links
+
+            - [PyPI](https://pypi.org/project/logly/${{ github.event.release.tag_name }}/)
+            - [GitHub](https://github.com/muhammad-fiaz/logly)
+            - [Changelog](https://github.com/muhammad-fiaz/logly/releases)
+            - [Issue Tracker](https://github.com/muhammad-fiaz/logly/issues)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}

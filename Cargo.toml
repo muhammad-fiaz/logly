@@ -1,9 +1,72 @@
-[package]
-name = "logly"
-version = "0.1.6"
-description = "Blazingly Fast Rust-Powered Python Logging Utility with Advanced Features"
+[workspace]
+members = [
+    ".",
+    "crates/color",
+    "crates/compress",
+    "crates/concurrency",
+    "crates/config",
+    "crates/context",
+    "crates/core",
+    "crates/error",
+    "crates/filter",
+    "crates/format",
+    "crates/levels",
+    "crates/network",
+    "crates/record",
+    "crates/rotate",
+    "crates/schedule",
+    "crates/sink",
+    "crates/source",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
+authors = ["Muhammad Fiaz <contact@muhammadfiaz.com>"]
+repository = "https://github.com/muhammad-fiaz/logly"
+
+[workspace.dependencies]
+# Internal crates
+color = { path = "crates/color" }
+compress = { path = "crates/compress" }
+concurrency = { path = "crates/concurrency" }
+config = { path = "crates/config" }
+context = { path = "crates/context" }
+engine = { package = "core", path = "crates/core" }
+error = { path = "crates/error" }
+filter = { path = "crates/filter" }
+format = { path = "crates/format" }
+levels = { path = "crates/levels" }
+network = { path = "crates/network" }
+record = { path = "crates/record" }
+rotate = { path = "crates/rotate" }
+schedule = { path = "crates/schedule" }
+sink = { path = "crates/sink" }
+source = { path = "crates/source" }
+
+# Third-party
+pyo3 = { version = "0.29.0", features = ["extension-module"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "3", features = ["json"] }
+hostname = "0.4"
+bzip2 = "0.6"
+flate2 = "1"
+xz2 = "0.1"
+zip = { version = "8", default-features = false, features = ["deflate"] }
+zstd = { version = "0.13", default-features = false, features = ["zstdmt"] }
+
+[package]
+name = "logly"
+version.workspace = true
+description = "A Rust-powered, high-performance logging library for Python."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 readme = "README.md"
 
 [lib]
@@ -11,40 +74,17 @@ name = "_logly"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26.0", features = ["extension-module"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["fmt", "ansi", "env-filter"] }
-tracing-appender = "0.2.3"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
-chrono = { version = "0.4.42", features = ["serde"] }
-parking_lot = "0.12.5"
-crossbeam-channel = "0.5.15"
-ahash = "0.8.12"
-smallvec = "1.15.1"
-flate2 = "1.1.2"
-zstd = "0.13.3"
-byte-unit = "5.1.6"
-arc-swap = "1.7.1"
-once_cell = "1.21.3"
-regex = "1.11.3"
-rayon = "1.11.0"
-ureq = { version = "3.1.2", default-features = false, features = ["rustls"] }
-
-[features]
-default = []
-
-[dev-dependencies]
-tempfile = "3.23.0"
-just = "1.43.0"
-
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-strip = true
-panic = "abort"
-
-[profile.dev]
-opt-level = 0
-debug = true
+compress.workspace = true
+config.workspace = true
+context.workspace = true
+engine.workspace = true
+error.workspace = true
+filter.workspace = true
+format.workspace = true
+levels.workspace = true
+network.workspace = true
+pyo3.workspace = true
+record.workspace = true
+rotate.workspace = true
+sink.workspace = true
+source.workspace = true

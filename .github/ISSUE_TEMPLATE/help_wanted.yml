@@ -1,0 +1,70 @@
+name: Help Wanted
+description: Get help with using Logly
+title: "[HELP] "
+labels: ["question", "help wanted"]
+assignees: []
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do you need help with?
+      placeholder: Describe your question or issue in detail
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What Have You Tried?
+      description: Describe what you've already tried.
+      placeholder: |
+        - I tried...
+        - I looked at the docs at...
+        - I searched for...
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Logly Version
+      description: What version of Logly are you using?
+      placeholder: e.g., 0.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What Python version are you using?
+      placeholder: e.g., 3.12.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: Code Snippet
+      description: If applicable, provide relevant code.
+      placeholder: |
+        ```python
+        from logly import logger
+
+        # Your code here
+        ```
+      render: python
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have read the documentation
+          required: true
+        - label: I have searched for existing issues and couldn't find any
+          required: true

@@ -1,0 +1,17 @@
+[package]
+name = "core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+error.workspace = true
+levels.workspace = true
+record.workspace = true
+sink.workspace = true
+
+[dev-dependencies]
+filter.workspace = true
+format.workspace = true

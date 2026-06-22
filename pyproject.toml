@@ -4,56 +4,131 @@ build-backend = "maturin"
 
 [project]
 name = "logly"
-version = "0.1.6"
-description = "A stupidly simple, yet blazingly fast and powerful logging utility for Python — powered by Rust."
-readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10, <=3.14"
-license = { file = "LICENSE" }
+description = "A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations."
 authors = [
   { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
 ]
-maintainers = [
-  { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
+license = { file = "LICENSE" }
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.12.5",
+    "typing_extensions>=4.0; python_version < '3.11'",
 ]
-keywords = ["logging", "rust", "pyo3", "tracing", "structured-logging", "logly", "performance"]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: System :: Logging",
-]
-dependencies = []
-
-[project.urls]
-Homepage = "https://github.com/muhammad-fiaz/logly"
-Source = "https://github.com/muhammad-fiaz/logly"
-"Bug Tracker" = "https://github.com/muhammad-fiaz/logly/issues"
-Documentation = "https://github.com/muhammad-fiaz/logly#readme"
-Changelog = "https://github.com/muhammad-fiaz/logly/releases"
 
 [dependency-groups]
 dev = [
-  "ipykernel>=6.30.1",
-  "maturin==1.9.1",
-  "mkdocs>=1.5.0",
-  "mkdocs-material>=9.0.0",
-  "mkdocs-minify-plugin>=0.8.0",
-  "mypy[faster-cache]==1.16.1",
-  "pre-commit==4.2.0",
-  "pylint>=3.3.8",
-  "pytest==8.4.1",
-  "pytest-cov==6.2.1",
-  "rich>=14.1.0",
-  "ruff==0.12.3",
-  "twine>=5.0.0",
+    "basedpyright>=1.39.8",
+    "maturin>=1.14.1",
+    "mypy[faster-cache]>=2.1.0",
+    "prek>=0.4.5",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.18",
+]
+
+[project.optional-dependencies]
+rich = [
+    "rich>=14.2.0",
+]
+fastapi = [
+    "fastapi>=0.115.0",
+    "starlette>=0.41.0",
+]
+starlette = [
+    "starlette>=0.41.0",
+]
+django = [
+    "django>=4.2",
+]
+flask = [
+    "flask>=3.0",
+]
+gunicorn = [
+    "gunicorn>=21.0",
+]
+sqlalchemy = [
+    "sqlalchemy>=2.0",
+]
+structlog = [
+    "structlog>=24.0",
+]
+opentelemetry = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+]
+prometheus = [
+    "prometheus-client>=0.20",
+]
+elasticsearch = [
+    "elasticsearch>=8.0",
+]
+sentry = [
+    "sentry-sdk>=2.0",
+]
+celery = [
+    "celery>=5.0",
+]
+uvicorn = [
+    "uvicorn>=0.20",
+]
+redis = [
+    "redis>=4.0",
+]
+kafka = [
+    "confluent-kafka>=2.0",
+]
+mongodb = [
+    "pymongo>=4.0",
+]
+postgresql = [
+    "psycopg2-binary>=2.9",
+]
+discord = [
+    "aiohttp>=3.0",
+]
+slack = [
+    "slack-sdk>=3.0",
+]
+apscheduler = [
+    "apscheduler>=3.10",
+]
+rq = [
+    "rq>=1.10",
+]
+click = [
+    "click>=8.0",
+]
+typer = [
+    "typer>=0.9",
+]
+all = [
+    "rich>=14.2.0",
+    "fastapi>=0.115.0",
+    "starlette>=0.41.0",
+    "django>=4.2",
+    "flask>=3.0",
+    "gunicorn>=21.0",
+    "sqlalchemy>=2.0",
+    "structlog>=24.0",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "prometheus-client>=0.20",
+    "elasticsearch>=8.0",
+    "sentry-sdk>=2.0",
+    "celery>=5.0",
+    "uvicorn>=0.20",
+    "redis>=4.0",
+    "confluent-kafka>=2.0",
+    "pymongo>=4.0",
+    "psycopg2-binary>=2.9",
+    "aiohttp>=3.0",
+    "slack-sdk>=3.0",
+    "apscheduler>=3.10",
+    "rq>=1.10",
+    "click>=8.0",
+    "typer>=0.9",
 ]
 
 [tool.maturin]
@@ -64,46 +139,26 @@ features = ["pyo3/extension-module"]
 [tool.mypy]
 check_untyped_defs = true
 disallow_untyped_defs = true
-exclude = ["examples"]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
 
-[[tool.mypy.overrides]]
-module = ["logly._logly", "logly"]
-disallow_untyped_defs = false
-
-
-[[tool.mypy.overrides]]
-module = ["examples.*"]
-disallow_untyped_defs = false
-ignore_errors = true
-
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov=logly --cov-report term-missing --cov-report xml --no-cov-on-fail"
+addopts = "--cov=logly --cov-report term-missing --no-cov-on-fail"
 
 [tool.coverage.report]
-exclude_lines = ["if __name__ == .__main__.:", "pragma: no cover"]
-
-[tool.pylint.messages_control]
-disable = [
-    "import-error",
-    "no-name-in-module",
-    "unnecessary-ellipsis",
-    "unused-argument",
-    "protected-access",
+exclude_lines = [
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "pragma: no cover",
 ]
-
-[tool.pylint.reports]
-output-format = "colorized"
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
 fix = true
-extend-exclude = ["examples"]
 
 [tool.ruff.lint]
 select = [

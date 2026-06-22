@@ -1,0 +1,15 @@
+[package]
+name = "compress"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+bzip2.workspace = true
+error.workspace = true
+flate2.workspace = true
+xz2.workspace = true
+zip.workspace = true
+zstd.workspace = true
