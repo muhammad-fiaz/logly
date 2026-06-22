@@ -119,8 +119,6 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
       - name: Install uv
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.1.0
       - name: Publish to PyPI
         run: uv publish wheels-*/*
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
