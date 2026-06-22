@@ -7,7 +7,13 @@ All models use Pydantic for automatic validation and serialization.
 
 from __future__ import annotations
 
-from typing import Literal, Self
+import sys
+from typing import Literal
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from pydantic import BaseModel, Field, model_validator
 
