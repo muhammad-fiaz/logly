@@ -13,7 +13,7 @@ jobs:
         target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -41,7 +41,7 @@ jobs:
         target: [x64, x86]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -70,7 +70,7 @@ jobs:
         target: [x86_64, aarch64]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.2"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -93,7 +93,7 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
