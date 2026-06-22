@@ -1,541 +1,229 @@
 ---
-title: Exception Handling API - Logly Python Logging
-description: Logly exception handling API reference. Learn how to use catch decorators and exception logging methods for robust error handling.
-keywords: python, logging, exceptions, api, error, handling, decorators, catch, logly
+title: Exceptions
+description: Complete reference for logly exception classes
 ---
 
-# Exception Handling
+# Exceptions
 
-Methods for catching and logging exceptions.
-
----
-
-## Overview
-
-Logly provides two approaches for exception handling:
-
-| Method | Type | Use Case |
-|--------|------|----------|
-| `catch()` | **Decorator** | Wrap functions to catch exceptions |
-| `exception()` | **Method** | Log exceptions manually |
-
-Both methods:
-- ✅ **Capture full traceback** (file, line, function)
-- ✅ **Support custom error handlers** (callbacks on error)
-- ✅ **Work with sync and async functions**
-- ✅ **Include exception details** in log output
-- ✅ **Allow re-raising** exceptions
-
----
-
-## logger.catch()
-
-Decorator that catches exceptions in functions and logs them automatically.
-
-### Signature
+All Logly exceptions inherit from a single base class. Import them from `logly.exceptions`:
 
 ```python
-logger.catch(
-    exception: type[BaseException] | tuple[type[BaseException], ...] = Exception,
-    *,
-    level: str = "ERROR",
-    reraise: bool = False,
-    message: str = "An error occurred",
-    onerror: Callable | None = None
+from logly.exceptions import (
+    LoglyError,
+    SinkError,
+    FormatterError,
+    FilterError,
+    ConfigError,
+    RotationError,
+    CompressionError,
 )
 ```
 
-### Parameters
+## Exception Hierarchy
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `exception` | `type \| tuple` | `Exception` | Exception type(s) to catch |
-| `level` | `str` | `"ERROR"` | Log level for caught exceptions |
-| `reraise` | `bool` | `False` | Re-raise exception after logging |
-| `message` | `str` | `"An error occurred"` | Custom error message |
-| `onerror` | `Callable \| None` | `None` | Callback function on error |
-
-### Returns
-- Decorator function
-
-### Examples
-
-=== "Basic Usage"
-    ```python
-    from logly import logger
-    
-    logger.configure(level="DEBUG")
-    logger.add("console")
-    
-    @logger.catch()
-    def divide(a: int, b: int) -> float:
-        return a / b
-    
-    # Normal execution
-    result = divide(10, 2)  # Returns 5.0
-    
-    # Exception caught and logged
-    result = divide(10, 0)  # Returns None, logs ZeroDivisionError
-    ```
-
-    **Output:**
-    ```
-    2025-01-15 10:30:45 | ERROR | An error occurred
-    Traceback (most recent call last):
-      File "app.py", line 8, in divide
-        return a / b
-    ZeroDivisionError: division by zero
-    ```
-
-=== "Custom Message"
-    ```python
-    @logger.catch(message="Division operation failed")
-    def divide(a: int, b: int) -> float:
-        return a / b
-    
-    divide(10, 0)
-    # Output: ... | ERROR | Division operation failed
-    ```
-
-=== "Specific Exceptions"
-    ```python
-    @logger.catch(exception=(ValueError, TypeError))
-    def process_data(data: str) -> int:
-        return int(data)
-    
-    process_data("invalid")  # Catches ValueError
-    process_data(None)       # Catches TypeError
-    ```
-
-=== "Reraise Exception"
-    ```python
-    @logger.catch(reraise=True)
-    def critical_operation():
-        risky_code()
-    
-    try:
-        critical_operation()  # Logs AND raises exception
-    except Exception as e:
-        print(f"Caught: {e}")
-    ```
-
-=== "Custom Log Level"
-    ```python
-    @logger.catch(level="CRITICAL")
-    def system_critical_task():
-        perform_critical_operation()
-    
-    system_critical_task()  # Logs at CRITICAL level
-    ```
-
-=== "Error Callback"
-    ```python
-    def on_error(exception: Exception):
-        print(f"Error handler: {type(exception).__name__}")
-        # Send alert, increment counter, etc.
-    
-    @logger.catch(onerror=on_error)
-    def monitored_function():
-        raise ValueError("Something went wrong")
-    
-    monitored_function()
-    # Logs error AND calls on_error()
-    ```
-
-=== "Async Functions"
-    ```python
-    import asyncio
-    
-    @logger.catch()
-    async def async_task():
-        await asyncio.sleep(1)
-        raise RuntimeError("Async error")
-    
-    asyncio.run(async_task())  # Logs exception
-    ```
-
-=== "Class Methods"
-    ```python
-    class DataProcessor:
-        @logger.catch(message="Processing failed")
-        def process(self, data):
-            # ... processing logic ...
-            raise ValueError("Invalid data")
-    
-    processor = DataProcessor()
-    processor.process(data)  # Logs exception
-    ```
-
-### Notes
-
-!!! tip "When to Use catch()"
-    - **Function-Level**: Wrap entire functions for automatic error handling
-    - **API Endpoints**: Catch exceptions in web handlers
-    - **Background Tasks**: Monitor long-running tasks
-    - **Data Processing**: Catch errors in data pipelines
-    - **Integration Points**: Log errors at system boundaries
-
-!!! warning "Return Value"
-    When an exception is caught (and not re-raised), the function returns `None`:
-    ```python
-    @logger.catch()
-    def get_user(user_id: int) -> User:
-        return database.get(user_id)  # Raises exception
-    
-    user = get_user(123)  # user = None (not User)
-    ```
-
-!!! info "Multiple Exceptions"
-    Catch multiple exception types:
-    ```python
-    @logger.catch(exception=(ValueError, KeyError, IndexError))
-    def process_data(data):
-        # ... processing ...
-        pass
-    ```
-
-!!! warning "Exception Propagation"
-    Without `reraise=True`, exceptions are **not** propagated:
-    ```python
-    @logger.catch()  # reraise=False (default)
-    def task():
-        raise ValueError()
-    
-    try:
-        task()  # No exception raised (caught and logged)
-    except ValueError:
-        print("This won't execute")  # Never reached
-    ```
-
----
-
-## logger.exception()
-
-Manually log an exception with full traceback.
-
-### Signature
-
-```python
-logger.exception(message: str, **kwargs) -> None
+```
+LoglyError
+├── SinkError
+│   ├── RotationError
+│   └── CompressionError
+├── FormatterError
+├── FilterError
+└── ConfigError
 ```
 
-### Parameters
-- `message` (str): Log message
-- `**kwargs`: Additional context fields
+---
 
-### Returns
-- `None`
+## Base Exception
 
-### Examples
+### LoglyError
 
-=== "Try/Except Block"
-    ```python
-    from logly import logger
-    
-    try:
-        result = 10 / 0
-    except ZeroDivisionError:
-        logger.exception("Division error occurred")
-    ```
+Base exception for all Logly errors. Catch this to handle any Logly-related error.
 
-    **Output:**
-    ```
-    2025-01-15 10:30:45 | ERROR | Division error occurred
-    Traceback (most recent call last):
-      File "app.py", line 4, in <module>
-        result = 10 / 0
-    ZeroDivisionError: division by zero
-    ```
+```python
+from logly.exceptions import LoglyError
 
-=== "With Context"
-    ```python
-    try:
-        process_order(order_id=1234)
-    except Exception:
-        logger.exception(
-            "Order processing failed",
-            order_id=1234,
-            user_id="alice",
-            retry_count=3
-        )
-    ```
-
-=== "Custom Handler"
-    ```python
-    def handle_request(request_id: str):
-        try:
-            process_request()
-        except ValueError as e:
-            logger.exception(
-                "Invalid request data",
-                request_id=request_id,
-                error_type=type(e).__name__
-            )
-        except Exception:
-            logger.exception(
-                "Unexpected error",
-                request_id=request_id
-            )
-    ```
-
-=== "Async Context"
-    ```python
-    async def async_task():
-        try:
-            await risky_async_operation()
-        except Exception:
-            logger.exception("Async operation failed")
-    ```
-
-=== "Re-raise After Logging"
-    ```python
-    try:
-        critical_operation()
-    except Exception:
-        logger.exception("Critical error")
-        raise  # Re-raise after logging
-    ```
-
-### Notes
-
-!!! tip "When to Use exception()"
-    - **Try/Except Blocks**: Log exceptions in error handlers
-    - **Custom Error Handling**: Add context before logging
-    - **Debugging**: Capture full traceback for investigation
-    - **Monitoring**: Track exception patterns
-
-!!! info "Automatic Traceback"
-    `exception()` automatically includes the full traceback from the current exception context:
-    ```python
-    try:
-        raise ValueError("Error")
-    except:
-        logger.exception("Captured")  # Includes full traceback
-    ```
-
-!!! warning "Must Be In Exception Context"
-    `exception()` should only be called within an exception handler (`except` block):
-    ```python
-    # ❌ WRONG: Not in exception context
-    logger.exception("No exception")
-    
-    # ✅ CORRECT: In exception context
-    try:
-        raise ValueError()
-    except:
-        logger.exception("Exception captured")
-    ```
+try:
+    logger.add("nonexistent/dir/file.log")
+except LoglyError as e:
+    print(f"Logly error: {e}")
+```
 
 ---
 
-## Comparison
+## Sink Errors
 
-### catch() vs exception()
+### SinkError
 
-| Feature | `catch()` | `exception()` |
-|---------|-----------|---------------|
-| **Type** | Decorator | Method |
-| **Usage** | Wrap functions | Manual in try/except |
-| **Automatic** | ✅ Yes | ❌ No |
-| **Control** | Limited | Full |
-| **Reraise** | Optional (`reraise=`) | Manual (`raise`) |
-| **Callback** | Optional (`onerror=`) | N/A |
+Raised when a sink operation fails (write errors, connection failures, etc.).
 
-### When to Use Each
+```python
+from logly.exceptions import SinkError
 
-**Use `catch()` when:**
-- ✅ You want automatic exception handling
-- ✅ Function-level error handling is sufficient
-- ✅ You need error callbacks (`onerror=`)
-- ✅ Minimal boilerplate is preferred
+try:
+    logger.info("Test message")
+except SinkError as e:
+    print(f"Sink failed: {e}")
+```
 
-**Use `exception()` when:**
-- ✅ You need custom error handling logic
-- ✅ Different exceptions require different handling
-- ✅ You want fine-grained control
-- ✅ You need to add context before logging
+**Common causes:**
+- File system permission denied
+- Network connection timeout
+- Disk full
+- Invalid sink configuration
 
 ---
 
-## Complete Example
+### RotationError
+
+Raised when log rotation fails. Inherits from `SinkError`.
+
+```python
+from logly.exceptions import RotationError
+
+try:
+    logger.add("app.log", rotation="invalid_policy")
+except RotationError as e:
+    print(f"Rotation failed: {e}")
+```
+
+**Common causes:**
+- Invalid rotation policy string
+- File system permission denied during rename
+- Rotation function raised an exception
+
+---
+
+### CompressionError
+
+Raised when log compression fails. Inherits from `SinkError`.
+
+```python
+from logly.exceptions import CompressionError
+
+try:
+    logger.add("app.log", compression="unknown_codec")
+except CompressionError as e:
+    print(f"Compression failed: {e}")
+```
+
+**Common causes:**
+- Unknown compression codec
+- Missing compression library (e.g., `zstd` not installed)
+- File system permission denied
+
+---
+
+## Formatter Errors
+
+### FormatterError
+
+Raised when a log format string is invalid or a formatter function fails.
+
+```python
+from logly.exceptions import FormatterError
+
+try:
+    logger.add("stdout", format="{invalid_token}")
+except FormatterError as e:
+    print(f"Format error: {e}")
+```
+
+**Common causes:**
+- Unknown format token (e.g., `{invalid}`)
+- Malformed time format (e.g., `{time:}`)
+- Formatter function raised an exception
+
+---
+
+## Filter Errors
+
+### FilterError
+
+Raised when a filter function is invalid or raises an exception.
+
+```python
+from logly.exceptions import FilterError
+
+try:
+    logger.add("stdout", filter="not_a_function")
+except FilterError as e:
+    print(f"Filter error: {e}")
+```
+
+**Common causes:**
+- Filter is not callable
+- Filter function raised an exception
+- Filter returned non-boolean value
+
+---
+
+## Config Errors
+
+### ConfigError
+
+Raised when logger configuration is invalid.
+
+```python
+from logly.exceptions import ConfigError
+
+try:
+    logger.configure(handlers="not_a_list")
+except ConfigError as e:
+    print(f"Config error: {e}")
+```
+
+**Common causes:**
+- Invalid handler configuration
+- Missing required parameters
+- Conflicting configuration options
+
+---
+
+## Error Handling Patterns
+
+### Catch All Logly Errors
+
+```python
+from logly.exceptions import LoglyError
+
+try:
+    logger.add("app.log", rotation="daily")
+    logger.info("Application started")
+except LoglyError as e:
+    print(f"Logging error: {e}")
+```
+
+### Catch Specific Errors
+
+```python
+from logly.exceptions import RotationError, CompressionError
+
+try:
+    logger.add("app.log", rotation="daily", compression="gzip")
+except RotationError:
+    print("Rotation failed — check rotation policy")
+except CompressionError:
+    print("Compression failed — check codec availability")
+```
+
+### Error Callback
 
 ```python
 from logly import logger
-import asyncio
+from logly.exceptions import LoglyError
 
-# Configure
-logger.configure(level="DEBUG", color=True)
-logger.add("console")
-logger.add("logs/errors.log", level="ERROR")
+def log_error(e: LoglyError):
+    print(f"Logging system error: {e}")
 
-# Error callback
-error_count = 0
-
-def on_error(exception: Exception):
-    global error_count
-    error_count += 1
-    print(f"🚨 Error #{error_count}: {type(exception).__name__}")
-
-# Using catch() decorator
-@logger.catch(
-    message="Data processing failed",
-    level="ERROR",
-    onerror=on_error
-)
-def process_data(data: list[int]):
-    return sum(data) / len(data)  # ZeroDivisionError if empty
-
-# Using exception() method
-def handle_request(request_id: str):
-    try:
-        if not request_id:
-            raise ValueError("Missing request_id")
-        
-        result = process_data([])
-        return result
-    except ValueError as e:
-        logger.exception(
-            "Validation error",
-            request_id=request_id,
-            error_type="validation"
-        )
-    except Exception:
-        logger.exception(
-            "Unexpected error",
-            request_id=request_id
-        )
-
-# Async example
-@logger.catch(reraise=True)
-async def async_task(task_id: int):
-    await asyncio.sleep(0.1)
-    if task_id < 0:
-        raise ValueError(f"Invalid task_id: {task_id}")
-    return task_id * 2
-
-# Run examples
-async def main():
-    # Test catch() decorator
-    result1 = process_data([1, 2, 3])  # OK: returns 2.0
-    result2 = process_data([])          # ERROR: logged, returns None
-    
-    # Test exception() method
-    handle_request("")     # ValueError logged
-    handle_request("123")  # ZeroDivisionError logged
-    
-    # Test async catch()
-    try:
-        await async_task(-1)  # ValueError logged and raised
-    except ValueError:
-        print("Caught re-raised exception")
-    
-    print(f"Total errors: {error_count}")
-    logger.complete()
-
-asyncio.run(main())
+logger.add("app.log", catch=True)  # Default: catches silently
 ```
 
-**Output:**
-```
-2025-01-15 10:30:45 | DEBUG | Processing data
-2025-01-15 10:30:45 | ERROR | Data processing failed
-Traceback...
-ZeroDivisionError: division by zero
-🚨 Error #1: ZeroDivisionError
-
-2025-01-15 10:30:45 | ERROR | Validation error request_id= error_type=validation
-Traceback...
-ValueError: Missing request_id
-
-2025-01-15 10:30:45 | ERROR | Data processing failed
-Traceback...
-ZeroDivisionError: division by zero
-🚨 Error #2: ZeroDivisionError
-
-2025-01-15 10:30:45 | ERROR | Unexpected error request_id=123
-Traceback...
-ZeroDivisionError: division by zero
-
-2025-01-15 10:30:45 | ERROR | An error occurred
-Traceback...
-ValueError: Invalid task_id: -1
-🚨 Error #3: ValueError
-
-Caught re-raised exception
-Total errors: 3
-```
-
----
-
-## Best Practices
-
-### ✅ DO
+### Reraise After Logging
 
 ```python
-# 1. Use catch() for automatic handling
-@logger.catch()
-def api_endpoint():
-    process_request()
+from logly import logger
 
-# 2. Use exception() for custom handling
-try:
-    risky_operation()
-except SpecificError:
-    logger.exception("Known error", context="value")
-except Exception:
-    logger.exception("Unknown error")
-
-# 3. Add context to exceptions
-try:
-    process_order(order_id)
-except Exception:
-    logger.exception("Order failed", order_id=order_id, user_id=user_id)
-
-# 4. Use reraise for critical errors
-@logger.catch(reraise=True)
-def critical_operation():
-    must_succeed()
-```
-
-### ❌ DON'T
-
-```python
-# 1. Don't catch all exceptions silently
-@logger.catch()  # ❌ Hides all errors
-def critical_operation():
-    must_succeed()
-
-# ✅ Use reraise for critical paths
-@logger.catch(reraise=True)
-def critical_operation():
-    must_succeed()
-
-# 2. Don't log exceptions twice
-@logger.catch()  # Already logs exception
-def process():
-    try:
-        risky_code()
-    except Exception:
-        logger.exception("Error")  # ❌ Duplicate logging
-
-# 3. Don't use exception() outside try/except
-logger.exception("No exception")  # ❌ No traceback available
-
-# ✅ Use in exception context
-try:
-    raise ValueError()
-except:
-    logger.exception("Error captured")
-
-# 4. Don't forget to add context
-try:
-    process_data(item)
-except Exception:
-    logger.exception("Error")  # ❌ Missing context
-
-# ✅ Add relevant context
-try:
-    process_data(item)
-except Exception:
-    logger.exception("Error processing", item_id=item.id, step="validation")
+with logger.catch(reraise=True):
+    critical_operation()
+# Exception is logged then re-raised
 ```

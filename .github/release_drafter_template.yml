@@ -1,56 +1,74 @@
-name-template: 'v$RESOLVED_VERSION 🌈'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 categories:
-  - title: '🚀 Features'
+  - title: "Breaking Changes"
     labels:
-      - 'feature'
-      - 'enhancement'
-  - title: '🐛 Bug Fixes'
+      - "breaking-change"
+      - "breaking"
+    collapse:
+      after: "Features"
+  - title: "Features"
     labels:
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-  - title: '📚 Documentation'
+      - "enhancement"
+      - "feature"
+      - "new-feature"
+    collapse:
+      after: "Bug Fixes"
+  - title: "Bug Fixes"
     labels:
-      - 'documentation'
-      - 'docs'
-  - title: '🧰 Maintenance'
+      - "bug"
+      - "fix"
+      - "bugfix"
+    collapse:
+      after: "Improvements"
+  - title: "Improvements"
     labels:
-      - 'chore'
-      - 'maintenance'
-  - title: '🔧 CI/CD & Testing'
+      - "improvement"
+      - "enhancement"
+      - "refactor"
+      - "performance"
+    collapse:
+      after: "Documentation"
+  - title: "Documentation"
     labels:
-      - 'ci'
-      - 'testing'
-      - 'github-actions'
-  - title: '⬆️ Dependencies'
+      - "documentation"
+      - "docs"
+      - "doc"
+    collapse:
+      after: "Dependencies"
+  - title: "Dependencies"
     labels:
-      - 'dependencies'
-      - 'deps'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
-change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+      - "dependencies"
+      - "deps"
+      - "skip-changelog"
+    collapse:
+      after: ""
+exclude-labels:
+  - "skip-changelog"
+  - "dependencies"
 version-resolver:
   major:
     labels:
-      - 'major'
-      - 'breaking-change'
+      - "major"
+      - "breaking-change"
+      - "breaking"
   minor:
     labels:
-      - 'minor'
-      - 'feature'
-      - 'enhancement'
+      - "minor"
+      - "enhancement"
+      - "feature"
+      - "new-feature"
   patch:
     labels:
-      - 'patch'
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-      - 'chore'
-      - 'documentation'
-      - 'ci'
-      - 'testing'
-      - 'dependencies'
+      - "patch"
+      - "bug"
+      - "fix"
+      - "bugfix"
+      - "dependencies"
   default: patch
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&'
+no-changes-template: "No changes since last release."
 template: |
   ## Changes
 
@@ -59,3 +77,7 @@ template: |
   ## Contributors
 
   $CONTRIBUTORS
+
+  ---
+
+  **Full Changelog**: https://github.com/muhammad-fiaz/logly/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

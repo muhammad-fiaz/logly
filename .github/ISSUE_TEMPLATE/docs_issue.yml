@@ -1,0 +1,67 @@
+name: Documentation Issue
+description: Report incorrect or missing documentation
+title: "[DOCS] "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What documentation is incorrect or missing?
+      placeholder: Describe the documentation issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What type of documentation issue is this?
+      options:
+        - "Incorrect information"
+        - "Missing documentation"
+        - "Outdated documentation"
+        - "Broken link"
+        - "Typo or formatting issue"
+        - "Example not working"
+    validations:
+      required: true
+
+  - type: input
+    id: page-url
+    attributes:
+      label: Page URL
+      description: Which page has the issue?
+      placeholder: e.g., https://muhammad-fiaz.github.io/logly/guides/sinks/
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Content
+      description: What should the documentation say?
+      placeholder: Describe what the documentation should contain
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Content
+      description: What does the documentation currently say?
+      placeholder: Quote or describe the current content
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have checked that this documentation issue exists
+          required: true
+        - label: I have included all relevant information above
+          required: true

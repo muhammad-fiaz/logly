@@ -1,738 +1,409 @@
+"""Logly type stubs.
+
+Provides type annotations for the ``logly`` package.
+"""
+
 from __future__ import annotations
 
-from collections.abc import Callable, Generator
-from typing import TypedDict
+import re
+from collections.abc import Callable, Generator, Mapping
+from pathlib import Path
+from types import TracebackType
+from typing import Any, Self
+
+from logly.models import PrettyJsonConfig
 
 __version__: str
-"""The version string of the logly library."""
 
-class SearchResult(TypedDict):
-    """Result of a log search operation."""
+class _Logger:
+    """Native Rust logger engine (internal).
 
-    line: int
-    content: str
-    match: str
-    context_before: list[str] | None
-    context_after: list[str] | None
+    This class wraps the PyO3-based Rust implementation and provides
+    low-level logging operations. It is not intended for direct use;
+    use :class:`~logly.Logger` instead.
+    """
 
-class PyLogger:
-    """High-performance logger implemented in Rust with asynchronous writing.
+    def __init__(self) -> None: ...
+    def add(
+        self,
+        sink: Any,
+        *,
+        level: str = "INFO",
+        format: str | Callable[[dict[str, Any]], str] = "{level} | {message}",
+        colorize: bool | None = None,
+        serialize: bool = False,
+        pretty_json: bool | PrettyJsonConfig | None = None,
+        enqueue: bool = False,
+        rotation: Any | None = None,
+        retention: Any | None = None,
+        compression: Any | None = None,
+        delay: bool = False,
+        watch: bool = False,
+        mode: str = "a",
+        encoding: str = "utf-8",
+        filter: Any | None = None,
+        patch: Any | None = None,
+    ) -> int: ...
+    def remove(self, sink_id: int | None = None) -> None: ...
+    def complete(self) -> None: ...
+    def enable(self, name: str) -> None: ...
+    def disable(self, name: str) -> None: ...
+    def log(self, level: str, message: str) -> None: ...
+    def log_structured(
+        self,
+        level: str,
+        message: str,
+        *,
+        name: str | None = None,
+        file: str | None = None,
+        line: int | None = None,
+        function: str | None = None,
+        module: str | None = None,
+        thread_name: str | None = None,
+        process_id: int | None = None,
+        extra: dict[str, str] | None = None,
+        exception: str | None = None,
+        colors: bool = False,
+    ) -> None: ...
+    def trace(self, message: str) -> None: ...
+    def debug(self, message: str) -> None: ...
+    def info(self, message: str) -> None: ...
+    def notice(self, message: str) -> None: ...
+    def success(self, message: str) -> None: ...
+    def warning(self, message: str) -> None: ...
+    def error(self, message: str) -> None: ...
+    def fail(self, message: str) -> None: ...
+    def critical(self, message: str) -> None: ...
+    def fatal(self, message: str) -> None: ...
 
-    This class provides the core logging functionality with support for
-    multiple sinks, log levels, structured logging, and async I/O for
-    optimal performance.
+class Logger:
+    """Main logger class providing the full logging API.
+
+    Usage::
+
+        from logly import logger
+
+        logger.info("Hello from Logly")
+        logger.opt(exception=True).error("Something went wrong")
     """
 
     def __init__(
         self,
-        auto_update_check: bool = True,
-        auto_configure: bool = True,
-        internal_debug: bool = False,
-        debug_log_path: str | None = None,
-    ) -> None:
-        """Create a new PyLogger instance.
-
-        **Recent Fixes:**
-        - Jupyter/Colab: Logs now display in notebooks via Python's sys.stdout.
-          See: https://github.com/muhammad-fiaz/logly/issues/76
-
-        Args:
-            auto_update_check: Enable automatic version checking (default: True).
-            auto_configure: Automatically create a console sink if no sinks exist (default: True).
-                            This ensures users can start logging immediately without calling configure().
-            internal_debug: Enable internal debug logging for troubleshooting (default: False).
-                           When enabled, all logly internal operations are logged to a debug file.
-                           Use this when reporting issues or debugging logly behavior.
-            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
-                           Only used when internal_debug=True.
-
-        Creates a logger with default configuration (INFO level, colored console output).
-        """
-        ...
-
-    def add(  # pylint: disable=too-many-arguments
-        self,
-        sink: str | None,
+        native: _Logger | None = None,
         *,
-        rotation: str | None = ...,
-        size_limit: str | None = ...,
-        filter_min_level: str | None = ...,
-        filter_module: str | None = ...,
-        filter_function: str | None = ...,
-        async_write: bool = ...,
-        buffer_size: int = ...,
-        flush_interval: int = ...,
-        max_buffered_lines: int = ...,
-        date_style: str | None = ...,
-        date_enabled: bool = ...,
-        retention: int | None = ...,
-        format: str | None = ...,  # pylint: disable=redefined-builtin
-        json: bool = ...,
-    ) -> int:
-        """Add a logging sink (output destination).
-
-        **Fixed Issues:**
-        - Retention now works correctly with size_limit to limit total log files.
-          See: https://github.com/muhammad-fiaz/logly/issues/77
-
-        Args:
-            sink: Path to log file or "console" for stdout.
-            rotation: Time-based rotation policy ("daily", "hourly", "minutely").
-            size_limit: Maximum file size before rotation. Supports case-insensitive formats:
-                       - Bytes: "100" (number only), "100B", "100b"
-                       - Kilobytes: "5KB", "5kb", "5K", "5k"
-                       - Megabytes: "10MB", "10mb", "10M", "10m"
-                       - Gigabytes: "1GB", "1gb", "1G", "1g"
-                       - Terabytes: "2TB", "2tb", "2T", "2t"
-            filter_min_level: Exact log level for this sink ("TRACE", "DEBUG", "INFO",
-                            "SUCCESS", "WARNING", "ERROR", "CRITICAL", "FAIL").
-                            Only messages with this exact level will be logged.
-            filter_module: Only log messages from this module.
-            filter_function: Only log messages from this function.
-            async_write: Enable background async writing (default: True).
-            buffer_size: Buffer size in bytes for async writing (default: 8192).
-            flush_interval: Flush interval in milliseconds for async writing (default: 1000).
-            max_buffered_lines: Maximum number of buffered lines before blocking (default: 1000).
-            date_style: Date format ("rfc3339", "local", "utc").
-            date_enabled: Include timestamp in log output (default: False).
-            retention: Number of rotated files to keep (including current). Works with
-                      both rotation and size_limit. Older files auto-deleted.
-            retention: Number of rotated files to keep (older files auto-deleted).
-            format: Custom format string with placeholders like "{level}", "{message}", "{time}", "{extra}", or any extra field key. Placeholders are case-insensitive and extra fields not used in the template are automatically appended.
-            json: Enable JSON output format (default: False).
-
-        Returns:
-            Handler ID that can be used to remove this sink later.
-        """
-        ...
-
+        name: str = "logly",
+        bound: Mapping[str, object] | None = None,
+        patchers: tuple[Callable[[dict[str, object]], None], ...] = (),
+        options: Any | None = None,
+        sink_configs: dict[int, tuple[object, dict[str, object]]] | None = None,
+    ) -> None: ...
+    def add(
+        self,
+        sink: object = "stderr",
+        *,
+        level: str | int = "DEBUG",
+        format: str | Callable[[dict[str, object]], str] | None = None,
+        rotation: str | int | object | None = None,
+        retention: int | str | object | None = None,
+        compression: str | object | None = None,
+        enqueue: bool = False,
+        colorize: bool | None = None,
+        backtrace: bool = True,
+        diagnose: bool = False,
+        filter: str | Callable[[dict[str, object]], bool] | Mapping[str, str | bool] | None = None,
+        serialize: bool = False,
+        pretty_json: bool | PrettyJsonConfig | None = None,
+        patch: Callable[[dict[str, object]], None] | None = None,
+        encoding: str = "utf-8",
+        delay: bool = False,
+        context: str | Any | None = None,
+        catch: bool = True,
+        mode: str = "a",
+        buffering: int = 1,
+        loop: Any | None = None,
+        opener: Callable[..., object] | None = None,
+        **kwargs: object,
+    ) -> int: ...
+    def remove(self, handler_id: int | None = None) -> None: ...
+    def complete(self) -> None: ...
+    def reinstall(self, handler_id: int | None = None) -> None: ...
+    def catch(
+        self,
+        exception: type[BaseException] | tuple[type[BaseException], ...] | None = ...,
+        *,
+        level: str = ...,
+        reraise: bool = ...,
+        onerror: Callable[[BaseException], None] | None = ...,
+        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = ...,
+        default: object = ...,
+    ) -> _CatchContext: ...
+    def opt(
+        self,
+        *,
+        exception: BaseException | bool | None = None,
+        record: bool = False,
+        lazy: bool = False,
+        colors: bool = False,
+        raw: bool = False,
+        capture: bool = True,
+        depth: int = 0,
+        ansi: bool = False,
+    ) -> Self: ...
+    def bind(self, **kwargs: object) -> Self: ...
+    def contextualize(self, **kwargs: object) -> Generator[None]: ...
+    def patch(self, patcher: Callable[[dict[str, object]], None]) -> Self: ...
+    def level(
+        self,
+        name: str,
+        no: int | None = None,
+        color: str | None = None,
+        icon: str | None = None,
+    ) -> tuple[str, int, str | None]: ...
+    def enable(self, name: str) -> None: ...
+    def disable(self, name: str) -> None: ...
     def configure(
         self,
-        level: str | None = ...,
-        color: bool = ...,
-        level_colors: dict[str, str] | None = ...,
-        json: bool = ...,
-        pretty_json: bool = ...,
-        console: bool = ...,
-        show_time: bool = ...,
-        show_module: bool = ...,
-        show_function: bool = ...,
-        show_filename: bool = ...,
-        show_lineno: bool = ...,
-        console_levels: dict[str, bool] | None = ...,
-        time_levels: dict[str, bool] | None = ...,
-        color_levels: dict[str, bool] | None = ...,
-        storage_levels: dict[str, bool] | None = ...,
-        color_callback: Callable[[str, str], str] | None = ...,
-        auto_sink: bool = ...,
-        auto_sink_levels: dict[str, str | dict[str, object]] | None = ...,
-        log_compact: bool = ...,
-    ) -> None:
-        """Configure global logger settings.
-
-        Args:
-            level: Default minimum log level ("TRACE", "DEBUG", "INFO", "SUCCESS",
-                  "WARNING", "ERROR", "CRITICAL", "FAIL").
-            color: Enable colored output for console logs. When enabled without
-                  custom level_colors, default colors are applied:
-                  - TRACE: Cyan, DEBUG: Blue, INFO: White, SUCCESS: Green,
-                  - WARNING: Yellow, ERROR: Red, CRITICAL: Bright Red, FAIL: Magenta.
-            level_colors: Dictionary mapping log levels to ANSI color codes or color names.
-                         When not provided and color=True, default colors are used.
-            json: Output logs in JSON format.
-            pretty_json: Format logs as pretty-printed JSON (more readable, higher cost).
-            console: Enable console output.
-            show_time: Show timestamps in console output.
-            show_module: Show module information in console output.
-            show_function: Show function information in console output.
-            show_filename: Show filename information in console output.
-            show_lineno: Show line number information in console output.
-            console_levels: Dictionary mapping log levels to console output enable/disable.
-            time_levels: Dictionary mapping log levels to time display enable/disable.
-            color_levels: Dictionary mapping log levels to color enable/disable.
-            storage_levels: Dictionary mapping log levels to file storage enable/disable.
-            color_callback: Custom color formatting function with signature (level: str, text: str) -> str.
-                           If provided, this function is used instead of built-in ANSI coloring.
-                           Allows integration with external color libraries like Rich, colorama, etc.
-                           When provided, level_colors parameter is ignored.
-            auto_sink: Automatically create a console sink if no sinks exist (default: True).
-                      When True and no sinks have been added, a console sink is created automatically.
-                      Set to False if you want full manual control over sinks.
-            auto_sink_levels: Dictionary mapping log levels to file paths or configuration dicts.
-                             Automatically creates file sinks for specified levels without manual logger.add() calls.
-                             Keys are level names ("DEBUG", "INFO", etc.), values can be:
-                             - str: Simple file path (e.g., "logs/debug.log")
-                             - dict: Advanced config with rotation, retention, json, etc.
-                             Example: {"DEBUG": "logs/debug.log", "ERROR": {"path": "logs/error.log", "rotation": "daily"}}
-            log_compact: Enable compact logging for better Jupyter/Colab compatibility (default: False).
-            internal_debug: Enable internal debug logging for troubleshooting (default: False).
-                           When enabled, all logly operations are logged to a debug file.
-            debug_log_path: Path to store internal debug logs (default: "logly_debug.log").
-                           Only used when internal_debug=True.
-        """
-        ...
-
-    def reset(self) -> None:
-        """Reset logger configuration to default settings.
-
-        Resets all logger settings to their default values, clearing any
-        per-level controls and custom configurations.
-        """
-        ...
-
-    def remove(self, handler_id: int) -> bool:
-        """Remove a logging sink by its handler ID.
-
-        Args:
-            handler_id: The ID returned by add() when the sink was created.
-
-        Returns:
-            True if the sink was successfully removed, False otherwise.
-        """
-        ...
-
-    def remove_all(self) -> int:
-        """Remove all logging sinks.
-
-        Clears all registered sinks (console and file outputs). This is useful
-        for cleanup or when you want to reconfigure all logging outputs.
-
-        Returns:
-            The number of sinks that were removed.
-        """
-        ...
-
-    def sink_count(self) -> int:
-        """Get the number of active sinks.
-
-        Returns the count of all registered sinks (file and console outputs).
-
-        Returns:
-            The number of active sinks.
-        """
-        ...
-
-    def list_sinks(self) -> list[int]:
-        """List all active sink handler IDs.
-
-        Returns a list of handler IDs for all registered sinks.
-
-        Returns:
-            List of handler IDs (as integers).
-        """
-        ...
-
-    def sink_info(self, handler_id: int) -> dict[str, str] | None:
-        """Get detailed information about a specific sink.
-
-        Args:
-            handler_id: Handler ID returned by add().
-
-        Returns:
-            Dictionary with sink information, or None if handler ID not found.
-        """
-        ...
-
-    def all_sinks_info(self) -> list[dict[str, str]]:
-        """Get information about all active sinks.
-
-        Returns:
-            List of sink information dictionaries.
-        """
-        ...
-
-    def delete(self, handler_id: int) -> bool:
-        """Delete the log file for a specific sink.
-
-        Args:
-            handler_id: Handler ID of the sink whose log file should be deleted.
-
-        Returns:
-            True if the file was successfully deleted, False otherwise.
-        """
-        ...
-
-    def delete_all(self) -> int:
-        """Delete all log files from all sinks.
-
-        Returns:
-            The number of files successfully deleted.
-        """
-        ...
-
-    def clear(self) -> None:
-        """Clear the console display.
-
-        This is a platform-specific operation that clears the terminal screen.
-        """
-        ...
-
-    def read(self, handler_id: int) -> str | None:
-        """Read log content from a specific sink's file.
-
-        Args:
-            handler_id: Handler ID of the sink whose log file should be read.
-
-        Returns:
-            The log file content as a string, or None if the file doesn't exist.
-        """
-        ...
-
-    def read_all(self) -> dict[int, str]:
-        """Read log content from all sinks.
-
-        Returns:
-            Dictionary mapping handler IDs to their log file contents.
-        """
-        ...
-
-    def file_size(self, handler_id: int) -> int | None:
-        """Get the file size of a specific sink's log file in bytes.
-
-        Args:
-            handler_id: The unique identifier of the sink.
-
-        Returns:
-            File size in bytes, or None if not found.
-        """
-        ...
-
-    def file_metadata(self, handler_id: int) -> dict[str, str] | None:
-        """Get detailed metadata for a specific sink's log file.
-
-        Args:
-            handler_id: The unique identifier of the sink.
-
-        Returns:
-            Dictionary with file metadata (size, created, modified, path), or None.
-        """
-        ...
-
-    def read_lines(self, handler_id: int, start: int, end: int) -> str | None:
-        """Read specific lines from a sink's log file.
-
-        Args:
-            handler_id: The unique identifier of the sink.
-            start: Starting line number (1-indexed, negative for end-relative).
-            end: Ending line number (inclusive, negative for end-relative).
-
-        Returns:
-            Selected lines joined with newlines, or None if not found.
-        """
-        ...
-
-    def line_count(self, handler_id: int) -> int | None:
-        """Count the number of lines in a sink's log file.
-
-        Args:
-            handler_id: The unique identifier of the sink.
-
-        Returns:
-            Number of lines, or None if not found.
-        """
-        ...
-
-    def read_json(self, handler_id: int, pretty: bool = False) -> str | None:
-        """Read and parse JSON log file.
-
-        Args:
-            handler_id: The unique identifier of the sink.
-            pretty: If True, returns pretty-printed JSON.
-
-        Returns:
-            JSON string, or None if not found.
-        """
-        ...
-
-    def trace(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at TRACE level (most verbose).
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def debug(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at DEBUG level.
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def info(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at INFO level (general information).
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def success(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at SUCCESS level (successful operations).
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def warning(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at WARNING level.
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def error(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at ERROR level.
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def critical(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at CRITICAL level (most severe).
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def fail(self, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at FAIL level (operation failures).
-
-        Use this for operation failures that are distinct from errors.
-        Displayed with magenta color by default to distinguish from ERROR.
-
-        Args:
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def log(self, level: str, message: str, /, *args: object, **kwargs: object) -> None:
-        """Log a message at a custom or aliased level.
-
-        Args:
-            level: Log level name (e.g., "INFO", "ERROR", or a custom alias).
-            message: The log message, optionally with % formatting placeholders.
-            *args: Arguments for % string formatting.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def complete(self) -> None:
-        """Flush all pending log messages and ensure they are written.
-
-        This method should be called before application shutdown to ensure
-        all buffered logs (especially from async sinks) are persisted.
-        """
-        ...
-
-    def _log_with_stdout(self, level: str, msg: str, stdout: object, **kwargs: object) -> None:
-        """Log a message directly to a specific stdout object (for testing).
-
-        This is an internal method used for testing color callbacks and other
-        output formatting functionality.
-
-        Args:
-            level: Log level string
-            msg: Log message
-            stdout: Python stdout object to write to
-            **kwargs: Additional context fields
-        """
-        ...
-
-    def add_callback(self, callback: object) -> int:
-        """Register a callback function to be invoked on every log message.
-
-        The callback will be executed asynchronously in a background thread,
-        ensuring zero impact on application performance.
-
-        Args:
-            callback: A callable that accepts a single dict argument containing
-                     log record information (timestamp, level, message, and fields).
-
-        Returns:
-            Callback ID (integer) that can be used with remove_callback().
-
-        Note:
-            Callbacks execute in background threads and are thread-safe.
-            If a callback raises an exception, it will be silently caught.
-        """
-        ...
-
-    def remove_callback(self, callback_id: int) -> bool:
-        """Remove a previously registered callback by its ID.
-
-        Args:
-            callback_id: The ID returned by add_callback() when registering.
-
-        Returns:
-            True if the callback was successfully removed, False otherwise.
-        """
-        ...
-
-    def enable(self) -> None:
-        """Enable logging for this logger instance.
-
-        When disabled, all log messages are silently ignored.
-        """
-        ...
-
-    def disable(self) -> None:
-        """Disable logging for this logger instance.
-
-        When disabled, all log messages are silently ignored without
-        any performance overhead from formatting or serialization.
-        """
-        ...
-
-    def level(self, name: str, mapped_to: str) -> None:
-        """Register a custom level name as an alias to an existing level.
-
-        Allows creating custom level names that map to built-in levels.
-        Use with the log() method to log at custom levels.
-
-        Args:
-            name: The custom level name/alias to create.
-            mapped_to: The existing level to map to ("TRACE", "DEBUG", "INFO",
-                      "SUCCESS", "WARNING", "ERROR", "CRITICAL").
-        """
-        ...
-
-    def bind(self, **kwargs: object) -> PyLogger:
-        """Create a new logger instance with additional context fields bound.
-
-        Bound context fields are automatically attached to all log messages
-        from this logger instance, providing a thread-safe way to add context.
-
-        Args:
-            **kwargs: Key-value pairs to bind as context fields.
-
-        Returns:
-            A new logger instance with the additional context bound.
-        """
-        ...
-
-    def contextualize(self, **kwargs: object) -> Generator[None, None, None]:
-        """Context manager to temporarily attach context fields.
-
-        Unlike bind(), contextualize() modifies the current logger instance
-        within a context block, automatically restoring original state on exit.
-
-        Args:
-            **kwargs: Key-value pairs to temporarily attach as context fields.
-
-        Yields:
-            None
-        """
-        ...
-
-    def exception(self, message: str = "", /, **kwargs: object) -> None:
-        """Log an exception with traceback at ERROR level.
-
-        Automatically captures the current exception traceback and logs it.
-        Must be called from within an exception handler.
-
-        Args:
-            message: Optional message prefix before the traceback.
-            **kwargs: Additional context fields to attach to the log record.
-        """
-        ...
-
-    def catch(
-        self, *, reraise: bool = False
-    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
-        """Decorator or context manager to automatically log exceptions.
-
-        Can be used as a decorator on functions or as a context manager.
-        By default, catches and logs exceptions without re-raising them.
-
-        Args:
-            reraise: If True, re-raise the exception after logging (default: False).
-
-        Returns:
-            A context manager/decorator that catches and logs exceptions.
-        """
-        ...
-
-    def _reset_for_tests(self) -> None:
-        """Reset internal state for testing purposes.
-
-        WARNING: This is for internal testing only and should not be used
-        in production code. It does not reset the global tracing subscriber.
-        """
-        ...
-
-    def enable_sink(self, sink_id: int) -> bool:
-        """Enable a specific sink by its handler ID.
-
-        When a sink is enabled, log messages will be written to it.
-        Sinks are enabled by default when created.
-
-        Args:
-            sink_id: The handler ID of the sink to enable.
-
-        Returns:
-            True if the sink was found and enabled, False if not found.
-
-        Example:
-            >>> sink_id = logger.add("app.log")
-            >>> logger.disable_sink(sink_id)
-            >>> logger.info("Not logged")  # Sink disabled
-            >>> logger.enable_sink(sink_id)
-            >>> logger.info("Logged")  # Sink re-enabled
-        """
-        ...
-
-    def disable_sink(self, sink_id: int) -> bool:
-        """Disable a specific sink by its handler ID.
-
-        When a sink is disabled, log messages will not be written to it,
-        but the sink remains registered and can be re-enabled later.
-
-        Args:
-            sink_id: The handler ID of the sink to disable.
-
-        Returns:
-            True if the sink was found and disabled, False if not found.
-
-        Example:
-            >>> sink_id = logger.add("app.log")
-            >>> logger.disable_sink(sink_id)
-            >>> logger.info("Not logged")  # Sink disabled
-        """
-        ...
-
-    def is_sink_enabled(self, sink_id: int) -> bool | None:
-        """Check if a specific sink is enabled.
-
-        Args:
-            sink_id: The handler ID of the sink to check.
-
-        Returns:
-            True if enabled, False if disabled, None if not found.
-
-        Example:
-            >>> sink_id = logger.add("app.log")
-            >>> logger.is_sink_enabled(sink_id)  # Returns True
-            >>> logger.disable_sink(sink_id)
-            >>> logger.is_sink_enabled(sink_id)  # Returns False
-        """
-        ...
-
-    def search_log(
-        self,
-        sink_id: int,
-        search_string: str,
         *,
-        first_only: bool = False,
-        case_sensitive: bool = False,
-        use_regex: bool = False,
-        start_line: int | None = None,
-        end_line: int | None = None,
-        max_results: int | None = None,
-        context_before: int | None = None,
-        context_after: int | None = None,
-        level_filter: str | None = None,
-        invert_match: bool = False,
-    ) -> list[SearchResult] | None:
-        """Search a sink's log file for a pattern (Rust-powered).
-
-        All search operations are performed by the high-performance Rust backend.
-
-        Args:
-            sink_id: Handler ID of the sink whose log file to search.
-            search_string: String or regex pattern to search for.
-            first_only: Return only first match (default: False).
-            case_sensitive: Perform case-sensitive search (default: False).
-            use_regex: Treat search_string as regex (default: False).
-            start_line: Start from this line number (1-indexed).
-            end_line: Stop at this line number (inclusive).
-            max_results: Maximum number of results.
-            context_before: Lines to include before match.
-            context_after: Lines to include after match.
-            level_filter: Only search lines with this log level.
-            invert_match: Return lines that DON'T match.
-
-        Returns:
-            List of dicts with "line", "content", "match" keys,
-            plus optional "context_before" and "context_after".
-            None if sink not found. Empty list if no matches.
-
-        Example:
-            >>> results = logger.search_log(sink_id, "error")
-            >>> regex_results = logger.search_log(sink_id, r"error:\\s+\\d+", use_regex=True)
-            >>> context_results = logger.search_log(sink_id, "crash", context_before=2, context_after=2)
-        """
-        ...
-
-    def __call__(
+        handlers: list[dict[str, object]] | None = None,
+        levels: list[dict[str, object]] | None = None,
+        extra: dict[str, object] | None = None,
+        patcher: Callable[[dict[str, object]], None] | None = None,
+        activation: list[tuple[str, bool]] | None = None,
+    ) -> None: ...
+    def log(
+        self, level: str | int, message: object, *args: object, **kwargs: object
+    ) -> dict[str, object] | None: ...
+    def trace(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def debug(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def info(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def notice(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def success(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def warning(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def warn(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def error(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def exception(
+        self, message: object, *args: object, exc_info: bool = True, **kwargs: object
+    ) -> None: ...
+    def fail(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def critical(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def fatal(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def audit(self, message: object, *args: object, **kwargs: object) -> None: ...
+    def root_dir(self, path: str | Path) -> None: ...
+    def parse(
         self,
-        auto_update_check: bool = True,
-        internal_debug: bool = False,
-        debug_log_path: str | None = None,
-        auto_configure: bool = True,
-    ) -> PyLogger:
-        """Create a new logger instance with custom initialization options.
+        path: str | Path,
+        pattern: str | re.Pattern[str] | None = None,
+        *,
+        cast: dict[str, Callable[[str], object]] | None = None,
+        chunk: int = 65536,
+        encoding: str = "utf-8",
+    ) -> Generator[dict[str, object]]: ...
+    def __copy__(self) -> Self: ...
+    def __deepcopy__(self, memo: dict[int, object]) -> Self: ...
+    @property
+    def levels(self) -> list[str]: ...
 
-        Args:
-            auto_update_check: Enable automatic version checking on startup. Defaults to True.
-            internal_debug: Enable internal debug logging for troubleshooting. Defaults to False.
-            debug_log_path: Path to the debug log file. Defaults to "logly_debug.log".
-            auto_configure: Automatically create a console sink if no sinks exist (default: True).
-                            This ensures users can start logging immediately without calling configure().
+class _CatchContext:
+    """Context manager and decorator for exception catching."""
 
+    def __enter__(self) -> _CatchContext: ...
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool: ...
+    def __call__(self, func: Callable[..., object]) -> Callable[..., object]: ...
 
-        Returns:
-            A new PyLogger instance with the specified configuration.
+class HttpJsonSink:
+    """HTTP JSON sink for sending logs to HTTP endpoints.
 
-        Example:
-            >>> from logly import logger
-            >>> # Create logger with auto-update checks (default)
-            >>> default_logger = logger()
-            >>>
-            >>> # Create logger without auto-update checks
-            >>> custom_logger = logger(auto_update_check=False)
-            >>>
-            >>> # Create logger with internal debugging enabled
-            >>> debug_logger = logger(internal_debug=True, debug_log_path="my_debug.log")
-        """
-        ...
+    Usage::
 
-logger: PyLogger
-
-def __getattr__(name: str) -> object:
-    """Redirect module attribute access to the logger instance for convenience.
-
-    This allows users to do:
-        import logly as logger
-        logger.info("message")
-
-    Or:
-        import logly
-        logly.info("message")
-
-    Instead of:
         from logly import logger
-        logger.info("message")
+        from logly.network import HttpJsonSink
+
+        logger.add(HttpJsonSink(url="http://localhost:3100/loki/api/v1/push"))
+    """
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        method: str = "POST",
+        headers: list[tuple[str, str]] | None = None,
+        timeout: int = 30,
+    ) -> None: ...
+    def write(self, line: str) -> None: ...
+    def flush(self) -> None: ...
+
+class TcpSink:
+    """TCP sink for sending logs over TCP.
+
+    Usage::
+
+        from logly import logger
+        from logly.network import TcpSink
+
+        logger.add(TcpSink(host="127.0.0.1", port=514))
+    """
+
+    def __init__(self, host: str = "127.0.0.1", port: int = 514, delimiter: str = "\n") -> None: ...
+    def connect(self) -> None: ...
+    def write(self, line: str) -> None: ...
+    def flush(self) -> None: ...
+
+class UdpSink:
+    """UDP sink for sending logs over UDP.
+
+    Usage::
+
+        from logly import logger
+        from logly.network import UdpSink
+
+        logger.add(UdpSink(host="127.0.0.1", port=514))
+    """
+
+    def __init__(self, host: str = "127.0.0.1", port: int = 514) -> None: ...
+    def write(self, line: str) -> None: ...
+
+class SyslogSink:
+    """Syslog sink for sending logs to syslog servers.
+
+    Usage::
+
+        from logly import logger
+        from logly.network import SyslogSink
+
+        logger.add(SyslogSink(host="127.0.0.1", port=514))
+    """
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 514,
+        facility: str = "USER",
+        transport: str = "UDP",
+        format: str = "RFC3164",
+        process_name: str = "logly",
+    ) -> None: ...
+    def write(self, line: str) -> None: ...
+    def flush(self) -> None: ...
+
+def register_custom_level(name: str, priority: int, color: str | None = None) -> str:
+    """Register a custom log level.
+
+    Args:
+        name: Level name (e.g. ``"VERBOSE"``).
+        priority: Numeric priority (lower = more verbose).
+        color: Optional ANSI color code.
+
+    Returns:
+        The registered level name.
     """
     ...
+
+def inspect_level(name: str) -> tuple[str, int, str | None]:
+    """Inspect a log level's configuration.
+
+    Args:
+        name: Level name to inspect.
+
+    Returns:
+        Tuple of ``(name, numeric_priority, color_or_none)``.
+    """
+    ...
+
+def list_levels() -> list[str]:
+    """List all registered level names in severity order.
+
+    Returns:
+        List of level name strings.
+    """
+    ...
+
+def unsupported(name: str) -> None:
+    """Mark a feature as unsupported.
+
+    Args:
+        name: Feature name.
+    """
+    ...
+
+def parse_rotation_str(value: str) -> str:
+    """Parse a rotation string into a normalized value.
+
+    Args:
+        value: Rotation string (e.g. ``"10 MB"``).
+
+    Returns:
+        Normalized rotation value.
+    """
+    ...
+
+def parse_retention_str(value: str) -> str:
+    """Parse a retention string into a normalized value.
+
+    Args:
+        value: Retention string (e.g. ``"30 days"``).
+
+    Returns:
+        Normalized retention value.
+    """
+    ...
+
+def parse_compression_str(value: str) -> str:
+    """Parse a compression string into a normalized codec name.
+
+    Args:
+        value: Compression string (e.g. ``"gzip"``).
+
+    Returns:
+        Normalized codec name.
+    """
+    ...
+
+def resolve_level_name(value: str) -> str:
+    """Resolve a level name or number to its canonical name.
+
+    Args:
+        value: Level name or numeric string.
+
+    Returns:
+        Canonical level name.
+    """
+    ...
+
+def format_exception_text(exc: Any, backtrace: bool = False) -> str | None:
+    """Format an exception as a text string.
+
+    Args:
+        exc: Exception instance or bool.
+        backtrace: Whether to include full backtrace.
+
+    Returns:
+        Formatted exception text, or ``None``.
+    """
+    ...
+
+def render_message(
+    message: str,
+    args: list[Any] | None = None,
+    kwargs: dict[str, Any] | None = None,
+    lazy: bool = False,
+) -> str:
+    """Render a log message with format arguments.
+
+    Args:
+        message: Format string.
+        args: Positional format arguments.
+        kwargs: Keyword format arguments.
+        lazy: Whether to defer formatting.
+
+    Returns:
+        Rendered message string.
+    """
+    ...
+
+logger: Logger
+"""Default module-level logger instance."""

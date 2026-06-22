@@ -5,10 +5,6 @@ on:
     branches:
     - main
   pull_request:
-
-permissions:
-  contents: read
-
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
@@ -19,22 +15,26 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     - name: Install Rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
     - name: Cache dependencies
       uses: Swatinem/rust-cache@v2
     - name: Run cargo clippy
-      run: cargo clippy --all-targets -- --deny warnings
+      run: cargo clippy --workspace --all-targets -- -D warnings
+    - name: Run cargo test
+      run: cargo test --workspace
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     - name: Install Rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
     - name: Cache dependencies
       uses: Swatinem/rust-cache@v2
     - name: Run cargo fmt
@@ -42,9 +42,9 @@ jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@v8
       with:
         enable-cache: true
     - name: Set up Python
@@ -54,7 +54,7 @@ jobs:
     - name: Install Dependencies
       run: |
         uv sync --frozen
-        uv run maturin build
+        uv run maturin develop
     - name: Ruff format check
       run: uv run ruff format logly tests --check
     - name: Lint with ruff
@@ -65,15 +65,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v5
-      with:
-        fetch-depth: 2
+    - uses: actions/checkout@v7
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@v8
       with:
         enable-cache: true
     - name: Set up Python ${{ matrix.python-version }}
@@ -83,16 +81,6 @@ jobs:
     - name: Install Dependencies
       run: |
         uv sync --frozen
-        uv run maturin build
+        uv run maturin develop
     - name: Test with pytest
-      run: uv run pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-    - name: Upload test results to Codecov
-      if: ${{ !cancelled() }}
-      uses: codecov/test-results-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Upload results to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      run: uv run pytest

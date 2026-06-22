@@ -1,0 +1,34 @@
+.md-source__repository {
+  overflow: visible;
+}
+
+div.autodoc-docstring {
+  padding-left: 20px;
+  margin-bottom: 30px;
+  border-left: 5px solid rgba(230, 230, 230);
+}
+
+div.autodoc-members {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+:root {
+  --md-primary-fg-color: #107c5f;
+  --md-accent-fg-color: #2563eb;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #071b17;
+  --md-default-fg-color: #e8fff6;
+  --md-primary-fg-color: #15a37a;
+  --md-accent-fg-color: #60a5fa;
+}
+
+.md-typeset h1 {
+  font-weight: 760;
+}
+
+.md-typeset code {
+  border-radius: 4px;
+}

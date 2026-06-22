@@ -1,0 +1,8 @@
+[package]
+name = "source"
+version.workspace = true
+description = "Source location capture and clickable link generation for Logly."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
