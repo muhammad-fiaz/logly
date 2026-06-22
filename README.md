@@ -1,25 +1,21 @@
 <div align="center">
 <img src="https://github.com/user-attachments/assets/565fc3dc-dd2c-47a6-bab6-2f545c551f26" alt="logly logo" width="400" />
 
+<a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly" alt="PyPI"></a>
+<a href="https://pypistats.org/packages/logly"><img src="https://img.shields.io/pypi/dm/logly" alt="PyPI - Downloads"></a>
 <a href="https://muhammad-fiaz.github.io/logly/"><img src="https://img.shields.io/badge/docs-muhammad--fiaz.github.io-blue" alt="Documentation"></a>
-<a href="https://pypi.org/project/logly/"><img src="https://img.shields.io/pypi/v/logly?label=PyPI&logo=pypi&logoColor=white" alt="PyPI"></a>
+<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.10-brightgreen.svg" alt="Supported Python"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/stars/muhammad-fiaz/logly" alt="GitHub stars"></a>
 <a href="https://github.com/muhammad-fiaz/logly/issues"><img src="https://img.shields.io/github/issues/muhammad-fiaz/logly" alt="GitHub issues"></a>
 <a href="https://github.com/muhammad-fiaz/logly/pulls"><img src="https://img.shields.io/github/issues-pr/muhammad-fiaz/logly" alt="GitHub pull requests"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/last-commit/muhammad-fiaz/logly" alt="GitHub last commit"></a>
+<a href="https://github.com/muhammad-fiaz/logly/releases"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly" alt="GitHub release"></a>
+<a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://codecov.io/gh/muhammad-fiaz/logly/graph/badge.svg?token=1G3MU8SDX1" alt="codecov"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/ci.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<img src="https://img.shields.io/badge/platforms-linux%20%7C%20windows%20%7C%20macos-blue" alt="Supported Platforms">
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"></a>
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml/badge.svg" alt="Release"></a>
-<a href="https://github.com/muhammad-fiaz/logly/releases/latest"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly?label=Latest%20Release&style=flat-square" alt="Latest Release"></a>
-<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python"></a>
-<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/badge/Rust-2024-orange?logo=rust&logoColor=white" alt="Rust"></a>
-<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/badge/PyO3-0.29-blue" alt="PyO3"></a>
-<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/badge/Maturin-1.x-brightgreen?logo=rust&logoColor=white" alt="Maturin"></a>
-<a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/badge/Ruff-checked-blue?logo=astral&logoColor=white" alt="Ruff"></a>
-<a href="https://github.com/sponsors/muhammad-fiaz"><img src="https://img.shields.io/badge/Sponsor-&#x1F496;-pink?style=social&logo=github" alt="GitHub Sponsors"></a>
-<a href="https://hits.sh/muhammad-fiaz/logly/"><img src="https://hits.sh/muhammad-fiaz/logly.svg?label=Visitors&extraCount=0&color=green" alt="Repo Visitors"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml/badge.svg" alt="Deploy Documentation"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml/badge.svg?event=release" alt="Publish Python distributions" /></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/release_drafter.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/release_drafter.yml/badge.svg" alt="Release Drafter"></a>
 
 <p><em>A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.</em></p>
 
