@@ -33,7 +33,7 @@
 A production-grade, high-performance logging library for Python, powered by a Rust-native engine built with PyO3. Designed with a clean, intuitive, and developer-friendly API, featuring a completely independent, from-scratch Rust implementation.
 
 > [!NOTE]
-> Logly v0.2.0 is a **complete rebuild from scratch**. This is a major release with significant changes, including a full Rust-native engine rewrite, new features, and improved APIs. Please refer to the [latest documentation](https://muhammad-fiaz.github.io/logly/) for up-to-date information. Logly is still in active development and improvement, and contributions are welcome!
+> **Logly v0.2.0** — A refactor of Logly from v0.1.6 with a rebuilt Rust-native engine, improved APIs, and new features. See the [documentation](https://muhammad-fiaz.github.io/logly/) for details. This project is under active development — contributions are welcome!
 
 **If you love `logly`, make sure to give it a star!**
 

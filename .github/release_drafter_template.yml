@@ -2,70 +2,80 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 categories:
   - title: "Breaking Changes"
-    labels:
-      - "breaking-change"
-      - "breaking"
+    when:
+      - label:
+          - "breaking-change"
+          - "breaking"
     collapse:
       after: "Features"
   - title: "Features"
-    labels:
-      - "enhancement"
-      - "feature"
-      - "new-feature"
+    when:
+      - label:
+          - "enhancement"
+          - "feature"
+          - "new-feature"
     collapse:
       after: "Bug Fixes"
   - title: "Bug Fixes"
-    labels:
-      - "bug"
-      - "fix"
-      - "bugfix"
+    when:
+      - label:
+          - "bug"
+          - "fix"
+          - "bugfix"
     collapse:
       after: "Improvements"
   - title: "Improvements"
-    labels:
-      - "improvement"
-      - "enhancement"
-      - "refactor"
-      - "performance"
+    when:
+      - label:
+          - "improvement"
+          - "refactor"
+          - "performance"
     collapse:
       after: "Documentation"
   - title: "Documentation"
-    labels:
-      - "documentation"
-      - "docs"
-      - "doc"
+    when:
+      - label:
+          - "documentation"
+          - "docs"
+          - "doc"
     collapse:
       after: "Dependencies"
   - title: "Dependencies"
-    labels:
-      - "dependencies"
-      - "deps"
-      - "skip-changelog"
+    when:
+      - label:
+          - "dependencies"
+          - "deps"
     collapse:
       after: ""
-exclude-labels:
-  - "skip-changelog"
-  - "dependencies"
-version-resolver:
-  major:
-    labels:
-      - "major"
-      - "breaking-change"
-      - "breaking"
-  minor:
-    labels:
-      - "minor"
-      - "enhancement"
-      - "feature"
-      - "new-feature"
-  patch:
-    labels:
-      - "patch"
-      - "bug"
-      - "fix"
-      - "bugfix"
-      - "dependencies"
-  default: patch
+  - type: pre-exclude
+    when:
+      - label:
+          - "skip-changelog"
+          - "dependencies"
+  - type: version-resolver
+    semver-increment: "major"
+    when:
+      - label:
+          - "major"
+          - "breaking-change"
+          - "breaking"
+  - type: version-resolver
+    semver-increment: "minor"
+    when:
+      - label:
+          - "minor"
+          - "enhancement"
+          - "feature"
+          - "new-feature"
+  - type: version-resolver
+    semver-increment: "patch"
+    when:
+      - label:
+          - "patch"
+          - "bug"
+          - "fix"
+          - "bugfix"
+          - "dependencies"
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&'
 no-changes-template: "No changes since last release."
