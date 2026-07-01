@@ -1,6 +1,6 @@
 ---
 title: Production Configuration
-description: Production-ready logging setup with rotation, retention, and compression.
+description: Robust logging setup with rotation, retention, and compression for production deployments.
 ---
 
 # Production Configuration

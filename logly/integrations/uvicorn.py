@@ -1,6 +1,22 @@
 """Uvicorn integration for Logly.
 
 Routes Uvicorn access and error logs through Logly.
+
+Requires ``uvicorn``.
+
+Install with::
+
+    # Option 1: uv (recommended)
+    uv add logly[uvicorn]
+
+    # Option 2: pip
+    pip install "logly[uvicorn]"
+
+    # Option 3: uv without extras
+    uv add uvicorn
+
+    # Option 4: pip without extras
+    pip install uvicorn
 """
 
 from __future__ import annotations
@@ -10,6 +26,15 @@ from typing import Any
 
 from logly.integrations.stdlib import InterceptHandler
 from logly.logger import logger
+
+_IMPORT_MSG = (
+    "uvicorn is required for Logly Uvicorn integration.\n"
+    "Install with one of:\n"
+    "  uv add logly[uvicorn]       # recommended\n"
+    "  pip install logly[uvicorn]\n"
+    "  uv add uvicorn\n"
+    "  pip install uvicorn"
+)
 
 
 def setup_uvicorn_logging(
@@ -35,9 +60,12 @@ def setup_uvicorn_logging(
         uvicorn.run("app:app", log_config=get_log_config())
 
     Args:
-        level: Minimum log level.
+        level: Minimum log level (default ``"INFO"``).
         format: Log format string.
         **kwargs: Additional arguments passed to ``logger.add()``.
+
+    Raises:
+        ImportError: If ``uvicorn`` is not installed.
     """
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         log = logging.getLogger(name)
@@ -65,10 +93,13 @@ def get_log_config(level: str = "INFO") -> dict[str, Any]:
         uvicorn.run("app:app", log_config=get_log_config())
 
     Args:
-        level: Minimum log level.
+        level: Minimum log level (default ``"INFO"``).
 
     Returns:
         A dict suitable for ``uvicorn.run(log_config=...)``.
+
+    Raises:
+        ImportError: If ``uvicorn`` is not installed.
     """
     return {
         "version": 1,

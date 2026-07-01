@@ -60,7 +60,9 @@ class DiscordHandler:
         if not self.webhook_url:
             return
 
-        payload: dict[str, Any] = {"content": message.rstrip("\n")}
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        payload: dict[str, Any] = {"content": strip_ansi(message.rstrip("\n"))}
         if self.username:
             payload["username"] = self.username
         if self.avatar_url:

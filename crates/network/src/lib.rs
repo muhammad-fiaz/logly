@@ -1,7 +1,31 @@
 //! Network-based logging sinks.
 //!
-//! Provides HTTP, TCP, UDP, and syslog sinks for transmitting log records
-//! over network protocols.
+//! This module provides sinks that transmit log records over network
+//! protocols. Supported transports:
+//!
+//! | Sink             | Protocol | Reliability | Use Case                    |
+//! |------------------|----------|-------------|-----------------------------|
+//! | [`HttpJsonSink`] | HTTP     | Request     | REST API log ingestion       |
+//! | [`TcpSink`]      | TCP      | Stream      | Persistent log forwarding   |
+//! | [`UdpSink`]      | UDP      | Datagram    | Fire-and-forget logging     |
+//! | [`SyslogSink`]   | UDP/TCP  | Syslog      | RFC 3164/5424 syslog servers |
+//!
+//! All sinks implement the [`NetworkSink`] trait for uniform access from
+//! higher-level code.
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use network::{HttpJsonSink, HttpJsonConfig, HttpMethod};
+//!
+//! let config = HttpJsonConfig {
+//!     url: "http://localhost:8080/logs".to_owned(),
+//!     method: HttpMethod::Post,
+//!     headers: vec![],
+//!     timeout_secs: 30,
+//! };
+//! let sink = HttpJsonSink::new(config);
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -18,7 +42,10 @@ use std::net::{TcpStream, ToSocketAddrs, UdpSocket};
 use std::sync::{Mutex, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// A JSON-serializable log record for HTTP transmission.
+/// JSON-serializable representation of a [`LogRecord`] for HTTP transmission.
+///
+/// This struct flattens the record into a simple JSON object suitable for
+/// ingestion by log aggregation services.
 #[derive(Serialize)]
 struct JsonLogRecord {
     timestamp: String,
@@ -59,7 +86,9 @@ impl From<&LogRecord> for JsonLogRecord {
     }
 }
 
-/// Configuration for the HTTP JSON sink.
+/// Configuration for the [`HttpJsonSink`].
+///
+/// Controls the HTTP endpoint, method, headers, and timeout.
 #[derive(Clone, Debug)]
 pub struct HttpJsonConfig {
     /// The HTTP endpoint URL.
@@ -72,7 +101,7 @@ pub struct HttpJsonConfig {
     pub timeout_secs: u64,
 }
 
-/// Supported HTTP methods.
+/// HTTP method used by [`HttpJsonSink`] to send log records.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HttpMethod {
     /// HTTP POST method.
@@ -81,14 +110,35 @@ pub enum HttpMethod {
     Put,
 }
 
-/// HTTP JSON sink that POSTs log records to an endpoint.
+/// HTTP sink that sends log records as JSON to a remote endpoint.
+///
+/// Supports both `POST` and `PUT` methods, custom headers, and configurable
+/// timeouts. The endpoint URL and headers can be updated at runtime via
+/// [`update_config`](Self::update_config).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use network::{HttpJsonSink, HttpJsonConfig, HttpMethod};
+///
+/// let config = HttpJsonConfig {
+///     url: "http://localhost:8080/logs".to_owned(),
+///     method: HttpMethod::Post,
+///     headers: vec![],
+///     timeout_secs: 30,
+/// };
+/// let sink = HttpJsonSink::new(config);
+/// ```
 pub struct HttpJsonSink {
     config: RwLock<HttpJsonConfig>,
     agent: ureq::Agent,
 }
 
 impl HttpJsonSink {
-    /// Creates a new HTTP JSON sink.
+    /// Creates a new HTTP JSON sink with the given configuration.
+    ///
+    /// A [`ureq::Agent`] is created with the specified timeout for
+    /// connection reuse.
     #[must_use]
     pub fn new(config: HttpJsonConfig) -> Self {
         let timeout = config.timeout_secs;
@@ -102,11 +152,14 @@ impl HttpJsonSink {
         }
     }
 
-    /// Sends a log record to the HTTP endpoint.
+    /// Sends a log record as JSON to the configured HTTP endpoint.
+    ///
+    /// The record is serialized to [`JsonLogRecord`] and sent as the
+    /// request body.
     ///
     /// # Errors
     ///
-    /// Returns an error if the HTTP request fails.
+    /// Returns a [`LoglyError::Sink`] if the HTTP request fails.
     pub fn send(&self, record: &LogRecord) -> LoglyResult<()> {
         let config = self
             .config
@@ -131,11 +184,15 @@ impl HttpJsonSink {
         Ok(())
     }
 
-    /// Updates the sink configuration.
+    /// Updates the sink configuration at runtime.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` — The new configuration to apply.
     ///
     /// # Errors
     ///
-    /// Returns an error if the config lock is poisoned.
+    /// Returns a [`LoglyError::Sink`] if the config lock is poisoned.
     pub fn update_config(&self, config: HttpJsonConfig) -> LoglyResult<()> {
         let mut guard = self
             .config
@@ -145,11 +202,14 @@ impl HttpJsonSink {
         Ok(())
     }
 
-    /// Writes a formatted log line to the HTTP endpoint.
+    /// Writes a pre-formatted log line to the HTTP endpoint.
+    ///
+    /// The line is wrapped in a JSON object with `message` and `timestamp`
+    /// fields.
     ///
     /// # Errors
     ///
-    /// Returns an error if the HTTP request fails.
+    /// Returns a [`LoglyError::Sink`] if the HTTP request fails.
     pub fn write(&self, line: &str) -> LoglyResult<()> {
         let config = self
             .config
@@ -179,13 +239,16 @@ impl HttpJsonSink {
         Ok(())
     }
 
-    /// Flushes buffered data (no-op for HTTP).
+    /// Flushes the sink. This is a no-op for HTTP since requests are
+    /// immediate.
     pub fn flush(&self) {
         // HTTP requests are immediate; nothing to flush.
     }
 }
 
-/// Configuration for the TCP sink.
+/// Configuration for the [`TcpSink`].
+///
+/// Controls the target host, port, and message delimiter.
 #[derive(Clone, Debug)]
 pub struct TcpConfig {
     /// Hostname or IP address.
@@ -207,13 +270,32 @@ impl Default for TcpConfig {
 }
 
 /// TCP sink that sends log messages over a persistent connection.
+///
+/// Messages are delimited by a configurable separator (default: newline).
+/// The connection is lazily established on the first send and automatically
+/// reconnected if dropped.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use network::{TcpSink, TcpConfig};
+///
+/// let config = TcpConfig {
+///     host: "127.0.0.1".to_owned(),
+///     port: 9999,
+///     delimiter: "\n".to_owned(),
+/// };
+/// let sink = TcpSink::new(config);
+/// sink.connect().unwrap();
+/// ```
 pub struct TcpSink {
     config: RwLock<TcpConfig>,
     stream: Mutex<Option<TcpStream>>,
 }
 
 impl TcpSink {
-    /// Creates a new TCP sink.
+    /// Creates a new TCP sink. The connection is not established until
+    /// [`connect`](Self::connect) or [`send`](Self::send) is called.
     #[must_use]
     pub fn new(config: TcpConfig) -> Self {
         Self {
@@ -222,11 +304,13 @@ impl TcpSink {
         }
     }
 
-    /// Connects to the TCP server.
+    /// Establishes a TCP connection to the configured server.
+    ///
+    /// Sets 5-second read/write timeouts on the stream.
     ///
     /// # Errors
     ///
-    /// Returns an error if the connection fails.
+    /// Returns a [`LoglyError::Sink`] if the connection fails.
     pub fn connect(&self) -> LoglyResult<()> {
         let config = self
             .config
@@ -259,11 +343,11 @@ impl TcpSink {
         Ok(())
     }
 
-    /// Reconnects to the TCP server.
+    /// Reconnects to the TCP server, dropping the existing connection.
     ///
     /// # Errors
     ///
-    /// Returns an error if reconnection fails.
+    /// Returns a [`LoglyError::Sink`] if reconnection fails.
     pub fn reconnect(&self) -> LoglyResult<()> {
         // Drop old connection
         {
@@ -276,11 +360,18 @@ impl TcpSink {
         self.connect()
     }
 
-    /// Sends a log message over TCP.
+    /// Sends a log message over the TCP connection.
+    ///
+    /// The message is appended with the configured delimiter. If the
+    /// connection is not established, it is automatically connected.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` — The log message to send.
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending or connecting fails.
     pub fn send(&self, message: &str) -> LoglyResult<()> {
         let config = self
             .config
@@ -313,20 +404,22 @@ impl TcpSink {
         Ok(())
     }
 
-    /// Writes a formatted log line over TCP.
+    /// Writes a pre-formatted log line over TCP.
+    ///
+    /// This is a convenience wrapper around [`send`](Self::send).
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending fails.
     pub fn write(&self, line: &str) -> LoglyResult<()> {
         self.send(line)
     }
 
-    /// Flushes the TCP stream.
+    /// Flushes the TCP stream, ensuring all buffered data is sent.
     ///
     /// # Errors
     ///
-    /// Returns an error if flushing fails.
+    /// Returns a [`LoglyError::Sink`] if flushing fails.
     pub fn flush(&self) -> LoglyResult<()> {
         let mut guard = self
             .stream
@@ -343,7 +436,9 @@ impl TcpSink {
     }
 }
 
-/// Configuration for the UDP sink.
+/// Configuration for the [`UdpSink`].
+///
+/// Controls the target host and port for UDP datagrams.
 #[derive(Clone, Debug)]
 pub struct UdpConfig {
     /// Hostname or IP address.
@@ -361,14 +456,31 @@ impl Default for UdpConfig {
     }
 }
 
-/// UDP sink that sends log messages (fire-and-forget).
+/// UDP sink that sends log messages as fire-and-forget datagrams.
+///
+/// UDP is connectionless and unreliable — messages may be lost or reordered.
+/// The socket is lazily initialized on the first send.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use network::{UdpSink, UdpConfig};
+///
+/// let config = UdpConfig {
+///     host: "127.0.0.1".to_owned(),
+///     port: 514,
+/// };
+/// let sink = UdpSink::new(config);
+/// sink.init().unwrap();
+/// ```
 pub struct UdpSink {
     config: RwLock<UdpConfig>,
     socket: Mutex<Option<UdpSocket>>,
 }
 
 impl UdpSink {
-    /// Creates a new UDP sink.
+    /// Creates a new UDP sink. The socket is not bound until
+    /// [`init`](Self::init) or [`send`](Self::send) is called.
     #[must_use]
     pub fn new(config: UdpConfig) -> Self {
         Self {
@@ -377,11 +489,11 @@ impl UdpSink {
         }
     }
 
-    /// Initializes the UDP socket.
+    /// Binds a UDP socket to an ephemeral local port.
     ///
     /// # Errors
     ///
-    /// Returns an error if socket creation fails.
+    /// Returns a [`LoglyError::Sink`] if socket creation fails.
     pub fn init(&self) -> LoglyResult<()> {
         let socket = UdpSocket::bind("0.0.0.0:0")
             .map_err(|e| LoglyError::Sink(format!("UDP bind failed: {e}")))?;
@@ -395,11 +507,17 @@ impl UdpSink {
         Ok(())
     }
 
-    /// Sends a log message over UDP.
+    /// Sends a log message as a UDP datagram.
+    ///
+    /// The socket is lazily initialized if not already bound.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` — The log message to send.
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending fails.
     pub fn send(&self, message: &str) -> LoglyResult<()> {
         let config = self
             .config
@@ -436,22 +554,29 @@ impl UdpSink {
         Ok(())
     }
 
-    /// Writes a formatted log line over UDP.
+    /// Writes a pre-formatted log line over UDP.
+    ///
+    /// This is a convenience wrapper around [`send`](Self::send).
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending fails.
     pub fn write(&self, line: &str) -> LoglyResult<()> {
         self.send(line)
     }
 
-    /// Flushes the UDP socket (no-op for UDP).
+    /// Flushes the sink. This is a no-op for UDP since datagrams are
+    /// fire-and-forget.
     pub fn flush(&self) {
         // UDP is fire-and-forget; nothing to flush.
     }
 }
 
 /// Syslog facility as defined in RFC 3164/5424.
+///
+/// The facility identifies the source of the log message (e.g., kernel,
+/// daemon, authentication). Combined with [`SyslogSeverity`], it forms
+/// the syslog priority value: `priority = facility * 8 + severity`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[allow(clippy::module_name_repetitions)]
 pub enum SyslogFacility {
@@ -498,7 +623,9 @@ pub enum SyslogFacility {
 }
 
 impl SyslogFacility {
-    /// Returns the numeric code for the facility.
+    /// Returns the numeric code for this facility.
+    ///
+    /// Codes follow the RFC 3164/5424 standard (0–23).
     #[must_use]
     pub const fn code(self) -> u32 {
         match self {
@@ -527,6 +654,10 @@ impl SyslogFacility {
 }
 
 /// Syslog severity as defined in RFC 3164/5424.
+///
+/// Severity indicates the urgency of the message, from `Emergency` (0)
+/// to `Debug` (7). Combined with [`SyslogFacility`], it forms the syslog
+/// priority value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[allow(clippy::module_name_repetitions)]
 pub enum SyslogSeverity {
@@ -549,7 +680,9 @@ pub enum SyslogSeverity {
 }
 
 impl SyslogSeverity {
-    /// Returns the numeric code for the severity.
+    /// Returns the numeric code for this severity.
+    ///
+    /// Codes follow the RFC 3164/5424 standard (0–7).
     #[must_use]
     pub const fn code(self) -> u32 {
         match self {
@@ -566,6 +699,8 @@ impl SyslogSeverity {
 }
 
 /// Syslog message format.
+///
+/// Determines the structure of the syslog message header and body.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SyslogFormat {
     /// RFC 3164 (BSD) format.
@@ -574,7 +709,9 @@ pub enum SyslogFormat {
     Rfc5424,
 }
 
-/// Transport protocol for syslog.
+/// Transport protocol used by [`SyslogSink`].
+///
+/// UDP is fire-and-forget; TCP provides reliable, ordered delivery.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SyslogTransport {
     /// UDP transport.
@@ -583,7 +720,10 @@ pub enum SyslogTransport {
     Tcp,
 }
 
-/// Configuration for the syslog sink.
+/// Configuration for the [`SyslogSink`].
+///
+/// Controls the syslog server address, facility, transport, format, and
+/// process name.
 #[derive(Clone, Debug)]
 pub struct SyslogConfig {
     /// Hostname or IP address of the syslog server.
@@ -613,7 +753,26 @@ impl Default for SyslogConfig {
     }
 }
 
-/// Syslog sink that sends messages in RFC 3164 or RFC 5424 format.
+/// Syslog sink that sends messages in RFC 3164 (BSD) or RFC 5424 format.
+///
+/// Supports both UDP and TCP transports. The transport is lazily initialized
+/// on the first send.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use network::{SyslogSink, SyslogConfig, SyslogFacility, SyslogTransport, SyslogFormat};
+///
+/// let config = SyslogConfig {
+///     host: "127.0.0.1".to_owned(),
+///     port: 514,
+///     facility: SyslogFacility::User,
+///     transport: SyslogTransport::Udp,
+///     format: SyslogFormat::Rfc3164,
+///     process_name: "myapp".to_owned(),
+/// };
+/// let sink = SyslogSink::new(config);
+/// ```
 pub struct SyslogSink {
     config: RwLock<SyslogConfig>,
     udp_socket: Mutex<Option<UdpSocket>>,
@@ -621,7 +780,8 @@ pub struct SyslogSink {
 }
 
 impl SyslogSink {
-    /// Creates a new syslog sink.
+    /// Creates a new syslog sink. The transport is not initialized until
+    /// [`init`](Self::init) or a message is sent.
     #[must_use]
     pub fn new(config: SyslogConfig) -> Self {
         Self {
@@ -631,7 +791,20 @@ impl SyslogSink {
         }
     }
 
-    /// Maps a log level to syslog severity.
+    /// Maps a [`LogLevel`] to the corresponding [`SyslogSeverity`].
+    ///
+    /// The mapping uses the level's numeric priority:
+    ///
+    /// | Priority Range | Severity   |
+    /// |----------------|------------|
+    /// | 0–10           | Debug      |
+    /// | 11–29          | Notice     |
+    /// | 30–39          | Info       |
+    /// | 40–49          | Warning    |
+    /// | 50–54          | Error      |
+    /// | 55–59          | Critical   |
+    /// | 60–69          | Alert      |
+    /// | 70+            | Emergency  |
     #[must_use]
     pub fn level_to_severity(level: &LogLevel) -> SyslogSeverity {
         match level.priority() {
@@ -646,11 +819,12 @@ impl SyslogSink {
         }
     }
 
-    /// Initializes the transport.
+    /// Initializes the transport (UDP socket or TCP connection).
     ///
     /// # Errors
     ///
-    /// Returns an error if transport initialization fails.
+    /// Returns a [`LoglyError::Sink`] if socket creation or connection
+    /// fails.
     pub fn init(&self) -> LoglyResult<()> {
         let config = self
             .config
@@ -689,7 +863,16 @@ impl SyslogSink {
         Ok(())
     }
 
-    /// Formats a message in RFC 3164 (BSD) format.
+    /// Formats a message in RFC 3164 (BSD) syslog format.
+    ///
+    /// The format is: `<priority>TIMESTAMP HOSTNAME PID: MESSAGE`
+    ///
+    /// # Arguments
+    ///
+    /// * `facility` — The syslog facility.
+    /// * `severity` — The syslog severity.
+    /// * `process_name` — The process name for the header.
+    /// * `message` — The log message body.
     #[must_use]
     pub fn format_rfc3164(
         facility: SyslogFacility,
@@ -712,7 +895,16 @@ impl SyslogSink {
         )
     }
 
-    /// Formats a message in RFC 5424 format.
+    /// Formats a message in RFC 5424 syslog format.
+    ///
+    /// The format is: `<priority>1 TIMESTAMP HOSTNAME PROCNAME PID - - - MESSAGE`
+    ///
+    /// # Arguments
+    ///
+    /// * `facility` — The syslog facility.
+    /// * `severity` — The syslog severity.
+    /// * `process_name` — The process name for the header.
+    /// * `message` — The log message body.
     #[must_use]
     pub fn format_rfc5424(
         facility: SyslogFacility,
@@ -735,11 +927,15 @@ impl SyslogSink {
         )
     }
 
-    /// Sends a log record via syslog.
+    /// Sends a [`LogRecord`] via syslog.
+    ///
+    /// The record's level is mapped to a syslog severity using
+    /// [`level_to_severity`](Self::level_to_severity), and the message
+    /// is formatted according to the configured format.
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending fails.
     pub fn send_record(&self, record: &LogRecord) -> LoglyResult<()> {
         let config = self
             .config
@@ -819,11 +1015,14 @@ impl SyslogSink {
         Ok(())
     }
 
-    /// Writes a formatted log line via syslog.
+    /// Writes a pre-formatted log line via syslog.
+    ///
+    /// The line is wrapped in a syslog envelope using the configured format
+    /// and sent with `Info` severity.
     ///
     /// # Errors
     ///
-    /// Returns an error if sending fails.
+    /// Returns a [`LoglyError::Sink`] if sending fails.
     pub fn write(&self, line: &str) -> LoglyResult<()> {
         let config = self
             .config
@@ -849,7 +1048,9 @@ impl SyslogSink {
         self.send_raw(&formatted)
     }
 
-    /// Sends a raw formatted syslog message.
+    /// Sends a raw, pre-formatted syslog message over the configured transport.
+    ///
+    /// The message must already include the syslog header/priority.
     fn send_raw(&self, message: &str) -> LoglyResult<()> {
         let config = self
             .config
@@ -914,9 +1115,11 @@ impl SyslogSink {
 
     /// Flushes the syslog transport.
     ///
+    /// Only flushes if the transport is TCP (UDP is fire-and-forget).
+    ///
     /// # Errors
     ///
-    /// Returns an error if flushing fails.
+    /// Returns a [`LoglyError::Sink`] if flushing fails.
     pub fn flush(&self) -> LoglyResult<()> {
         let config = self
             .config
@@ -941,6 +1144,10 @@ impl SyslogSink {
 }
 
 /// A trait for network sinks that accept formatted log lines.
+///
+/// All network sink types ([`HttpJsonSink`], [`TcpSink`], [`UdpSink`],
+/// [`SyslogSink`]) implement this trait, allowing uniform access from
+/// higher-level code.
 pub trait NetworkSink: Send + Sync {
     /// Writes a formatted log line to the network destination.
     ///

@@ -472,7 +472,7 @@ for level_name, level_no, color in logger.levels:
 | `NOTICE` | 25 | Cyan |
 | `SUCCESS` | 30 | Green (bold) |
 | `WARNING` | 40 | Yellow |
-| `ERROR` | 40 | Red |
+| `ERROR` | 50 | Red |
 | `FAIL` | 55 | Red (bold) |
 | `CRITICAL` | 60 | Red (bold, bg) |
 | `FATAL` | 70 | Red (bold, bg) |

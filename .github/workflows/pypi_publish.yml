@@ -1,13 +1,17 @@
 name: PyPi Publish
+
 on:
   release:
     types:
       - published
+
 permissions:
   contents: read
+
 jobs:
   linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       matrix:
         target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
@@ -31,12 +35,14 @@ jobs:
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
+
   windows:
     runs-on: windows-latest
+    timeout-minutes: 25
     strategy:
       matrix:
         target: [x64, x86]
@@ -61,12 +67,14 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
       - name: Upload wheel
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
+
   macos:
     runs-on: macos-latest
+    timeout-minutes: 25
     strategy:
       matrix:
         target: [x86_64, aarch64]
@@ -89,12 +97,14 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
       - name: Upload wheel
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
+
   sdist:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -111,20 +121,22 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
           path: dist
+
   release:
-    name: Release
+    name: Publish to PyPI
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       id-token: write
       contents: write
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [linux, windows, macos, sdist]
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true

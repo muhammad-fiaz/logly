@@ -39,23 +39,23 @@
   cargo fmt --all -- --check
 
 @mypy:
-  uv run mypy logly tests
+  uv run --group dev mypy logly tests
 
 @ruff-check:
-  uv run ruff check logly tests --fix
+  uv run --group dev ruff check logly tests --fix
 
 @ruff-format:
-  uv run ruff format logly tests
+  uv run --group dev ruff format logly tests
 
 @test *args="":
   cargo test --workspace
-  uv run pytest {{args}}
+  uv run --group dev pytest {{args}}
 
 @build:
-  uv run maturin build
+  uv run --group dev maturin build
 
 @docs-serve:
-  uv run mkdocs serve
+  uv run --group dev mkdocs serve
 
 @docs-deploy:
-  uv run mkdocs gh-deploy
+  uv run --group dev mkdocs gh-deploy

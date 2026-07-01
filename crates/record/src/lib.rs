@@ -1,4 +1,19 @@
 //! Immutable log record values.
+//!
+//! Contains the [`LogRecord`] struct — the primary data carrier passed from the
+//! engine to sinks — and its builder pattern via [`LogRecordBuilder`].
+//!
+//! # Record Lifecycle
+//!
+//! 1. A record is created via [`LogRecord::builder`] with a level and message.
+//! 2. Optional fields are set using the builder's chainable methods.
+//! 3. The record is finalized with [`LogRecordBuilder::build`].
+//! 4. The immutable record is passed to sinks for formatting and output.
+//!
+//! # Structured Data
+//!
+//! Records carry arbitrary key-value pairs in the `extra` field, allowing
+//! structured logging alongside the traditional message text.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -10,15 +25,41 @@ use std::collections::BTreeMap;
 use std::time::SystemTime;
 
 /// Immutable data passed from the engine to sinks.
+///
+/// A `LogRecord` captures all information about a single log event, including
+/// metadata (timestamp, level, source location) and structured data. Records
+/// are created via the builder pattern and are immutable once constructed.
+///
+/// # Clone Semantics
+///
+/// Cloning a `LogRecord` produces a fully independent copy. Mutating the clone
+/// does not affect the original.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::LogLevel;
+/// use record::LogRecord;
+///
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "started")
+///     .name("myapp")
+///     .extra("env", "prod")
+///     .build();
+///
+/// assert_eq!(record.name, "myapp");
+/// assert_eq!(record.extra.get("env").unwrap(), "prod");
+/// ```
 #[derive(Clone, Debug)]
 pub struct LogRecord {
-    /// Record creation time.
+    /// Record creation time (UTC).
     pub timestamp: SystemTime,
     /// Record severity level.
     pub level: LogLevel,
     /// Renderable message text.
     pub message: String,
     /// Module or logger name.
+    ///
+    /// Defaults to `"logly"` if not explicitly set.
     pub name: String,
     /// Source file path, when known.
     pub file: Option<String>,
@@ -33,6 +74,9 @@ pub struct LogRecord {
     /// Process identifier.
     pub process_id: u32,
     /// Bound structured fields.
+    ///
+    /// Key-value pairs attached to the record for structured logging.
+    /// Keys are sorted alphabetically (via `BTreeMap`).
     pub extra: BTreeMap<String, String>,
     /// Captured exception text, when attached.
     pub exception: Option<String>,
@@ -40,6 +84,9 @@ pub struct LogRecord {
 
 impl LogRecord {
     /// Starts building a log record.
+    ///
+    /// Returns a [`LogRecordBuilder`] with the given level and message. The
+    /// timestamp is set to `SystemTime::now()` and the default name is `"logly"`.
     #[must_use]
     pub fn builder(level: LogLevel, message: impl Into<String>) -> LogRecordBuilder {
         LogRecordBuilder::new(level, message)
@@ -47,6 +94,21 @@ impl LogRecord {
 }
 
 /// Builder for [`LogRecord`].
+///
+/// Provides a fluent API for constructing log records. Required fields
+/// (level, message) are set in the constructor; all other fields are optional.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::LogLevel;
+/// use record::LogRecordBuilder;
+///
+/// let record = LogRecordBuilder::new(LogLevel::new("ERROR", 50, None), "failed")
+///     .name("myapp")
+///     .extra("user", "alice")
+///     .build();
+/// ```
 #[derive(Debug)]
 pub struct LogRecordBuilder {
     record: LogRecord,
@@ -54,6 +116,9 @@ pub struct LogRecordBuilder {
 
 impl LogRecordBuilder {
     /// Creates a builder with required values.
+    ///
+    /// Sets the timestamp to `SystemTime::now()`, the name to `"logly"`,
+    /// and captures the current thread name and process ID.
     #[must_use]
     pub fn new(level: LogLevel, message: impl Into<String>) -> Self {
         Self {
@@ -75,6 +140,8 @@ impl LogRecordBuilder {
     }
 
     /// Sets the logger name.
+    ///
+    /// This identifies the component or module that produced the log record.
     #[must_use]
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.record.name = name.into();
@@ -82,6 +149,8 @@ impl LogRecordBuilder {
     }
 
     /// Sets the module name.
+    ///
+    /// Typically the filename without extension (e.g., `"main"`, `"lib"`).
     #[must_use]
     pub fn module(mut self, module: impl Into<String>) -> Self {
         self.record.module = Some(module.into());
@@ -89,6 +158,8 @@ impl LogRecordBuilder {
     }
 
     /// Sets source file and line information.
+    ///
+    /// Both fields are optional; pass `None` to leave them unset.
     #[must_use]
     pub fn location(mut self, file: Option<String>, line: Option<u32>) -> Self {
         self.record.file = file;
@@ -97,6 +168,8 @@ impl LogRecordBuilder {
     }
 
     /// Adds one structured field.
+    ///
+    /// Multiple calls accumulate fields. Duplicate keys overwrite previous values.
     #[must_use]
     pub fn extra(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.record.extra.insert(key.into(), value.into());
@@ -104,6 +177,8 @@ impl LogRecordBuilder {
     }
 
     /// Finalizes the record.
+    ///
+    /// Consumes the builder and returns an immutable [`LogRecord`].
     #[must_use]
     pub fn build(self) -> LogRecord {
         self.record

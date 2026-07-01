@@ -1,7 +1,29 @@
 //! Scheduling primitives for retention and timed rotation.
 //!
-//! Runs scheduled tasks on the `concurrency` crate's worker infrastructure
-//! rather than spawning ad hoc threads.
+//! This module provides a lightweight scheduler for periodic tasks such as
+//! log rotation, cleanup, and health checks. Tasks run on dedicated threads
+//! with configurable intervals.
+//!
+//! # Key Types
+//!
+//! - [`Interval`] — A fixed duration between task executions.
+//! - [`ScheduledTask`] — A single periodic task running on its own thread.
+//! - [`Scheduler`] — A manager that owns multiple [`ScheduledTask`]s and
+//!   provides centralized lifecycle control.
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use schedule::{Scheduler, Interval};
+//!
+//! let scheduler = Scheduler::new();
+//! scheduler
+//!     .schedule("cleanup", Interval::from_mins(30), || {
+//!         println!("running cleanup");
+//!     })
+//!     .unwrap();
+//! // Tasks run until `stop_all` is called or the scheduler is dropped.
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -14,20 +36,31 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-/// A periodic task schedule.
+/// A fixed interval between periodic task executions.
+///
+/// `Interval` is a lightweight wrapper around [`Duration`] with convenience
+/// constructors for common time units.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Interval {
     duration: Duration,
 }
 
 impl Interval {
-    /// Creates a schedule from a duration.
+    /// Creates an interval from a [`Duration`].
+    ///
+    /// # Arguments
+    ///
+    /// * `duration` — The time between executions.
     #[must_use]
     pub const fn new(duration: Duration) -> Self {
         Self { duration }
     }
 
-    /// Creates a schedule from seconds.
+    /// Creates an interval from a number of seconds.
+    ///
+    /// # Arguments
+    ///
+    /// * `secs` — Number of seconds between executions.
     #[must_use]
     pub const fn from_secs(secs: u64) -> Self {
         Self {
@@ -35,7 +68,7 @@ impl Interval {
         }
     }
 
-    /// Creates a schedule from minutes.
+    /// Creates an interval from a number of minutes.
     #[must_use]
     pub const fn from_mins(mins: u64) -> Self {
         Self {
@@ -43,14 +76,23 @@ impl Interval {
         }
     }
 
-    /// Returns the duration between runs.
+    /// Returns the underlying [`Duration`] for this interval.
     #[must_use]
     pub const fn duration(self) -> Duration {
         self.duration
     }
 }
 
-/// A scheduled task that runs periodically.
+/// A periodic task that executes on its own thread at a fixed interval.
+///
+/// The task is started immediately upon creation. Call [`ScheduledTask::stop`]
+/// or drop the task to halt execution. The task thread will finish processing
+/// the current iteration before stopping.
+///
+/// # Thread Safety
+///
+/// The task closure must be `Fn` (not `FnMut`) and `Send + Sync` so it can
+/// be shared across the scheduler thread safely.
 pub struct ScheduledTask {
     name: String,
     interval: Interval,
@@ -59,7 +101,16 @@ pub struct ScheduledTask {
 }
 
 impl ScheduledTask {
-    /// Creates and starts a scheduled task.
+    /// Creates and immediately starts a scheduled task.
+    ///
+    /// The task runs on a dedicated thread, executing `task` every `interval`.
+    /// The thread sleeps in 100ms increments to stay responsive to stop signals.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` — A human-readable identifier for the task.
+    /// * `interval` — How often to execute the task.
+    /// * `task` — The closure to execute.
     ///
     /// # Panics
     ///
@@ -96,23 +147,26 @@ impl ScheduledTask {
         }
     }
 
-    /// Returns the task name.
+    /// Returns the human-readable task name.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    /// Returns the task interval.
+    /// Returns the [`Interval`] for this task.
     #[must_use]
     pub fn interval(&self) -> Interval {
         self.interval
     }
 
-    /// Stops the scheduled task.
+    /// Stops the scheduled task and joins its thread.
+    ///
+    /// After this call, the task will no longer execute. The underlying
+    /// thread is joined, ensuring clean shutdown.
     ///
     /// # Errors
     ///
-    /// Returns an error if the task thread panics.
+    /// Returns a [`LoglyError::Schedule`] if the task thread panics.
     pub fn stop(&mut self) -> LoglyResult<()> {
         self.running.store(false, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
@@ -133,13 +187,22 @@ impl Drop for ScheduledTask {
     }
 }
 
-/// A scheduler that manages multiple periodic tasks.
+/// A thread-safe manager for multiple periodic tasks.
+///
+/// `Scheduler` owns a collection of [`ScheduledTask`]s and provides methods
+/// to register new tasks and stop all tasks at once. Dropping the scheduler
+/// automatically stops all tasks.
+///
+/// # Thread Safety
+///
+/// The task list is protected by a [`Mutex`], so `schedule` can be called
+/// from multiple threads concurrently.
 pub struct Scheduler {
     tasks: Mutex<Vec<ScheduledTask>>,
 }
 
 impl Scheduler {
-    /// Creates a new empty scheduler.
+    /// Creates a new empty scheduler with no tasks.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -147,11 +210,20 @@ impl Scheduler {
         }
     }
 
-    /// Schedules a periodic task.
+    /// Registers and starts a new periodic task.
+    ///
+    /// The task begins executing immediately on its own thread.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` — A human-readable identifier for the task.
+    /// * `interval` — How often to execute the task.
+    /// * `task` — The closure to execute.
     ///
     /// # Errors
     ///
-    /// Returns an error if the task list cannot be locked.
+    /// Returns a [`LoglyError::Schedule`] if the internal lock cannot be
+    /// acquired.
     pub fn schedule<F>(
         &self,
         name: impl Into<String>,
@@ -169,11 +241,14 @@ impl Scheduler {
         Ok(())
     }
 
-    /// Stops all scheduled tasks.
+    /// Stops all registered tasks and clears the task list.
+    ///
+    /// Each task is stopped sequentially. After this call, `task_count`
+    /// returns 0.
     ///
     /// # Errors
     ///
-    /// Returns an error if any task fails to stop.
+    /// Returns a [`LoglyError::Schedule`] if any task thread panics.
     pub fn stop_all(&self) -> LoglyResult<()> {
         let mut tasks = self
             .tasks
@@ -186,7 +261,7 @@ impl Scheduler {
         Ok(())
     }
 
-    /// Returns the number of active scheduled tasks.
+    /// Returns the number of currently registered tasks.
     #[must_use]
     pub fn task_count(&self) -> usize {
         self.tasks.lock().map_or(0, |tasks| tasks.len())

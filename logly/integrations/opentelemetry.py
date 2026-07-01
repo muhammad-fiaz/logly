@@ -81,17 +81,52 @@ class OTelLogSink:
 
     def write(self, message: str) -> None:
         """Forward one rendered message to the OTel logger."""
-        severity = self._resolve_severity()
-        self._otel_logger.emit(severity_number=severity, body=message.rstrip("\n"))
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        clean = strip_ansi(message.rstrip("\n"))
+        severity = self._resolve_severity(clean)
+        self._otel_logger.emit(severity_number=severity, body=clean)
 
     @staticmethod
-    def _resolve_severity() -> int:
+    def _resolve_severity(message: str) -> int:
+        """Resolve OTel ``SeverityNumber`` from message content.
+
+        Maps Logly levels to OTel severity integers:
+
+        - ``TRACE`` -> 1 (TRACE)
+        - ``DEBUG`` -> 5 (DEBUG)
+        - ``INFO``, ``NOTICE``, ``SUCCESS`` -> 9 (INFO)
+        - ``WARNING`` -> 13 (WARN)
+        - ``ERROR``, ``FAIL`` -> 17 (ERROR)
+        - ``CRITICAL``, ``FATAL`` -> 21 (FATAL)
+
+        Args:
+            message: The formatted log message string.
+
+        Returns:
+            OTel ``SeverityNumber`` integer value.
+        """
         try:
             from opentelemetry._logs import SeverityNumber
-
-            return SeverityNumber.INFO.value
         except (ImportError, AttributeError):
             return 9
+
+        upper = message.upper()
+        if "FATAL" in upper or "CRITICAL" in upper:
+            return SeverityNumber.FATAL.value
+        if "ERROR" in upper or "FAIL" in upper:
+            return SeverityNumber.ERROR.value
+        if "WARNING" in upper or "WARN" in upper:
+            return SeverityNumber.WARN.value
+        if "NOTICE" in upper:
+            return SeverityNumber.INFO.value
+        if "SUCCESS" in upper:
+            return SeverityNumber.INFO.value
+        if "TRACE" in upper:
+            return SeverityNumber.TRACE.value
+        if "DEBUG" in upper:
+            return SeverityNumber.DEBUG.value
+        return SeverityNumber.INFO.value
 
     def flush(self) -> None:
         """Flush the OTel log provider."""

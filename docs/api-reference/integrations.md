@@ -898,3 +898,254 @@ logger.add(RabbitMQHandler(
 | `routing_key` | `str \| None` | `None` | Routing key |
 | `durable` | `bool` | `True` | Durable queue |
 | `timeout` | `int` | `10` | Connection timeout (seconds) |
+
+---
+
+## Pydantic
+
+### PydanticLogHandler
+
+```python
+import logging
+from logly.integrations.pydantic import PydanticLogHandler
+
+handler = PydanticLogHandler()
+handler.setLevel(logging.INFO)
+```
+
+Routes Python `logging` records through Logly for Pydantic-based applications. No extra dependencies.
+
+### LoglyFormatter
+
+```python
+import logging
+from logly.integrations.pydantic import LoglyFormatter
+
+handler = logging.StreamHandler()
+handler.setFormatter(LoglyFormatter())
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `logly_logger` | `Logger \| None` | `None` | Logly logger instance (uses global logger) |
+
+---
+
+## tqdm
+
+### TqdmSink
+
+```python
+from logly import logger
+from logly.integrations.tqdm import TqdmSink
+from tqdm import tqdm
+
+logger.remove()
+logger.add(TqdmSink(), colorize=True)
+
+for i in tqdm(range(100)):
+    if i % 20 == 0:
+        logger.info("Processing item {}", i)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tqdm_instance` | `Any` | `None` | Optional tqdm class or instance |
+
+---
+
+## Datadog
+
+### DatadogSink
+
+```python
+from logly import logger
+from logly.integrations.datadog import DatadogSink
+
+logger.add(DatadogSink(
+    api_key="your-api-key",
+    service="myapp",
+    environment="production",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `api_key` | `str` | | Datadog API key |
+| `host` | `str \| None` | `None` | Host name |
+| `source` | `str \| None` | `"python"` | Log source |
+| `service` | `str \| None` | `None` | Service name |
+| `tags` | `list[str] \| None` | `None` | Tags list |
+| `site` | `str` | `"datadoghq.com"` | Datadog site |
+| `timeout` | `float` | `5.0` | Request timeout (seconds) |
+
+---
+
+## New Relic
+
+### NewRelicSink
+
+```python
+from logly import logger
+from logly.integrations.newrelic import NewRelicSink
+
+logger.add(NewRelicSink(
+    license_key="your-license-key",
+    app_name="myapp",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `license_key` | `str \| None` | `None` | New Relic license key |
+| `app_name` | `str \| None` | `None` | Application name |
+
+---
+
+## Seq
+
+### SeqSink
+
+```python
+from logly import logger
+from logly.integrations.seq import SeqSink
+
+logger.add(SeqSink(
+    server_url="http://localhost:5341",
+    api_key="your-api-key",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `server_url` | `str` | | Seq server URL |
+| `api_key` | `str \| None` | `None` | API key |
+| `event_template` | `dict[str, Any] \| None` | `None` | Additional fields for every event |
+| `timeout` | `float` | `5.0` | Request timeout (seconds) |
+
+---
+
+## AWS CloudWatch
+
+### CloudWatchSink
+
+```python
+from logly import logger
+from logly.integrations.aws_cloudwatch import CloudWatchSink
+
+logger.add(CloudWatchSink(
+    log_group="/myapp/logs",
+    log_stream="production",
+    region="us-east-1",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `log_group` | `str` | | CloudWatch log group name |
+| `log_stream` | `str` | | CloudWatch log stream name |
+| `region` | `str \| None` | `None` | AWS region |
+| `aws_access_key_id` | `str \| None` | `None` | AWS access key |
+| `aws_secret_access_key` | `str \| None` | `None` | AWS secret key |
+| `batch_size` | `int` | `10000` | Events per batch |
+| `flush_interval` | `float` | `5.0` | Flush interval (seconds) |
+| `create_group` | `bool` | `True` | Auto-create log group |
+| `create_stream` | `bool` | `True` | Auto-create log stream |
+
+---
+
+## Google Cloud Logging
+
+### GoogleCloudLoggingSink
+
+```python
+from logly import logger
+from logly.integrations.google_cloud_logging import GoogleCloudLoggingSink
+
+logger.add(GoogleCloudLoggingSink(
+    project_id="my-project",
+    log_name="myapp",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `project_id` | `str` | | GCP project ID |
+| `log_name` | `str` | `"logly"` | Log name |
+| `resource` | `Any` | `None` | Monitored resource |
+| `credentials` | `Any` | `None` | GCP credentials |
+
+---
+
+## Azure Monitor
+
+### AzureMonitorSink
+
+```python
+from logly import logger
+from logly.integrations.azure_monitor import AzureMonitorSink
+
+logger.add(AzureMonitorSink(
+    connection_string="InstrumentationKey=...",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `connection_string` | `str \| None` | `None` | Application Insights connection string |
+| `instrumentation_key` | `str \| None` | `None` | Instrumentation key (legacy) |
+
+---
+
+## Logstash
+
+### LogstashSink
+
+```python
+from logly import logger
+from logly.integrations.logstash import LogstashSink
+
+logger.add(LogstashSink(
+    host="localhost",
+    port=5959,
+    protocol="tcp",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `host` | `str` | `"localhost"` | Logstash host |
+| `port` | `int` | `5959` | Logstash port |
+| `protocol` | `str` | `"tcp"` | Protocol: `"tcp"` or `"udp"` |
+| `message_type` | `str` | `"logstash"` | Event type |
+| `tags` | `list[str] \| None` | `None` | Event tags |
+| `key_prefix` | `str` | `""` | Key prefix for fields |
+| `timeout` | `float` | `5.0` | Connection timeout (seconds) |
+
+---
+
+## Graylog
+
+### GraylogSink
+
+```python
+from logly import logger
+from logly.integrations.graylog import GraylogSink
+
+logger.add(GraylogSink(
+    host="localhost",
+    port=12201,
+    protocol="udp",
+))
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `host` | `str` | `"localhost"` | Graylog host |
+| `port` | `int` | `12201` | Graylog port |
+| `protocol` | `str` | `"udp"` | Protocol: `"tcp"` or `"udp"` |
+| `graylog_version` | `str` | `"1.1"` | GELF version: `"1.0"` or `"1.1"` |
+| `chunk_size` | `int` | `8192` | UDP chunk size |
+| `facility` | `str \| None` | `None` | Facility name |
+| `hostname` | `str \| None` | `None` | Override hostname |
+| `timeout` | `float` | `5.0` | Connection timeout (seconds) |

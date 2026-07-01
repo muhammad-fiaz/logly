@@ -1,7 +1,16 @@
 //! Record filters and level gates.
 //!
-//! Provides the `Filter` trait, a level-threshold filter, composable filter
+//! Provides the [`Filter`] trait, a level-threshold filter, composable filter
 //! chains (AND/OR), and support for custom filter callables from Python.
+//!
+//! # Filter Types
+//!
+//! - [`LevelFilter`]: Accepts records at or above a minimum severity level
+//! - [`PrefixFilter`]: Accepts records whose logger name starts with a prefix
+//! - [`ExtraFilter`]: Accepts records containing specific key-value pairs
+//! - [`NotFilter`]: Inverts another filter's result
+//! - [`ConstFilter`]: Always accepts or always rejects
+//! - [`FilterChain`]: Combines multiple filters with AND/OR logic
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -13,12 +22,29 @@ use record::LogRecord;
 use std::sync::Arc;
 
 /// Decides whether a record should reach a sink.
+///
+/// Filters are evaluated before formatting. If a filter rejects a record,
+/// the sink never sees it. Filters must be `Send + Sync` to support
+/// concurrent logging.
+///
+/// # Implementors
+///
+/// - [`LevelFilter`]
+/// - [`PrefixFilter`]
+/// - [`ExtraFilter`]
+/// - [`NotFilter`]
+/// - [`ConstFilter`]
+/// - [`FilterChain`]
 pub trait Filter: Send + Sync {
     /// Returns `true` when the record is accepted.
     fn accept(&self, record: &LogRecord) -> bool;
 }
 
 /// Filters records below a threshold level.
+///
+/// Accepts records whose level priority is greater than or equal to the
+/// minimum. This is the most common filter type, used to set the minimum
+/// log level for a sink.
 ///
 /// # Examples
 ///
@@ -41,6 +67,8 @@ pub struct LevelFilter {
 
 impl LevelFilter {
     /// Creates a level-threshold filter.
+    ///
+    /// Records with priority >= the minimum level are accepted.
     #[must_use]
     pub const fn new(minimum: LogLevel) -> Self {
         Self { minimum }
@@ -56,10 +84,30 @@ impl Filter for LevelFilter {
 /// A composable filter chain that combines multiple filters.
 ///
 /// Supports AND (all must pass) and OR (any must pass) composition.
+/// Chains can be nested arbitrarily.
+///
+/// # Examples
+///
+/// ```rust
+/// use filter::{Filter, FilterChain, LevelFilter, PrefixFilter};
+/// use levels::LogLevel;
+/// use record::LogRecord;
+/// use std::sync::Arc;
+///
+/// // Accept only records that are WARNING+ AND start with "app."
+/// let chain = FilterChain::all(vec![
+///     Arc::new(LevelFilter::new(LogLevel::new("WARNING", 40, None))),
+///     Arc::new(PrefixFilter::new("app.")),
+/// ]);
+/// ```
 pub enum FilterChain {
     /// All filters must accept (logical AND).
+    ///
+    /// If any filter rejects, the chain rejects.
     All(Vec<Arc<dyn Filter>>),
     /// Any filter must accept (logical OR).
+    ///
+    /// If any filter accepts, the chain accepts.
     Any(Vec<Arc<dyn Filter>>),
 }
 
@@ -83,12 +131,16 @@ impl Clone for FilterChain {
 
 impl FilterChain {
     /// Creates an AND chain.
+    ///
+    /// All filters in the vector must accept for the chain to accept.
     #[must_use]
     pub fn all(filters: Vec<Arc<dyn Filter>>) -> Self {
         Self::All(filters)
     }
 
     /// Creates an OR chain.
+    ///
+    /// At least one filter in the vector must accept for the chain to accept.
     #[must_use]
     pub fn any(filters: Vec<Arc<dyn Filter>>) -> Self {
         Self::Any(filters)
@@ -105,6 +157,23 @@ impl Filter for FilterChain {
 }
 
 /// A filter that accepts records whose name starts with a given prefix.
+///
+/// # Examples
+///
+/// ```rust
+/// use filter::{Filter, PrefixFilter};
+/// use record::LogRecord;
+/// use levels::LogLevel;
+///
+/// let filter = PrefixFilter::new("app.");
+/// let mut record = LogRecord::builder(LogLevel::new("INFO", 20, None), "msg").build();
+///
+/// record.name = "app.core".to_owned();
+/// assert!(filter.accept(&record));
+///
+/// record.name = "other".to_owned();
+/// assert!(!filter.accept(&record));
+/// ```
 #[derive(Clone, Debug)]
 pub struct PrefixFilter {
     prefix: String,
@@ -112,6 +181,8 @@ pub struct PrefixFilter {
 
 impl PrefixFilter {
     /// Creates a prefix filter.
+    ///
+    /// Records whose `name` field starts with the given prefix are accepted.
     #[must_use]
     pub fn new(prefix: impl Into<String>) -> Self {
         Self {
@@ -127,6 +198,29 @@ impl Filter for PrefixFilter {
 }
 
 /// A filter that accepts records containing specific extra key-value pairs.
+///
+/// All required key-value pairs must be present in the record's `extra` map
+/// for the filter to accept.
+///
+/// # Examples
+///
+/// ```rust
+/// use filter::{Filter, ExtraFilter};
+/// use record::LogRecord;
+/// use levels::LogLevel;
+/// use std::collections::BTreeMap;
+///
+/// let mut required = BTreeMap::new();
+/// required.insert("service".to_owned(), "api".to_owned());
+/// let filter = ExtraFilter::new(required);
+///
+/// let mut record = LogRecord::builder(LogLevel::new("INFO", 20, None), "msg").build();
+/// record.extra.insert("service".to_owned(), "api".to_owned());
+/// assert!(filter.accept(&record));
+///
+/// record.extra.insert("service".to_owned(), "web".to_owned());
+/// assert!(!filter.accept(&record));
+/// ```
 #[derive(Clone, Debug)]
 pub struct ExtraFilter {
     required: std::collections::BTreeMap<String, String>,
@@ -149,6 +243,23 @@ impl Filter for ExtraFilter {
 }
 
 /// A filter that inverts another filter's result.
+///
+/// Wraps an inner filter and accepts records when the inner filter rejects,
+/// and vice versa.
+///
+/// # Examples
+///
+/// ```rust
+/// use filter::{Filter, NotFilter, ConstFilter};
+/// use record::LogRecord;
+/// use levels::LogLevel;
+/// use std::sync::Arc;
+///
+/// let inner = Arc::new(ConstFilter::new(true));
+/// let filter = NotFilter::new(inner);
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "msg").build();
+/// assert!(!filter.accept(&record)); // inverted: true → false
+/// ```
 pub struct NotFilter {
     inner: Arc<dyn Filter>,
 }
@@ -182,6 +293,23 @@ impl Filter for NotFilter {
 }
 
 /// A filter that always accepts or always rejects.
+///
+/// Useful as a default or test filter, or as the inner filter for [`NotFilter`].
+///
+/// # Examples
+///
+/// ```rust
+/// use filter::{Filter, ConstFilter};
+/// use record::LogRecord;
+/// use levels::LogLevel;
+///
+/// let accept = ConstFilter::new(true);
+/// let reject = ConstFilter::new(false);
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "msg").build();
+///
+/// assert!(accept.accept(&record));
+/// assert!(!reject.accept(&record));
+/// ```
 #[derive(Clone, Debug)]
 pub struct ConstFilter {
     accept: bool,
@@ -189,6 +317,9 @@ pub struct ConstFilter {
 
 impl ConstFilter {
     /// Creates a constant filter.
+    ///
+    /// If `accept` is `true`, the filter accepts all records; otherwise it
+    /// rejects all records.
     #[must_use]
     pub const fn new(accept: bool) -> Self {
         Self { accept }

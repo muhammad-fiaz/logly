@@ -3,6 +3,13 @@
 //! These are the canonical Rust-side config shapes that the Python Pydantic
 //! models mirror/validate before crossing the `PyO3` boundary. Every field is
 //! explicit and documented so that defaults are never hidden.
+//!
+//! # Module Structure
+//!
+//! - **Enums**: [`RotationPolicy`], [`RetentionPolicy`], [`CompressionCodec`], [`EnqueueMode`]
+//! - **Config structs**: [`SinkConfig`], [`LoggerConfig`]
+//! - **Parser functions**: [`parse_size`], [`resolve_rotation_policy`], [`resolve_retention_policy`], [`resolve_compression_codec`]
+//! - **Serialization helpers**: [`strip_ansi_markup`], [`env_config_overrides`]
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -12,16 +19,56 @@
 use error::{LoglyError, LoglyResult};
 
 /// Sink enqueue behavior.
+///
+/// Controls whether log records are dispatched synchronously on the caller's
+/// thread or asynchronously via a background worker.
+///
+/// # Examples
+///
+/// ```rust
+/// use config::EnqueueMode;
+///
+/// assert_eq!(EnqueueMode::default(), EnqueueMode::Synchronous);
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum EnqueueMode {
     /// Dispatch on the caller thread (blocking).
+    ///
+    /// The log call blocks until the record is written. This is the simplest
+    /// and most predictable mode.
     #[default]
     Synchronous,
     /// Dispatch using a background worker thread.
+    ///
+    /// The log call returns immediately; records are queued and written
+    /// asynchronously. Useful for high-throughput scenarios where blocking
+    /// the caller is unacceptable.
     Background,
 }
 
 /// Rotation policy for file sinks.
+///
+/// Determines when log files should be rotated (closed and a new file opened).
+/// Supports time-based, size-based, and calendar-based rotation strategies.
+///
+/// # Examples
+///
+/// ```rust
+/// use config::{RotationPolicy, resolve_rotation_policy};
+///
+/// // Named intervals
+/// assert_eq!(resolve_rotation_policy("daily").unwrap(), RotationPolicy::IntervalSeconds(86400));
+/// assert_eq!(resolve_rotation_policy("hourly").unwrap(), RotationPolicy::IntervalSeconds(3600));
+///
+/// // Size-based
+/// assert_eq!(resolve_rotation_policy("10 MB").unwrap(), RotationPolicy::SizeBytes(10_000_000));
+///
+/// // Clock rotation
+/// assert_eq!(resolve_rotation_policy("00:00").unwrap(), RotationPolicy::ClockRotation("00:00".to_owned()));
+///
+/// // Weekday rotation
+/// assert_eq!(resolve_rotation_policy("monday").unwrap(), RotationPolicy::WeekdayRotation(0));
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum RotationPolicy {
     /// Rotation is disabled.
@@ -30,40 +77,96 @@ pub enum RotationPolicy {
     /// Rotate when the file reaches this many bytes.
     SizeBytes(u64),
     /// Rotate after this many seconds since the file was created/last rotated.
+    ///
+    /// Common presets: 60 (minutely), 3600 (hourly), 86400 (daily),
+    /// 604800 (weekly), 2592000 (monthly).
     IntervalSeconds(u64),
     /// Rotate at a specific time of day (HH:MM format, 24-hour).
+    ///
+    /// The file is rotated when the system clock reaches the specified time.
     ClockRotation(String),
     /// Rotate on a specific day of the week (0=Monday through 6=Sunday).
+    ///
+    /// The file is rotated at midnight on the specified weekday.
     WeekdayRotation(u8),
 }
 
 /// Retention policy for rotated files.
+///
+/// Controls how many rotated log files are kept and/or how long they are
+/// retained before deletion. Both fields are optional; if both are `None`,
+/// all rotated files are kept indefinitely.
+///
+/// # Examples
+///
+/// ```rust
+/// use config::{RetentionPolicy, resolve_retention_policy};
+///
+/// // Keep at most 10 files
+/// let p = resolve_retention_policy("10").unwrap();
+/// assert_eq!(p.count, Some(10));
+/// assert_eq!(p.seconds, None);
+///
+/// // Keep files for 30 days
+/// let p = resolve_retention_policy("30 days").unwrap();
+/// assert_eq!(p.count, None);
+/// assert_eq!(p.seconds, Some(30 * 86400));
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct RetentionPolicy {
-    /// Maximum number of rotated files to keep (None = unlimited).
+    /// Maximum number of rotated files to keep.
+    ///
+    /// When `None`, there is no limit on the number of files retained.
     pub count: Option<u32>,
-    /// Maximum age in seconds (None = unlimited).
+    /// Maximum age of rotated files in seconds.
+    ///
+    /// When `None`, files are not deleted based on age.
     pub seconds: Option<u64>,
 }
 
 /// Compression codec for rotated files.
+///
+/// Specifies the compression algorithm applied to rotated log files.
+/// The codec determines both the file extension and the compression ratio.
+///
+/// # Supported Codecs
+///
+/// | Codec | Extension | Notes |
+/// |---|---|---|
+/// | `None` | `.log` | No compression |
+/// | `Gzip` | `.gz` | Fast, good ratio |
+/// | `Zip` | `.zip` | Archive format |
+/// | `Bz2` | `.bz2` | Slow, high ratio |
+/// | `Xz` | `.xz` | Slowest, best ratio |
+/// | `Zstd` | `.zst` | Fast, excellent ratio |
+///
+/// # Examples
+///
+/// ```rust
+/// use config::{CompressionCodec, resolve_compression_codec};
+///
+/// assert_eq!(CompressionCodec::Gzip.to_string(), "gzip");
+/// assert_eq!(resolve_compression_codec("gz").unwrap(), CompressionCodec::Gzip);
+/// assert_eq!(resolve_compression_codec("tar.gz").unwrap(), CompressionCodec::Gzip);
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum CompressionCodec {
-    /// No compression.
+    /// No compression. Files are stored as plain text.
     #[default]
     None,
-    /// Gzip compression.
+    /// Gzip compression. Good balance of speed and compression ratio.
     Gzip,
-    /// Zip archive compression.
+    /// Zip archive compression. Creates standard ZIP archives.
     Zip,
-    /// Bzip2 compression.
+    /// Bzip2 compression. Slower but higher compression ratio than gzip.
     Bz2,
-    /// XZ/LZMA compression.
+    /// XZ/LZMA compression. Best compression ratio but slowest.
     Xz,
-    /// Zstandard compression.
+    /// Zstandard compression. Excellent speed and ratio; recommended for most use cases.
     Zstd,
 }
 
+/// Displays the codec name in lowercase (e.g., `"gzip"`, `"zstd"`).
 impl std::fmt::Display for CompressionCodec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -78,28 +181,67 @@ impl std::fmt::Display for CompressionCodec {
 }
 
 /// Configuration shared by sink implementations.
+///
+/// Each sink (console, file, callback) is configured via this struct. The
+/// defaults produce a sensible INFO-level console output with no rotation.
+///
+/// # Default Values
+///
+/// | Field | Default |
+/// |---|---|
+/// | `level` | `"INFO"` |
+/// | `format` | `"{level} \| {message}"` |
+/// | `colorize` | `None` (auto-detect) |
+/// | `serialize` | `false` |
+/// | `enqueue` | `Synchronous` |
+/// | `rotation` | `Never` |
+/// | `retention` | unlimited |
+/// | `compression` | `None` |
+/// | `append` | `true` |
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SinkConfig {
     /// Minimum accepted level name.
+    ///
+    /// Records below this level are filtered out. Case-insensitive.
     pub level: String,
     /// Output format template.
+    ///
+    /// Supports placeholder tokens like `{level}`, `{message}`, `{time}`, etc.
+    /// See `TemplateFormatter` for the full token reference.
     pub format: String,
-    /// Whether ANSI colors are emitted (None = auto-detect).
+    /// Whether ANSI colors are emitted.
+    ///
+    /// - `None`: auto-detect (enabled for TTY, disabled otherwise)
+    /// - `Some(true)`: always emit colors
+    /// - `Some(false)`: never emit colors
     pub colorize: Option<bool>,
     /// Whether JSON output is emitted.
+    ///
+    /// When `true`, the sink uses `JsonFormatter` instead of `TemplateFormatter`.
     pub serialize: bool,
     /// Enqueue mode for this sink.
+    ///
+    /// Controls whether records are written synchronously or via a background thread.
     pub enqueue: EnqueueMode,
     /// Rotation policy.
+    ///
+    /// Determines when log files are rotated. Defaults to `Never`.
     pub rotation: RotationPolicy,
     /// Retention policy.
+    ///
+    /// Controls how many rotated files are kept and for how long.
     pub retention: RetentionPolicy,
     /// Compression codec.
+    ///
+    /// Applied to rotated files. Defaults to `None`.
     pub compression: CompressionCodec,
-    /// Whether to append to existing files (true) or overwrite (false).
+    /// Whether to append to existing files (`true`) or overwrite (`false`).
+    ///
+    /// When `false`, the file is truncated on open.
     pub append: bool,
 }
 
+/// Default configuration for a sink: INFO level, basic format, no rotation.
 impl Default for SinkConfig {
     fn default() -> Self {
         Self {
@@ -117,11 +259,30 @@ impl Default for SinkConfig {
 }
 
 /// Top-level logger configuration.
+///
+/// Contains the list of sink configurations and any logger names that should
+/// be disabled by default.
+///
+/// # Examples
+///
+/// ```rust
+/// use config::LoggerConfig;
+///
+/// let config = LoggerConfig::default();
+/// assert!(config.sinks.is_empty());
+/// assert!(config.disabled.is_empty());
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct LoggerConfig {
     /// Sink configurations to install.
+    ///
+    /// Each entry defines a separate output destination with its own format,
+    /// level filter, and rotation settings.
     pub sinks: Vec<SinkConfig>,
     /// Logger names disabled by default.
+    ///
+    /// Loggers matching these names will not produce output until explicitly
+    /// enabled. Useful for suppressing noisy third-party loggers.
     pub disabled: Vec<String>,
 }
 

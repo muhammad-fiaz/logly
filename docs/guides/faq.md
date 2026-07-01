@@ -14,7 +14,7 @@ Logly is a high-performance logging library for Python powered by a Rust-native 
 ### Why use Logly over stdlib logging?
 
 - **Rust-native performance** for high-throughput logging
-- **11 built-in log levels** (including SUCCESS, NOTICE, FAIL, AUDIT)
+- **10 built-in log levels** (including SUCCESS, NOTICE, FAIL)
 - **Automatic file rotation** with size/time/clock policies
 - **Built-in compression** (GZIP, ZIP, bz2, XZ, Zstd)
 - **Retention policies** with automatic cleanup
@@ -25,10 +25,10 @@ Logly is a high-performance logging library for Python powered by a Rust-native 
 
 ### Is Logly production-ready?
 
-Yes. Logly is built for high-performance, production-grade logging with:
+Logly is built for high-performance logging with:
 
 - Zero unsafe Rust code
-- Comprehensive test suite (185+ Rust tests, 247+ Python tests)
+- Comprehensive test suite (344+ Rust tests, 869 Python tests)
 - Thread-safe concurrent operations
 - Memory-efficient queue-based async logging
 - Built-in error handling and recovery

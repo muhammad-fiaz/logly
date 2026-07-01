@@ -22,6 +22,7 @@ Install with::
 from __future__ import annotations
 
 import importlib.util
+import re
 import time
 
 _IMPORT_MSG = (
@@ -41,6 +42,8 @@ CREATE TABLE IF NOT EXISTS {table} (
     created_at TIMESTAMP DEFAULT NOW()
 )
 """
+
+_IDENTIFIER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 class PostgresHandler:
@@ -83,6 +86,11 @@ class PostgresHandler:
         if importlib.util.find_spec("psycopg2") is None:
             raise ImportError(_IMPORT_MSG)
 
+        if not _IDENTIFIER_RE.match(table):
+            raise ValueError(
+                f"Invalid table name {table!r}. Table names must be alphanumeric identifiers."
+            )
+
         import psycopg2 as _psycopg2  # noqa: PLC0415
 
         self._conn = _psycopg2.connect(dsn)
@@ -99,10 +107,12 @@ class PostgresHandler:
 
     def write(self, message: str) -> None:
         """Insert one log entry into PostgreSQL."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         with self._conn.cursor() as cur:
             cur.execute(
                 f"INSERT INTO {self._table} (message, timestamp) VALUES (%s, %s)",
-                (message.rstrip("\n"), time.time()),
+                (strip_ansi(message.rstrip("\n")), time.time()),
             )
         self._conn.commit()
 

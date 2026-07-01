@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from logly import Logger
 
 
@@ -9,7 +11,7 @@ def test_callable_format_receives_record() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def my_format(record: dict) -> str:
+    def my_format(record: dict[str, object]) -> str:
         return f"{record['level']}:{record['message']}"
 
     sink_id = logger.add(lambda m: messages.append(m), level="DEBUG", format=my_format)
@@ -23,7 +25,7 @@ def test_callable_format_custom_output() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def custom(record: dict) -> str:
+    def custom(record: dict[str, object]) -> str:
         return f"CUSTOM|{record['message']}"
 
     sink_id = logger.add(lambda m: messages.append(m), level="DEBUG", format=custom)
@@ -36,7 +38,7 @@ def test_callable_filter_passes() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def my_filter(record: dict) -> bool:
+    def my_filter(record: dict[str, object]) -> bool:
         return record["level"] == "INFO"
 
     sink_id = logger.add(
@@ -53,7 +55,7 @@ def test_callable_filter_blocks() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def block_all(record: dict) -> bool:
+    def block_all(record: dict[str, object]) -> bool:
         return False
 
     sink_id = logger.add(
@@ -68,7 +70,7 @@ def test_callable_filter_blocks_all_levels() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def only_warning(record: dict) -> bool:
+    def only_warning(record: dict[str, object]) -> bool:
         return record["level"] in ("WARNING", "ERROR")
 
     sink_id = logger.add(
@@ -85,7 +87,7 @@ def test_dict_filter_matches_extra() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def patcher(record: dict) -> None:
+    def patcher(record: dict[str, Any]) -> None:
         record.setdefault("extra", {})["service"] = "api"
 
     sink_id = logger.add(
@@ -104,7 +106,7 @@ def test_dict_filter_no_match() -> None:
     logger = Logger()
     messages: list[str] = []
 
-    def patcher(record: dict) -> None:
+    def patcher(record: dict[str, Any]) -> None:
         record.setdefault("extra", {})["service"] = "web"
 
     sink_id = logger.add(

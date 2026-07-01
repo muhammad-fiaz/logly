@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import importlib.util
 import time
+from typing import Any
 
 _IMPORT_MSG = (
     "pymongo is required for Logly MongoDB integration.\n"
@@ -80,17 +81,19 @@ class MongoHandler:
 
         from pymongo import MongoClient  # noqa: PLC0415
 
-        self._client = MongoClient(
+        self._client: Any = MongoClient(
             uri,
             serverSelectionTimeoutMS=int(timeout * 1000),
         )
-        self._collection = self._client[database][collection]
+        self._collection: Any = self._client[database][collection]
 
     def write(self, message: str) -> None:
         """Insert one log entry into MongoDB."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         self._collection.insert_one(
             {
-                "message": message.rstrip("\n"),
+                "message": strip_ansi(message.rstrip("\n")),
                 "timestamp": time.time(),
             }
         )

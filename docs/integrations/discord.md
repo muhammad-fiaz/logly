@@ -5,38 +5,22 @@ description: Send log entries to Discord webhooks.
 
 # Discord
 
-`DiscordHandler` sends log entries to a Discord channel via webhook. Uses the Python standard library (`urllib.request`) - no extra dependencies required.
+`DiscordHandler` sends log entries to a Discord channel via webhook. No extra dependencies required.
 
 ## Installation
 
-This integration requires the `aiohttp` package.
+This integration uses Python's standard library (`urllib.request`). No additional packages needed.
 
 ::: code-group
 
 ```bash [uv]
-uv add logly[discord]
+uv add logly
 ```
 
 ```bash [pip]
-pip install "logly[discord]"
+pip install logly
 ```
 
-```bash [uv (without extras)]
-uv add aiohttp
-```
-
-```bash [pip (without extras)]
-pip install aiohttp
-```
-
-:::
-
-::: warning Missing Dependency
-If `aiohttp` is not installed, you'll see:
-
-```
-ModuleNotFoundError: No module named 'aiohttp'
-```
 :::
 
 ## Usage

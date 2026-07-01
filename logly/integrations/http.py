@@ -58,14 +58,17 @@ class HttpHandler:
         Args:
             message: The formatted log message to send.
         """
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         body: str | bytes
         headers: dict[str, str]
 
+        clean = strip_ansi(message.rstrip("\n"))
         if self.format == "json":
-            body = json.dumps({"message": message.rstrip("\n")}).encode("utf-8")
+            body = json.dumps({"message": clean}).encode("utf-8")
             headers = {"Content-Type": "application/json", **self.headers}
         else:
-            body = message.rstrip("\n").encode("utf-8")
+            body = clean.encode("utf-8")
             headers = {"Content-Type": "text/plain", **self.headers}
 
         request = urllib.request.Request(

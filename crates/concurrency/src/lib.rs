@@ -1,8 +1,36 @@
 //! Background worker thread pool and channel-based dispatch.
 //!
-//! Provides a bounded, backpressure-aware message queue for `enqueue=True`
-//! sinks so that logging calls never block the calling thread. Messages are
-//! dispatched to a dedicated worker thread via an `mpsc` channel.
+//! This module provides a bounded, backpressure-aware message queue for
+//! asynchronous log dispatch. It is designed for sinks configured with
+//! `enqueue=True`, ensuring that logging calls never block the calling thread.
+//!
+//! # Key Types
+//!
+//! - [`Backpressure`] — Controls behavior when the queue is full.
+//! - [`BackgroundWorker`] — A single worker thread that processes messages
+//!   from an `mpsc` channel.
+//! - [`WorkerPool`] — A pool of [`BackgroundWorker`]s that distributes tasks
+//!   across multiple threads.
+//!
+//! # Backpressure Policies
+//!
+//! | Policy         | Behavior                                        |
+//! |----------------|------------------------------------------------|
+//! | `Block`        | Producer blocks until capacity is available.     |
+//! | `DropNewest`   | New messages are silently dropped when full.     |
+//! | `Grow`         | Queue grows without bound (memory risk).         |
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use concurrency::{BackgroundWorker, Backpressure};
+//!
+//! let worker = BackgroundWorker::new(100, Backpressure::Block, |msg: String| {
+//!     println!("received: {msg}");
+//! });
+//! worker.send("hello".to_owned()).unwrap();
+//! worker.shutdown().unwrap();
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -14,7 +42,10 @@ use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
-/// Queue behavior when the background sink reaches capacity.
+/// Controls how the message queue behaves when it reaches capacity.
+///
+/// This determines what happens to messages sent to a [`BackgroundWorker`]
+/// when the underlying channel is full.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Backpressure {
     /// Block producers until capacity is available.
@@ -47,10 +78,25 @@ impl<T> ChannelSender<T> {
     }
 }
 
-/// A background worker that processes messages from a channel.
+/// A background worker that processes messages on a dedicated thread.
 ///
-/// The worker runs on a dedicated thread and invokes the provided callback
-/// for each message received.
+/// Messages are sent through an `mpsc` channel and processed sequentially
+/// by the worker thread. The worker supports three backpressure policies
+/// via [`Backpressure`].
+///
+/// # Thread Safety
+///
+/// `BackgroundWorker` is `Send` but not `Sync`. Multiple producers can
+/// send messages concurrently through the shared [`Sender`].
+///
+/// # Lifecycle
+///
+/// 1. Call [`BackgroundWorker::new`] to spawn the worker thread.
+/// 2. Send messages via [`BackgroundWorker::send`].
+/// 3. Call [`BackgroundWorker::shutdown`] to drain and stop.
+///
+/// If dropped without calling [`shutdown`], the worker will still drain
+/// pending messages.
 pub struct BackgroundWorker<T: Send + 'static> {
     sender: Option<ChannelSender<T>>,
     handle: Option<JoinHandle<()>>,
@@ -59,6 +105,16 @@ pub struct BackgroundWorker<T: Send + 'static> {
 
 impl<T: Send + 'static> BackgroundWorker<T> {
     /// Creates a new background worker with the given capacity and callback.
+    ///
+    /// Spawns a dedicated thread that processes messages from the channel.
+    /// The `callback` is invoked for each message received.
+    ///
+    /// # Arguments
+    ///
+    /// * `capacity` — Maximum number of messages the queue can hold (ignored
+    ///   for `Backpressure::Grow`).
+    /// * `backpressure` — Policy for handling a full queue.
+    /// * `callback` — Function invoked for each message.
     ///
     /// # Panics
     ///
@@ -96,15 +152,22 @@ impl<T: Send + 'static> BackgroundWorker<T> {
         }
     }
 
-    /// Sends a message to the worker, respecting backpressure policy.
+    /// Sends a message to the worker, respecting the backpressure policy.
     ///
-    /// For `DropNewest`, messages are silently dropped when the queue is full.
-    /// For `Block`, the call blocks until capacity is available.
-    /// For `Grow`, messages are never dropped.
+    /// # Behavior by Policy
+    ///
+    /// - `Block`: Blocks the calling thread until capacity is available.
+    /// - `DropNewest`: Returns an error if the queue is full (message is dropped).
+    /// - `Grow`: Never blocks; messages are always accepted.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` — The message to enqueue.
     ///
     /// # Errors
     ///
-    /// Returns an error if the channel is disconnected (worker terminated).
+    /// Returns a [`LoglyError::Concurrency`] if the queue is full
+    /// (`DropNewest` policy) or the worker has shut down.
     pub fn send(&self, message: T) -> LoglyResult<()> {
         if let Some(sender) = &self.sender {
             if sender.try_send(message) {
@@ -125,16 +188,22 @@ impl<T: Send + 'static> BackgroundWorker<T> {
     }
 
     /// Returns the number of messages waiting to be processed.
+    ///
+    /// This count increases when a message is sent and decreases after the
+    /// callback completes.
     #[must_use]
     pub fn pending_count(&self) -> usize {
         self.pending.lock().map_or(0, |c| *c)
     }
 
-    /// Waits for all pending messages to be processed and stops the worker.
+    /// Drains all pending messages and stops the worker thread.
+    ///
+    /// After this call, no more messages can be sent. The worker thread
+    /// is joined and cleaned up.
     ///
     /// # Errors
     ///
-    /// Returns an error if the worker thread panics.
+    /// Returns a [`LoglyError::Concurrency`] if the worker thread panics.
     pub fn shutdown(mut self) -> LoglyResult<()> {
         self.sender.take();
         if let Some(handle) = self.handle.take() {
@@ -172,13 +241,36 @@ impl<T: Send + 'static> Drop for BackgroundWorker<T> {
     }
 }
 
-/// A thread pool for executing multiple background tasks.
+/// A thread pool that distributes tasks across multiple background workers.
+///
+/// Tasks are submitted via [`WorkerPool::submit`] and dispatched to the
+/// least-loaded worker. All workers use `Backpressure::Block` to ensure
+/// no tasks are lost.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use concurrency::WorkerPool;
+///
+/// let pool = WorkerPool::new(4, 256);
+/// pool.submit(|| println!("task 1")).unwrap();
+/// pool.submit(|| println!("task 2")).unwrap();
+/// pool.shutdown().unwrap();
+/// ```
 pub struct WorkerPool {
     workers: Vec<BackgroundWorker<Box<dyn Fn() + Send>>>,
 }
 
 impl WorkerPool {
-    /// Creates a worker pool with the given number of workers.
+    /// Creates a worker pool with the specified number of workers.
+    ///
+    /// Each worker gets its own bounded channel with the given `capacity`.
+    /// Workers use `Backpressure::Block` so tasks are never silently dropped.
+    ///
+    /// # Arguments
+    ///
+    /// * `workers` — Number of worker threads to spawn.
+    /// * `capacity` — Per-worker channel capacity.
     #[must_use]
     pub fn new(workers: usize, capacity: usize) -> Self {
         let pool_workers = (0..workers)
@@ -199,9 +291,16 @@ impl WorkerPool {
 
     /// Submits a task to the least-loaded worker.
     ///
+    /// The task is dispatched to the worker with the fewest pending messages.
+    /// If multiple workers have the same load, one is chosen arbitrarily.
+    ///
+    /// # Arguments
+    ///
+    /// * `task` — A closure to execute on a worker thread.
+    ///
     /// # Errors
     ///
-    /// Returns an error if no workers are available.
+    /// Returns a [`LoglyError::Concurrency`] if no workers are available.
     pub fn submit(&self, task: impl Fn() + Send + 'static) -> LoglyResult<()> {
         let least_loaded = self
             .workers
@@ -211,11 +310,14 @@ impl WorkerPool {
         least_loaded.send(Box::new(task))
     }
 
-    /// Shuts down all workers.
+    /// Shuts down all workers in the pool.
+    ///
+    /// Each worker drains its pending messages before stopping. Workers
+    /// are shut down sequentially.
     ///
     /// # Errors
     ///
-    /// Returns an error if any worker fails to shut down.
+    /// Returns a [`LoglyError::Concurrency`] if any worker thread panics.
     pub fn shutdown(self) -> LoglyResult<()> {
         for worker in self.workers {
             worker.shutdown()?;

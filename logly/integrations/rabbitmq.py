@@ -112,11 +112,13 @@ class RabbitMQHandler:
         """Publish one log message to RabbitMQ."""
         import pika as _pika  # noqa: PLC0415
 
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         try:
             channel = self._ensure_connection()
             payload = json.dumps(
                 {
-                    "message": message.rstrip("\n"),
+                    "message": strip_ansi(message.rstrip("\n")),
                     "timestamp": time.time(),
                 }
             )

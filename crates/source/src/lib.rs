@@ -1,14 +1,33 @@
 //! Source location capture and clickable link generation.
 //!
-//! Provides utilities for capturing, formatting, and generating clickable
-//! source code location links for various editors and terminals.
+//! This module provides utilities for capturing, formatting, and generating
+//! clickable source code location links for various editors and terminals.
 //!
 //! # Features
 //!
-//! - **Source location capture**: File, line, column, function, module
-//! - **Clickable links**: Hyperlinks for VS Code, `IntelliJ`, Sublime, Vim, Emacs, macOS Terminal, iTerm2
-//! - **Source context**: Read surrounding lines from source files
-//! - **Format tokens**: `{file}`, `{line}`, `{function}`, `{source}` in templates
+//! - **Source location capture**: [`SourceLocation`] stores file, line, column,
+//!   function, and module information.
+//! - **Clickable links**: [`clickable_link`] generates hyperlinks for
+//!   VS Code, `JetBrains`, Sublime, Vim, Emacs, macOS Terminal, iTerm2,
+//!   and generic file URIs.
+//! - **Source context**: [`source_context`] reads surrounding lines from
+//!   source files for debugging output.
+//! - **Format tokens**: [`resolve_source_token`] resolves template tokens
+//!   like `{file}`, `{line}`, `{function}`, `{source}` from a location.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use source::{SourceLocation, LinkFormat, clickable_link};
+//!
+//! let loc = SourceLocation::new()
+//!     .with_file("src/main.rs")
+//!     .with_line(42)
+//!     .with_function("main");
+//!
+//! let link = clickable_link(&loc, LinkFormat::VsCode).unwrap();
+//! assert!(link.starts_with("vscode://file/"));
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -19,6 +38,21 @@ use std::fmt;
 use std::fmt::Write as _;
 
 /// A captured source code location.
+///
+/// Stores the file path, line, column, function name, and module path.
+/// All fields are optional — only the available information is populated.
+///
+/// Use the builder pattern to construct a `SourceLocation`:
+///
+/// ```rust
+/// use source::SourceLocation;
+///
+/// let loc = SourceLocation::new()
+///     .with_file("src/main.rs")
+///     .with_line(42)
+///     .with_column(10)
+///     .with_function("main");
+/// ```
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SourceLocation {
     /// File path (absolute or relative).
@@ -34,13 +68,17 @@ pub struct SourceLocation {
 }
 
 impl SourceLocation {
-    /// Creates a new empty source location.
+    /// Creates a new empty source location with all fields `None`.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Sets the file path.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` — The source file path (absolute or relative).
     #[must_use]
     pub fn with_file(mut self, file: impl Into<String>) -> Self {
         self.file = Some(file.into());
@@ -48,6 +86,10 @@ impl SourceLocation {
     }
 
     /// Sets the line number (1-indexed).
+    ///
+    /// # Arguments
+    ///
+    /// * `line` — The 1-indexed line number.
     #[must_use]
     pub fn with_line(mut self, line: u32) -> Self {
         self.line = Some(line);
@@ -55,39 +97,53 @@ impl SourceLocation {
     }
 
     /// Sets the column number (1-indexed).
+    ///
+    /// # Arguments
+    ///
+    /// * `column` — The 1-indexed column number.
     #[must_use]
     pub fn with_column(mut self, column: u32) -> Self {
         self.column = Some(column);
         self
     }
 
-    /// Sets the function name.
+    /// Sets the function or method name.
+    ///
+    /// # Arguments
+    ///
+    /// * `function` — The function name.
     #[must_use]
     pub fn with_function(mut self, function: impl Into<String>) -> Self {
         self.function = Some(function.into());
         self
     }
 
-    /// Sets the module path.
+    /// Sets the module or namespace path.
+    ///
+    /// # Arguments
+    ///
+    /// * `module` — The module path.
     #[must_use]
     pub fn with_module(mut self, module: impl Into<String>) -> Self {
         self.module = Some(module.into());
         self
     }
 
-    /// Returns `true` if the location has a file path.
+    /// Returns `true` if the file path is set.
     #[must_use]
     pub fn has_file(&self) -> bool {
         self.file.is_some()
     }
 
-    /// Returns `true` if the location has both file and line.
+    /// Returns `true` if both file path and line number are set.
     #[must_use]
     pub fn has_file_and_line(&self) -> bool {
         self.file.is_some() && self.line.is_some()
     }
 
     /// Returns the filename (last component of the file path).
+    ///
+    /// For `src/main.rs`, this returns `Some("main.rs")`.
     #[must_use]
     pub fn filename(&self) -> Option<&str> {
         self.file.as_ref().map(|f| {
@@ -98,7 +154,10 @@ impl SourceLocation {
         })
     }
 
-    /// Formats as `file:line` (e.g., `src/main.rs:42`).
+    /// Formats the location as `file:line`.
+    ///
+    /// Returns `None` if no file path is set. If the line is also set,
+    /// the format is `src/main.rs:42`.
     #[must_use]
     pub fn file_line(&self) -> Option<String> {
         match (&self.file, self.line) {
@@ -108,7 +167,10 @@ impl SourceLocation {
         }
     }
 
-    /// Formats as `file:line:column` (e.g., `src/main.rs:42:10`).
+    /// Formats the location as `file:line:column`.
+    ///
+    /// Returns `None` if no file path is set. Partial results are returned
+    /// when only some fields are available.
     #[must_use]
     pub fn file_line_col(&self) -> Option<String> {
         match (&self.file, self.line, self.column) {
@@ -119,7 +181,13 @@ impl SourceLocation {
         }
     }
 
-    /// Formats as `function (file:line)` (e.g., `main (src/main.rs:42)`).
+    /// Formats as `function (file:line)`.
+    ///
+    /// Returns the most specific representation available:
+    /// - `main (src/main.rs:42)` — all fields present
+    /// - `main (src/main.rs)` — function and file, no line
+    /// - `main` — function only
+    /// - `src/main.rs:42` — file and line, no function
     #[must_use]
     pub fn function_location(&self) -> Option<String> {
         match (&self.function, &self.file, self.line) {
@@ -145,7 +213,10 @@ impl fmt::Display for SourceLocation {
     }
 }
 
-/// Editor/terminal type for clickable link generation.
+/// Supported editor/terminal types for clickable link generation.
+///
+/// Each variant produces a URL or command string that opens the file at the
+/// specified location in the corresponding editor.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum LinkFormat {
     /// VS Code `vscode://file/path:line`
@@ -188,11 +259,29 @@ impl fmt::Display for LinkFormat {
     }
 }
 
-/// Generates a clickable link for the given source location.
+/// Generates a clickable link for the given source location and format.
 ///
-/// # Errors
+/// The link format depends on the target editor or terminal. For example,
+/// VS Code uses `vscode://file/...` while Vim uses `+line path`.
 ///
-/// Returns `None` if the location lacks required fields (file path).
+/// # Arguments
+///
+/// * `loc` — The source location to link to.
+/// * `format` — The target editor/terminal format.
+///
+/// # Returns
+///
+/// `Some(link)` if the location has a file path, `None` otherwise.
+///
+/// # Examples
+///
+/// ```rust
+/// use source::{SourceLocation, LinkFormat, clickable_link};
+///
+/// let loc = SourceLocation::new().with_file("src/main.rs").with_line(42);
+/// let link = clickable_link(&loc, LinkFormat::Plain).unwrap();
+/// assert_eq!(link, "src/main.rs:42");
+/// ```
 #[must_use]
 pub fn clickable_link(loc: &SourceLocation, format: LinkFormat) -> Option<String> {
     let file = loc.file.as_deref()?;
@@ -225,7 +314,16 @@ pub fn clickable_link(loc: &SourceLocation, format: LinkFormat) -> Option<String
 
 /// Normalizes a file path for cross-platform display.
 ///
-/// Converts backslashes to forward slashes and removes `./` prefix.
+/// Converts Windows backslashes to forward slashes and strips the leading
+/// `./` prefix if present.
+///
+/// # Arguments
+///
+/// * `path` — The file path to normalize.
+///
+/// # Returns
+///
+/// A normalized path string.
 fn normalize_path(path: &str) -> String {
     let normalized = path.replace('\\', "/");
     if let Some(stripped) = normalized.strip_prefix("./") {
@@ -235,13 +333,33 @@ fn normalize_path(path: &str) -> String {
     }
 }
 
-/// Reads source context (surrounding lines) from a file.
+/// Reads surrounding source lines from a file.
 ///
-/// Returns up to `context_lines` lines before and after the target line.
+/// Returns up to `context_lines` lines before and after the target line,
+/// each wrapped in a [`SourceLine`] that indicates whether it is the target.
+///
+/// # Arguments
+///
+/// * `path` — Path to the source file.
+/// * `line` — The target line number (1-indexed).
+/// * `context_lines` — Number of lines to include before and after the target.
+///
+/// # Returns
+///
+/// A `Vec<SourceLine>` containing the context window.
 ///
 /// # Errors
 ///
-/// Returns an error if the file cannot be read.
+/// Returns an [`std::io::Error`] if the file cannot be read.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use source::source_context;
+///
+/// let lines = source_context("src/main.rs", 42, 2).unwrap();
+/// assert!(lines.iter().any(|l| l.is_target));
+/// ```
 pub fn source_context(
     path: &str,
     line: u32,
@@ -268,6 +386,8 @@ pub fn source_context(
 }
 
 /// A single line of source code context.
+///
+/// Returned by [`source_context`] to represent a line in the context window.
 #[derive(Clone, Debug)]
 pub struct SourceLine {
     /// Line number (1-indexed).
@@ -278,16 +398,26 @@ pub struct SourceLine {
     pub is_target: bool,
 }
 
-/// Formats source context lines for display.
+/// Formats source context lines for display with line numbers and markers.
 ///
-/// Produces output like:
+/// The target line is marked with `>>`. Output looks like:
+///
 /// ```text
 ///    40 |     fn main() {
 ///    41 |         let x = 42;
 /// >> 42 |         println!("{x}");
 ///    43 |     }
-///    44 |
 /// ```
+///
+/// # Arguments
+///
+/// * `lines` — The source lines to format.
+/// * `gutter_width` — Optional fixed gutter width. If `None`, the width
+///   is calculated from the maximum line number.
+///
+/// # Returns
+///
+/// A formatted string ready for display.
 #[must_use]
 pub fn format_source_context(lines: &[SourceLine], gutter_width: Option<u32>) -> String {
     if lines.is_empty() {
@@ -314,15 +444,33 @@ pub fn format_source_context(lines: &[SourceLine], gutter_width: Option<u32>) ->
     out
 }
 
-/// Applies a format spec with source location tokens.
+/// Resolves a format token from a [`SourceLocation`].
 ///
 /// Supported tokens:
-/// - `{source}` or `{source:context}` — source `<file:line>` with context lines
-/// - `{file}` — source file path
-/// - `{line}` — source line number
-/// - `{column}` — source column number
-/// - `{function}` — function name
-/// - `{module}` — module path
+///
+/// | Token                | Output                                |
+/// |----------------------|---------------------------------------|
+/// | `{file}`             | File path                             |
+/// | `{line}`             | Line number                           |
+/// | `{column}`           | Column number                         |
+/// | `{function}`         | Function name                         |
+/// | `{module}`           | Module path                           |
+/// | `{file_line}`        | `file:line`                           |
+/// | `{file_line_col}`    | `file:line:column`                    |
+/// | `{function_location}`| `function (file:line)`                |
+/// | `{filename}`         | Last path component                   |
+/// | `{source}`           | `file:line`                           |
+/// | `{source:N}`         | Source context with N surrounding lines|
+///
+/// # Arguments
+///
+/// * `name` — The token name (without braces).
+/// * `loc` — The source location to extract values from.
+///
+/// # Returns
+///
+/// `Some(value)` if the token is recognized and the location has the
+/// required fields, `None` otherwise.
 #[must_use]
 pub fn resolve_source_token(name: &str, loc: &SourceLocation) -> Option<String> {
     match name {

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from logly import Logger
 
 
@@ -39,7 +41,7 @@ def test_configure_patcher_applies_to_records() -> None:
     messages: list[str] = []
     logger = Logger()
 
-    def my_patcher(record: dict) -> None:
+    def my_patcher(record: dict[str, Any]) -> None:
         record.setdefault("extra", {})["patched"] = "yes"
 
     logger.configure(patcher=my_patcher)

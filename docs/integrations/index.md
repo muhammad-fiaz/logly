@@ -26,6 +26,8 @@ Logly provides first-class integrations for popular Python frameworks, tools, an
 | [APScheduler](apscheduler) | Route APScheduler job logs through Logly | `uv add logly[apscheduler]` |
 | [RQ](rq) | Route RQ worker job logs through Logly | `uv add logly[rq]` |
 | [Celery](celery) | Task logging for Celery workers | `uv add logly[celery]` |
+| [Pydantic](pydantic) | Route Pydantic application logs through Logly | `uv add logly[pydantic]` |
+| [tqdm](tqdm) | Log output through tqdm progress bars | `uv add logly[tqdm]` |
 | [Propagate](propagate) | Propagate records to stdlib `logging` hierarchy | Built-in |
 
 ## Observability & Monitoring
@@ -37,6 +39,12 @@ Logly provides first-class integrations for popular Python frameworks, tools, an
 | [Loki](loki) | Ship logs to Grafana Loki | `uv add logly[loki]` |
 | [Sentry](sentry) | Forward error logs to Sentry | `uv add logly[sentry]` |
 | [Elasticsearch](elasticsearch) | Index logs into Elasticsearch | `uv add logly[elasticsearch]` |
+| [Datadog](datadog) | Send logs to Datadog Logs API | Built-in |
+| [New Relic](newrelic) | Send logs to New Relic | `uv add logly[newrelic]` |
+| [Seq](seq) | Send logs to Seq structured log server | Built-in |
+| [AWS CloudWatch](aws_cloudwatch) | Send logs to AWS CloudWatch Logs | `uv add logly[aws]` |
+| [Google Cloud Logging](google_cloud_logging) | Send logs to Google Cloud Logging | `uv add logly[gcloud]` |
+| [Azure Monitor](azure_monitor) | Send logs to Azure Monitor | `uv add logly[azure]` |
 | [Telemetry](telemetry) | Generic telemetry sink for custom backends | Built-in |
 
 ## Data Stores & Message Brokers
@@ -48,6 +56,8 @@ Logly provides first-class integrations for popular Python frameworks, tools, an
 | [MongoDB](mongodb) | Insert logs into MongoDB collections | `uv add logly[mongodb]` |
 | [PostgreSQL](postgresql) | Insert logs into PostgreSQL tables | `uv add logly[postgresql]` |
 | [RabbitMQ](rabbitmq) | Publish logs to RabbitMQ queues | `uv add logly[rabbitmq]` |
+| [Logstash](logstash) | Send logs to Logstash via TCP/UDP | Built-in |
+| [Graylog](graylog) | Send logs to Graylog in GELF format | Built-in |
 
 ## Notifications & Webhooks
 

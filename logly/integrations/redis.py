@@ -96,9 +96,11 @@ class RedisHandler:
 
     def write(self, message: str) -> None:
         """Push one log entry to Redis."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         entry = json.dumps(
             {
-                "message": message.rstrip("\n"),
+                "message": strip_ansi(message.rstrip("\n")),
                 "timestamp": time.time(),
             }
         )

@@ -65,8 +65,10 @@ class SlackHandler:
         if not self.webhook_url:
             return
 
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         payload: dict[str, Any] = {
-            "text": message.rstrip("\n"),
+            "text": strip_ansi(message.rstrip("\n")),
         }
         if self.channel:
             payload["channel"] = self.channel

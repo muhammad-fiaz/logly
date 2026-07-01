@@ -1,3 +1,8 @@
+---
+title: Celery Integration
+description: Route Celery worker task logs through Logly for structured logging.
+---
+
 # Celery Integration
 
 Logly integrates with Celery to route worker task logs through the Rust-powered engine.

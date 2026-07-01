@@ -1,8 +1,30 @@
-//! Rotation policies for file sinks.
+//! File rotation policies for log sinks.
 //!
-//! Implements size-based, time-based, clock-based, and weekday-based rotation
-//! with support for both overwrite and append semantics. Emits rotation events
-//! that the `compress` and `schedule` crates can react to.
+//! This module implements a flexible rotation system that supports multiple
+//! rotation strategies:
+//!
+//! - **Size-based**: Rotate when the file exceeds a byte threshold.
+//! - **Time-based (interval)**: Rotate after a fixed elapsed duration.
+//! - **Clock-based**: Rotate at a specific time of day (`HH:MM`).
+//! - **Weekday-based**: Rotate on a specific day of the week.
+//!
+//! Rotation is non-destructive — the current file is renamed with a timestamp
+//! suffix, and a new file is created. The [`OverwriteMode`] controls whether
+//! subsequent writes truncate or append. Rotation events can be consumed by
+//! the `compress` and `schedule` crates for automated archiving.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use rotate::{RotationPolicy, check_rotation, RotationAction};
+//! use std::path::Path;
+//!
+//! let action = check_rotation(
+//!     Path::new("app.log"),
+//!     &RotationPolicy::SizeBytes(10 * 1024 * 1024),
+//!     0,
+//! );
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -14,10 +36,16 @@ use error::LoglyResult;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-/// Day of week for weekday rotation (0=Monday, 6=Sunday).
+/// Day of week for weekday rotation.
+///
+/// Uses ISO 8601 numbering: `0` = Monday, `6` = Sunday.
 pub type Weekday = u8;
 
-/// File rotation policy.
+/// Defines when and how a log file should be rotated.
+///
+/// Each variant encodes a different rotation trigger. The engine evaluates
+/// the policy against the current file state to determine if rotation is
+/// required.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum RotationPolicy {
     /// Rotation is disabled.
@@ -46,7 +74,10 @@ impl std::fmt::Display for RotationPolicy {
     }
 }
 
-/// Behavior after rotation: overwrite the original or append to a new file.
+/// Controls file behavior after a rotation event.
+///
+/// Determines whether the original file is truncated and reused, or whether
+/// a new file is appended to.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum OverwriteMode {
     /// Truncate the original file after rotation.
@@ -65,7 +96,9 @@ impl std::fmt::Display for OverwriteMode {
     }
 }
 
-/// Result of a rotation check: whether rotation is needed and the rotated path.
+/// Result of evaluating a rotation policy against a file.
+///
+/// Returned by [`check_rotation`] to indicate whether rotation should occur.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RotationAction {
     /// No rotation needed.
@@ -74,9 +107,28 @@ pub enum RotationAction {
     RotateTo(PathBuf),
 }
 
-/// Parses a clock rotation spec "HH:MM" into (hours, minutes).
+/// Parses a clock rotation specification string into `(hours, minutes)`.
 ///
-/// Returns `None` if the spec is invalid.
+/// The spec must be in `HH:MM` format (24-hour clock). Hours must be 0–23
+/// and minutes must be 0–59.
+///
+/// # Arguments
+///
+/// * `spec` - A time string in `"HH:MM"` format.
+///
+/// # Returns
+///
+/// `Some((hours, minutes))` if the spec is valid, `None` otherwise.
+///
+/// # Examples
+///
+/// ```rust
+/// use rotate::parse_clock_spec;
+///
+/// assert_eq!(parse_clock_spec("00:00"), Some((0, 0)));
+/// assert_eq!(parse_clock_spec("23:59"), Some((23, 59)));
+/// assert_eq!(parse_clock_spec("24:00"), None);
+/// ```
 #[must_use]
 pub fn parse_clock_spec(spec: &str) -> Option<(u32, u32)> {
     let parts: Vec<&str> = spec.split(':').collect();
@@ -91,11 +143,29 @@ pub fn parse_clock_spec(spec: &str) -> Option<(u32, u32)> {
     Some((hours, minutes))
 }
 
-/// Checks whether a file needs rotation based on the given policy.
+/// Evaluates whether a file requires rotation under the given policy.
+///
+/// For size-based policies, rotation triggers when the current file size
+/// plus `next_message_bytes` exceeds the threshold. For time-based policies,
+/// rotation triggers when the file's last modification time exceeds the
+/// interval. For clock-based and weekday-based policies, rotation triggers
+/// when the current time matches the target and the file is sufficiently old.
+///
+/// # Arguments
+///
+/// * `path` - Path to the log file to check.
+/// * `policy` - The rotation policy to evaluate against.
+/// * `next_message_bytes` - Size in bytes of the message about to be written.
+///
+/// # Returns
+///
+/// * `Ok(RotationAction::None)` — no rotation needed.
+/// * `Ok(RotationAction::RotateTo(path))` — rotation needed; the file should
+///   be moved to the returned path.
 ///
 /// # Errors
 ///
-/// Returns an error if the file metadata cannot be read.
+/// Returns an error if file metadata cannot be read.
 ///
 /// # Examples
 ///
@@ -103,7 +173,6 @@ pub fn parse_clock_spec(spec: &str) -> Option<(u32, u32)> {
 /// use rotate::{RotationPolicy, check_rotation, RotationAction};
 /// use std::path::Path;
 ///
-/// // A non-existent file never needs rotation.
 /// let action = check_rotation(Path::new("/nonexistent"), &RotationPolicy::Never, 100);
 /// assert!(matches!(action, Ok(RotationAction::None)));
 /// ```
@@ -179,7 +248,21 @@ pub fn check_rotation(
     }
 }
 
-/// Performs the file rotation by renaming the current file.
+/// Performs a file rotation by renaming the current file.
+///
+/// The file at `path` is renamed to a timestamped variant via
+/// [`generate_rotated_path`]. If the file does not exist, no error is
+/// returned — only the would-be rotated path.
+///
+/// # Arguments
+///
+/// * `path` - The current log file to rotate.
+/// * `_mode` - The overwrite mode (currently unused; reserved for future
+///   truncation semantics).
+///
+/// # Returns
+///
+/// The path of the rotated file.
 ///
 /// # Errors
 ///
@@ -202,9 +285,19 @@ pub fn perform_rotation(path: &Path, _mode: OverwriteMode) -> LoglyResult<PathBu
     Ok(rotated)
 }
 
-/// Generates a unique rotated file path based on the current timestamp.
+/// Generates a unique rotated file path based on the current Unix timestamp.
 ///
-/// If the path already exists, a numeric suffix is appended.
+/// The rotated path has the format `{stem}.{ext}.{timestamp}`. If that path
+/// already exists, a numeric counter suffix is appended:
+/// `{stem}.{ext}.{timestamp}.{counter}`.
+///
+/// # Arguments
+///
+/// * `path` - The original file path to derive the rotated name from.
+///
+/// # Returns
+///
+/// A [`PathBuf`] containing the rotated file path.
 #[must_use]
 pub fn generate_rotated_path(path: &Path) -> PathBuf {
     let timestamp = chrono_timestamp();

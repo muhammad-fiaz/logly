@@ -104,15 +104,18 @@ class ElasticsearchSink:
 
     def write(self, message: str) -> None:
         """Index one log entry."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        msg = strip_ansi(message.rstrip("\n"))
         if self._use_client and self._client is not None:
             self._client.index(
                 index=self.index,
-                document={"message": message.rstrip("\n")},
+                document={"message": msg},
             )
             return
 
         # Fallback to raw HTTP
-        doc = json.dumps({"message": message.rstrip("\n")}).encode("utf-8")
+        doc = json.dumps({"message": msg}).encode("utf-8")
         url = f"{self.endpoint}/{self.index}/_doc"
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if self._auth:

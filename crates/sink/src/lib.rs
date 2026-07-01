@@ -1,7 +1,24 @@
 //! Sink trait and built-in sink implementations.
 //!
-//! Provides the core `Sink` trait, console sinks (stdout/stderr), file sinks,
-//! and a generic callback sink for custom destinations.
+//! Provides the core [`Sink`] trait, console sinks (stdout/stderr), file sinks,
+//! background-worker sinks, callback sinks, and custom writer sinks.
+//!
+//! # Sink Types
+//!
+//! - [`ConsoleSink`]: Writes to stdout or stderr
+//! - [`FileSink`]: Appends to a file with rotation and retention support
+//! - [`EnqueueSink`]: Wraps any sink with a background worker thread
+//! - [`CallbackSink`]: Invokes a closure for each record
+//! - [`CustomSink`]: Delegates to a [`CustomWriter`] trait object
+//!
+//! # Lifecycle
+//!
+//! 1. Records arrive via [`Sink::handle`]
+//! 2. The sink applies its filter; rejected records are silently dropped
+//! 3. The sink formats the record using its formatter
+//! 4. The formatted line is written to the destination
+//! 5. Buffers are flushed via [`Sink::flush`]
+//! 6. Resources are released via [`Sink::close`]
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -18,8 +35,23 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 /// Lifecycle and record handling contract for all sinks.
+///
+/// Every sink must implement at least [`handle`](Sink::handle). The default
+/// implementations of [`flush`](Sink::flush) and [`close`](Sink::close) are
+/// no-ops; override them if the sink buffers data or holds resources.
+///
+/// # Implementors
+///
+/// - [`ConsoleSink`]
+/// - [`FileSink`]
+/// - [`EnqueueSink`]
+/// - [`CallbackSink`]
+/// - [`CustomSink`]
 pub trait Sink: Send + Sync {
     /// Handles one accepted log record.
+    ///
+    /// The sink should apply its filter, format the record, and write the
+    /// output to its destination.
     ///
     /// # Errors
     ///
@@ -27,6 +59,8 @@ pub trait Sink: Send + Sync {
     fn handle(&self, record: &LogRecord) -> LoglyResult<()>;
 
     /// Flushes buffered data.
+    ///
+    /// Override this if the sink buffers writes (e.g., file or network sinks).
     ///
     /// # Errors
     ///
@@ -36,6 +70,9 @@ pub trait Sink: Send + Sync {
     }
 
     /// Closes the sink and releases resources.
+    ///
+    /// The default implementation calls [`flush`](Sink::flush). Override
+    /// this to perform additional cleanup (e.g., closing file handles).
     ///
     /// # Errors
     ///
@@ -57,7 +94,23 @@ pub enum Stream {
 /// Console sink for standard output or error.
 ///
 /// Renders records using the configured formatter and optionally applies
-/// ANSI colorization.
+/// ANSI colorization via [`color::paint`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use sink::{ConsoleSink, Stream};
+/// use format::TemplateFormatter;
+/// use filter::LevelFilter;
+/// use levels::LogLevel;
+///
+/// let sink = ConsoleSink::new(
+///     Stream::Stdout,
+///     Box::new(TemplateFormatter::new("{level} | {message}")),
+///     Box::new(LevelFilter::new(LogLevel::new("INFO", 20, None))),
+///     true,
+/// );
+/// ```
 pub struct ConsoleSink {
     stream: Stream,
     formatter: Box<dyn Formatter>,
@@ -67,6 +120,13 @@ pub struct ConsoleSink {
 
 impl ConsoleSink {
     /// Creates a console sink.
+    ///
+    /// # Arguments
+    ///
+    /// * `stream` - Target stream (stdout or stderr)
+    /// * `formatter` - Formatter for rendering records
+    /// * `filter` - Filter for accepting/rejecting records
+    /// * `colorize` - Whether to apply ANSI color codes
     #[must_use]
     pub fn new(
         stream: Stream,
@@ -99,6 +159,19 @@ impl Sink for ConsoleSink {
 }
 
 /// File sink that appends formatted records to a path.
+///
+/// Supports file rotation (by size, time, or schedule), retention policies,
+/// compression of rotated files, and lazy file opening (delay mode).
+///
+/// # Rotation
+///
+/// When rotation triggers, the current file is renamed and a new file is
+/// opened. The rotated file may be compressed based on the configured codec.
+///
+/// # Watch Mode
+///
+/// When `watch` is `true`, the sink detects if the log file has been deleted
+/// (e.g., by an external log rotation tool) and re-opens it automatically.
 pub struct FileSink {
     path: PathBuf,
     file: Mutex<Option<File>>,
@@ -119,9 +192,25 @@ pub struct FileSink {
 impl FileSink {
     /// Opens a file sink.
     ///
+    /// Creates the parent directory if it doesn't exist. When `delay` is `true`,
+    /// the file is not opened until the first record is written.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the log file
+    /// * `formatter` - Formatter for rendering records
+    /// * `filter` - Filter for accepting/rejecting records
+    /// * `append` - Whether to append to existing files
+    /// * `rotation` - Rotation policy
+    /// * `retention` - Retention policy for rotated files
+    /// * `compression` - Compression codec for rotated files
+    /// * `delay` - Defer file opening until first write
+    /// * `watch` - Re-open file if deleted externally
+    ///
     /// # Errors
     ///
-    /// Returns an error when the file cannot be opened.
+    /// Returns an error when the file cannot be opened or the directory
+    /// cannot be created.
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         path: impl AsRef<Path>,
@@ -247,6 +336,15 @@ impl Sink for FileSink {
 }
 
 /// Sink wrapper that processes logs on a background worker thread.
+///
+/// Wraps any [`Sink`] and dispatches records via a bounded channel. The
+/// worker thread processes records asynchronously, reducing latency for
+/// the calling thread.
+///
+/// # Backpressure
+///
+/// Uses drop-newest backpressure: when the queue is full, new records
+/// are dropped rather than blocking the caller.
 pub struct EnqueueSink {
     inner: Arc<dyn Sink>,
     worker: concurrency::BackgroundWorker<LogRecord>,
@@ -254,6 +352,9 @@ pub struct EnqueueSink {
 
 impl EnqueueSink {
     /// Wraps a sink in an enqueue background worker.
+    ///
+    /// Creates a background thread with a queue capacity of 1000 records.
+    /// Records that arrive when the queue is full are silently dropped.
     #[must_use]
     pub fn new(inner: Arc<dyn Sink>) -> Self {
         let inner_clone = Arc::clone(&inner);
@@ -287,6 +388,32 @@ impl Sink for EnqueueSink {
 }
 
 /// A generic callback sink that invokes a function for each record.
+///
+/// The callback receives the formatted string (after filtering). This is
+/// useful for integrating with external logging systems or custom output
+/// destinations.
+///
+/// # Examples
+///
+/// ```rust
+/// use sink::CallbackSink;
+/// use format::TemplateFormatter;
+/// use filter::LevelFilter;
+/// use levels::LogLevel;
+/// use std::sync::Arc;
+/// use std::sync::atomic::{AtomicUsize, Ordering};
+///
+/// let counter = Arc::new(AtomicUsize::new(0));
+/// let counter_clone = Arc::clone(&counter);
+///
+/// let sink = CallbackSink::new(
+///     Box::new(move |_line: &str| {
+///         counter_clone.fetch_add(1, Ordering::SeqCst);
+///     }),
+///     Box::new(TemplateFormatter::new("{level} | {message}")),
+///     Box::new(LevelFilter::new(LogLevel::new("INFO", 20, None))),
+/// );
+/// ```
 pub struct CallbackSink {
     callback: Box<dyn Fn(&str) + Send + Sync>,
     formatter: Box<dyn Formatter>,
@@ -295,6 +422,12 @@ pub struct CallbackSink {
 
 impl CallbackSink {
     /// Creates a callback sink.
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - Function called with each formatted log line
+    /// * `formatter` - Formatter for rendering records
+    /// * `filter` - Filter for accepting/rejecting records
     #[must_use]
     pub fn new(
         callback: Box<dyn Fn(&str) + Send + Sync>,
@@ -320,7 +453,11 @@ impl Sink for CallbackSink {
     }
 }
 
-/// A custom sink that wraps a Rust trait object implementing `write()`.
+/// A custom sink that wraps a Rust trait object implementing [`CustomWriter`].
+///
+/// Delegates formatting and filtering to the standard pipeline, then passes
+/// the formatted line to the writer. This is the primary extension point
+/// for adding new output destinations.
 pub struct CustomSink {
     writer: Arc<dyn CustomWriter>,
     formatter: Box<dyn Formatter>,
@@ -328,6 +465,14 @@ pub struct CustomSink {
 }
 
 /// Trait for custom sink writers.
+///
+/// Implement this trait to create a custom output destination. The
+/// [`CustomSink`] handles filtering and formatting; the writer only
+/// needs to handle the final output.
+///
+/// # Implementors
+///
+/// Any struct that implements `write_line` and optionally `flush`.
 pub trait CustomWriter: Send + Sync {
     /// Writes a formatted log line.
     ///
@@ -346,6 +491,12 @@ pub trait CustomWriter: Send + Sync {
 
 impl CustomSink {
     /// Creates a custom sink.
+    ///
+    /// # Arguments
+    ///
+    /// * `writer` - The custom writer implementation
+    /// * `formatter` - Formatter for rendering records
+    /// * `filter` - Filter for accepting/rejecting records
     #[must_use]
     pub fn new(
         writer: Arc<dyn CustomWriter>,

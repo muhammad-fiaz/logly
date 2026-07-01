@@ -47,7 +47,7 @@ A Rust-powered, high-performance logging library for Python with structured sink
 | **Context binding** | Attach persistent key-value pairs to logs |
 | **Exception catching** | `catch()` decorator and context manager |
 | **Background workers** | Non-blocking writes with `enqueue=True` |
-| **30+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more |
+| **40+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more |
 
 For full details, see the [documentation](https://muhammad-fiaz.github.io/logly/).
 
@@ -96,7 +96,7 @@ logger.complete()
 ```
 
 > [!TIP]
-> Logly includes every feature you'd expect from a mature logging library like Loguru, plus additional features like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations -- all without compromising speed. The entire core engine is written in Rust with zero unsafe code.
+> Logly is designed for production Python services that need structured records, multiple sinks, rotation, compression, background dispatch, color themes, source context display, and framework integrations without giving up native performance.
 
 ---
 
@@ -154,12 +154,39 @@ logger.add("stdout", level="INFO", colorize=True)
 logger.info("All three sinks receive this")
 ```
 
+### Independent Loggers
+
+Use `Logger()` when a subsystem needs a separate set of sinks that does not
+write to the global logger.
+
+```python
+from logly import Logger
+
+api_logger = Logger()
+worker_logger = Logger()
+
+api_logger.add("api.log", level="INFO")
+worker_logger.add("worker.log", level="DEBUG")
+
+api_logger.info("request accepted")
+worker_logger.debug("job claimed")
+```
+
 ### Lazy Evaluation
 
 ```python
 from logly import logger
 
 logger.opt(lazy=True).debug("Result: {}", lambda: expensive_computation())
+```
+
+### Custom Levels
+
+```python
+from logly import logger, register_custom_level
+
+register_custom_level("AUDIT", 35, "magenta")
+logger.audit("Security event detected")
 ```
 
 For more examples, see the [documentation](https://muhammad-fiaz.github.io/logly/).
@@ -249,9 +276,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## Acknowledgment
+## Acknowledgements
 
-The API design of this project is inspired by [Loguru](https://github.com/Delgan/loguru) by Delgan. We are grateful for the design inspiration.
+Logly's Python API syntax and ergonomics are inspired by [Loguru](https://github.com/Delgan/loguru). The underlying engine is an independent, from-scratch Rust implementation.
 
 ---
 

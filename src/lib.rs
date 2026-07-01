@@ -218,6 +218,7 @@ struct PyObjectSink {
     sink: Py<PyAny>,
     formatter: Box<dyn format::Formatter>,
     filter: Box<dyn filter::Filter>,
+    colorize: bool,
 }
 
 impl sink::Sink for PyObjectSink {
@@ -225,10 +226,13 @@ impl sink::Sink for PyObjectSink {
         if !self.filter.accept(record) {
             return Ok(());
         }
-        let mut line = self.formatter.format(record)?;
-        if !line.ends_with('\n') {
-            line.push('\n');
-        }
+        let formatted = self.formatter.format(record)?;
+        let line = color::paint(&record.level, &formatted, self.colorize);
+        let line = if line.ends_with('\n') {
+            line
+        } else {
+            format!("{line}\n")
+        };
         Python::attach(|py| {
             let py_sink = self.sink.bind(py);
             if py_sink.is_callable() {
@@ -746,6 +750,7 @@ impl PyLogger {
                 sink,
                 formatter,
                 filter: filter_chain,
+                colorize: colorize.unwrap_or(false),
             })
         };
 
@@ -1297,6 +1302,92 @@ fn render_message(
     })
 }
 
+/// Strips all Rich-style `<tag>` and `</tag>` markup from a string.
+///
+/// This removes HTML-like tags such as `<bold>`, `<red>`, `</green>`, etc.,
+/// returning plain text without ANSI escape codes. Useful when you need
+/// clean text for file output or external services.
+///
+/// # Arguments
+///
+/// * `text` - String that may contain Rich-style markup tags.
+///
+/// # Returns
+///
+/// The string with all `<tag>` and `</tag>` sequences removed.
+///
+/// # Examples
+///
+/// ```python
+/// from logly import strip_rich_tags
+///
+/// strip_rich_tags("<bold>Hello</bold> <red>World</red>")
+/// # Returns: "Hello World"
+/// ```
+#[pyfunction]
+fn strip_rich_tags(text: &str) -> String {
+    color::strip_rich_tags(text)
+}
+
+/// Apply theme-aware coloring that adapts to the current color scheme.
+///
+/// Maps a logical level name (e.g. `"success"`, `"error"`) to the
+/// appropriate ANSI color based on the built-in theme.
+///
+/// # Arguments
+///
+/// * `text` - The text to colorize.
+/// * `level_name` - Logical level name (e.g. `"success"`, `"error"`, `"warning"`).
+/// * `colorize` - Whether to emit ANSI codes. If `False`, returns text unchanged.
+///
+/// # Returns
+///
+/// The text wrapped in ANSI color codes, or plain text if `colorize=False`.
+///
+/// # Examples
+///
+/// ```python
+/// from logly import paint_themed
+///
+/// paint_themed("Done!", "success", colorize=True)
+/// # Returns: "\033[32mDone!\033[0m" (green text)
+/// ```
+#[pyfunction]
+#[pyo3(signature = (text, level_name, colorize=true))]
+fn paint_themed(text: &str, level_name: &str, colorize: bool) -> String {
+    let level = levels::LogLevel::new(level_name, 0, None);
+    color::paint_themed(&level, text, colorize, &color::Theme::defaults())
+}
+
+/// Colorize text with a named ANSI color.
+///
+/// Wraps the given text in ANSI escape codes for the specified color.
+/// If `colorize` is `False`, returns the text unchanged.
+///
+/// # Arguments
+///
+/// * `text` - The text to colorize.
+/// * `color` - ANSI color name (e.g. `"red"`, `"bold_blue"`, `"green"`).
+/// * `colorize` - Whether to emit ANSI codes.
+///
+/// # Returns
+///
+/// The text wrapped in ANSI color codes, or plain text if `colorize=False`.
+///
+/// # Examples
+///
+/// ```python
+/// from logly import colorize
+///
+/// colorize("Error!", "red", colorize=True)
+/// # Returns: "\033[31mError!\033[0m"
+/// ```
+#[pyfunction]
+#[pyo3(signature = (text, color, colorize=true))]
+fn colorize(text: &str, color: &str, colorize: bool) -> String {
+    color::colorize(text, color, colorize)
+}
+
 #[pymodule]
 fn _logly(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyLogger>()?;
@@ -1314,6 +1405,9 @@ fn _logly(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(resolve_level_name, module)?)?;
     module.add_function(wrap_pyfunction!(format_exception_text, module)?)?;
     module.add_function(wrap_pyfunction!(render_message, module)?)?;
+    module.add_function(wrap_pyfunction!(strip_rich_tags, module)?)?;
+    module.add_function(wrap_pyfunction!(paint_themed, module)?)?;
+    module.add_function(wrap_pyfunction!(colorize, module)?)?;
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

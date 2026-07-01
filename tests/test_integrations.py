@@ -4,6 +4,7 @@ import copy
 import logging
 import sys
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -90,7 +91,7 @@ class TestOpenTelemetryIntegration:
         from logly.integrations.opentelemetry import OTelLogSink
 
         saved = sys.modules.get("opentelemetry.sdk._logs")
-        sys.modules["opentelemetry.sdk._logs"] = None  # type: ignore[assignment]
+        cast(dict[str, Any], sys.modules)["opentelemetry.sdk._logs"] = None
         try:
             with pytest.raises(ImportError):
                 OTelLogSink(service_name="test")
@@ -239,7 +240,7 @@ class TestFormatTemplate:
         log = Logger()
         messages: list[str] = []
 
-        def custom_fmt(record: dict) -> str:
+        def custom_fmt(record: dict[str, object]) -> str:
             return f"CALLABLE:{record['message']}"
 
         sink_id = log.add(lambda m: messages.append(m), level="DEBUG", format=custom_fmt)
@@ -375,7 +376,7 @@ class TestPatchAndClone:
         log = Logger()
         messages: list[str] = []
 
-        def add_tag(record: dict) -> None:
+        def add_tag(record: dict[str, Any]) -> None:
             record["extra"]["tagged"] = "yes"
 
         patched = log.patch(add_tag)

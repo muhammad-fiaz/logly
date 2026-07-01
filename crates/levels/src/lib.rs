@@ -1,4 +1,23 @@
 //! Level definitions and the custom level registry.
+//!
+//! Provides the [`LogLevel`] type with built-in levels (TRACE through FATAL),
+//! a thread-safe global registry, and functions for registering custom levels
+//! and resolving levels from strings or numeric priorities.
+//!
+//! # Built-in Levels
+//!
+//! | Name | Priority | Default Color |
+//! |---|---|---|
+//! | `TRACE` | 5 | dim |
+//! | `DEBUG` | 10 | blue |
+//! | `INFO` | 20 | (none) |
+//! | `NOTICE` | 25 | cyan |
+//! | `SUCCESS` | 30 | green |
+//! | `WARNING` | 40 | yellow |
+//! | `ERROR` | 50 | red |
+//! | `FAIL` | 55 | magenta |
+//! | `CRITICAL` | 60 | bold_red |
+//! | `FATAL` | 70 | bold_red |
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -12,6 +31,21 @@ use std::str::FromStr;
 use std::sync::{OnceLock, RwLock};
 
 /// A logging level with a stable name and numeric priority.
+///
+/// Levels are ordered by priority: lower values are less severe. The level
+/// name is always stored in uppercase. Levels implement [`Ord`] by priority,
+/// so `TRACE` (5) < `INFO` (20) < `ERROR` (50).
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::LogLevel;
+///
+/// let level = LogLevel::new("warning", 40, Some("yellow".to_owned()));
+/// assert_eq!(level.name(), "WARNING");
+/// assert_eq!(level.priority(), 40);
+/// assert_eq!(level.color(), Some("yellow"));
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LogLevel {
     name: String,
@@ -22,6 +56,10 @@ pub struct LogLevel {
 
 impl LogLevel {
     /// Creates a level value.
+    ///
+    /// The name is normalized to uppercase. The `color` parameter specifies
+    /// a default ANSI color name (e.g., `"red"`, `"bold_blue"`) or `None`
+    /// for no default color.
     #[must_use]
     pub fn new(name: impl Into<String>, priority: u16, color: Option<String>) -> Self {
         Self {
@@ -33,6 +71,9 @@ impl LogLevel {
     }
 
     /// Creates a level value with an icon.
+    ///
+    /// The icon is an optional string (e.g., an emoji or glyph) that can be
+    /// displayed alongside the level name in formatted output.
     #[must_use]
     pub fn with_icon(
         name: impl Into<String>,
@@ -49,48 +90,67 @@ impl LogLevel {
     }
 
     /// Returns the level name.
+    ///
+    /// The name is always uppercase (e.g., `"INFO"`, `"ERROR"`).
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
     /// Returns the numeric severity priority.
+    ///
+    /// Lower values indicate less severe levels. Built-in levels range from
+    /// 5 (TRACE) to 70 (FATAL).
     #[must_use]
     pub const fn priority(&self) -> u16 {
         self.priority
     }
 
     /// Returns the optional default ANSI color name.
+    ///
+    /// This is used by the color module to apply default coloring when no
+    /// theme override is present.
     #[must_use]
     pub fn color(&self) -> Option<&str> {
         self.color.as_deref()
     }
 
     /// Returns the optional icon string.
+    ///
+    /// Icons are typically emoji or Unicode glyphs used for visual distinction
+    /// in formatted output.
     #[must_use]
     pub fn icon(&self) -> Option<&str> {
         self.icon.as_deref()
     }
 }
 
+/// Displays the level name (e.g., `"INFO"`, `"ERROR"`).
 impl Display for LogLevel {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         formatter.write_str(&self.name)
     }
 }
 
+/// Compares two levels by priority. Always returns `Some`.
 impl PartialOrd for LogLevel {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
+/// Orders two levels by priority (lower = less severe).
 impl Ord for LogLevel {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.priority.cmp(&other.priority)
     }
 }
 
+/// Parses a level name or numeric priority string into a `LogLevel`.
+///
+/// Supports both named levels (e.g., `"INFO"`, `"error"`) and numeric
+/// strings (e.g., `"20"`, `"50"`). Numeric strings that don't match an
+/// existing level will register a new one.
 impl FromStr for LogLevel {
     type Err = LoglyError;
 
@@ -127,18 +187,35 @@ fn default_levels() -> HashMap<String, LogLevel> {
 
 /// Registers or replaces a custom level.
 ///
+/// If a level with the same name already exists, it is replaced. The name
+/// is normalized to uppercase.
+///
 /// # Errors
 ///
-/// Returns an error when the level name is empty or the registry lock is poisoned.
+/// Returns [`LoglyError::InvalidLevel`] when the level name is empty
+/// or the registry lock is poisoned.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::register_level;
+///
+/// let level = register_level("AUDIT", 35, Some("cyan".to_owned())).unwrap();
+/// assert_eq!(level.name(), "AUDIT");
+/// assert_eq!(level.priority(), 35);
+/// ```
 pub fn register_level(name: &str, priority: u16, color: Option<String>) -> LoglyResult<LogLevel> {
     register_level_with_icon(name, priority, color, None)
 }
 
 /// Registers or replaces a custom level with an icon.
 ///
+/// Like [`register_level`], but also sets an optional icon string for the level.
+///
 /// # Errors
 ///
-/// Returns an error when the level name is empty or the registry lock is poisoned.
+/// Returns [`LoglyError::InvalidLevel`] when the level name is empty
+/// or the registry lock is poisoned.
 pub fn register_level_with_icon(
     name: &str,
     priority: u16,
@@ -160,9 +237,23 @@ pub fn register_level_with_icon(
 
 /// Looks up a level by name.
 ///
+/// The name lookup is case-insensitive. Returns the registered level or an error
+/// if no level with that name exists.
+///
 /// # Errors
 ///
-/// Returns an error when the level is unknown.
+/// Returns [`LoglyError::InvalidLevel`] when the level is unknown.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::level;
+///
+/// let info = level("INFO").unwrap();
+/// assert_eq!(info.priority(), 20);
+///
+/// assert!(level("NONEXISTENT").is_err());
+/// ```
 pub fn level(name: &str) -> LoglyResult<LogLevel> {
     let guard = registry()
         .read()
@@ -175,9 +266,12 @@ pub fn level(name: &str) -> LoglyResult<LogLevel> {
 
 /// Returns all currently registered levels sorted by priority.
 ///
+/// Includes both built-in levels and any custom levels registered via
+/// [`register_level`] or [`register_level_with_icon`].
+///
 /// # Errors
 ///
-/// Returns an error when the level registry lock is poisoned.
+/// Returns [`LoglyError::InvalidLevel`] when the level registry lock is poisoned.
 pub fn levels() -> LoglyResult<Vec<LogLevel>> {
     let mut values = registry()
         .read()
@@ -191,13 +285,30 @@ pub fn levels() -> LoglyResult<Vec<LogLevel>> {
 
 /// Resolves a level from a name string or numeric priority.
 ///
-/// If `value` is a valid integer, returns the level with that priority.
-/// If the integer doesn't match any registered level, registers a new one.
-/// Otherwise looks up by name.
+/// Resolution strategy:
+/// 1. If `value` is a valid integer, look up the level with that priority.
+/// 2. If no level matches that priority, register a new level named `LEVEL_{num}`.
+/// 3. Otherwise, look up by name (case-insensitive).
 ///
 /// # Errors
 ///
-/// Returns an error when the registry lock is poisoned.
+/// Returns [`LoglyError::InvalidLevel`] when the registry lock is poisoned
+/// or the name is unknown.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::resolve_level;
+///
+/// // Numeric priority matches existing level
+/// let info = resolve_level("20").unwrap();
+/// assert_eq!(info.name(), "INFO");
+///
+/// // Unknown numeric priority registers a new level
+/// let custom = resolve_level("99").unwrap();
+/// assert_eq!(custom.priority(), 99);
+/// assert_eq!(custom.name(), "LEVEL_99");
+/// ```
 pub fn resolve_level(value: &str) -> LoglyResult<LogLevel> {
     if let Ok(num) = value.parse::<u16>() {
         let all = levels()?;
@@ -215,6 +326,15 @@ pub fn resolve_level(value: &str) -> LoglyResult<LogLevel> {
 /// Returns `None` if the exception is `None` or `false`.
 /// Returns `"exception=True"` if the exception is `true`.
 /// Otherwise returns `"TypeName: value"`.
+///
+/// # Examples
+///
+/// ```rust
+/// use levels::format_exception_text;
+///
+/// assert_eq!(format_exception_text(None), None);
+/// assert_eq!(format_exception_text(Some("ValueError: bad")), Some("ValueError: bad".to_owned()));
+/// ```
 #[must_use]
 pub fn format_exception_text(exception: Option<&str>) -> Option<String> {
     exception.map(str::to_owned)

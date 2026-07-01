@@ -77,9 +77,11 @@ class LokiSink:
 
     def write(self, message: str) -> None:
         """Push one log entry to Loki."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         ts = str(int(time.time() * 1_000_000_000))
         stream: dict[str, Any] = {"stream": self.labels}
-        stream["values"] = [[ts, message.rstrip("\n")]]
+        stream["values"] = [[ts, strip_ansi(message.rstrip("\n"))]]
         payload = json.dumps({"streams": [stream]}).encode("utf-8")
 
         headers: dict[str, str] = {

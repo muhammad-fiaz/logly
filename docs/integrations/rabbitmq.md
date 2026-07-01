@@ -9,7 +9,40 @@ description: Publish log entries to RabbitMQ queues.
 
 ## Installation
 
-No additional dependencies required. This integration uses Python's standard library.
+This integration requires the `pika` package.
+
+::: code-group
+
+```bash [uv]
+uv add logly[rabbitmq]
+```
+
+```bash [pip]
+pip install "logly[rabbitmq]"
+```
+
+```bash [uv (without extras)]
+uv add pika
+```
+
+```bash [pip (without extras)]
+pip install pika
+```
+
+:::
+
+::: warning Missing Dependency
+If `pika` is not installed, you'll see:
+
+```
+pika is required for Logly RabbitMQ integration.
+Install with one of:
+  uv add logly[rabbitmq]       # recommended
+  pip install logly[rabbitmq]
+  uv add pika
+  pip install pika
+```
+:::
 
 ## Usage
 

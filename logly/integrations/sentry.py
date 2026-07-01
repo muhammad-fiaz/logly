@@ -122,11 +122,13 @@ class SentrySink:
     def write(self, message: str) -> None:
         """Capture one log message as a Sentry event."""
         try:
-            import sentry_sdk
+            import sentry_sdk  # noqa: PLC0415
         except ImportError:
             return
 
-        msg = message.rstrip("\n")
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        msg = strip_ansi(message.rstrip("\n"))
         detected_level: _SentryLevel = "info"
         upper = msg.upper()
         for logly_name, sentry_name in _SENTRY_LEVEL_MAP.items():

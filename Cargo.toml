@@ -74,6 +74,7 @@ name = "_logly"
 crate-type = ["cdylib"]
 
 [dependencies]
+color.workspace = true
 compress.workspace = true
 config.workspace = true
 context.workspace = true

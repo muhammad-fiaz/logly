@@ -133,9 +133,9 @@ logger.add("app.log", format="{time:YYYY-MM-DDTHH:mm:ss} | {message}")
 
 ### Time Format Tokens
 
-Logly supports both Loguru-style and strftime tokens:
+Logly supports both brace-style datetime tokens and strftime tokens:
 
-| Loguru Token | strftime Equivalent | Example |
+| Token | strftime Equivalent | Example |
 |-------------|-------------------|---------|
 | `YYYY` | `%Y` | 2026 |
 | `YY` | `%y` | 26 |

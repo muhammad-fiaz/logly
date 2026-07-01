@@ -1,8 +1,42 @@
 //! Structured context primitives for `bind()`, `contextualize()`, and `patch()`.
 //!
-//! Provides thread-local and async-context-safe storage for bound key-value
-//! fields, scoped context, and record-mutation hooks. Coordinates with the
-//! `PyO3` layer on Python's `contextvars` semantics.
+//! This module provides three layers of context that are merged into every
+//! log record:
+//!
+//! 1. **Bound context** ([`BoundContext`]) — Key-value pairs permanently
+//!    attached to a logger via `bind()`. Immutable after creation.
+//! 2. **Scoped context** ([`ScopedContext`]) — Temporary key-value pairs
+//!    active for the current execution scope (e.g., a request handler).
+//!    Works across async boundaries.
+//! 3. **Patcher chain** ([`PatcherChain`]) — Mutation hooks that modify
+//!    the record's extra fields just before dispatch.
+//!
+//! # Merge Priority
+//!
+//! When a log record is emitted, contexts are merged in this order:
+//!
+//! ```text
+//! bound → scoped → patchers
+//! ```
+//!
+//! Later sources overwrite earlier ones for duplicate keys.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use context::{BoundContext, ScopedContext, PatcherChain, merge_contexts};
+//!
+//! let bound = BoundContext::new()
+//!     .with("service", "api")
+//!     .with("version", "1.0");
+//! let scoped = ScopedContext::new();
+//! scoped.set("request_id", "abc-123");
+//! let patchers = PatcherChain::new();
+//!
+//! let extra = merge_contexts(&bound, &scoped, &patchers);
+//! assert_eq!(extra.get("service"), Some(&"api".to_owned()));
+//! assert_eq!(extra.get("request_id"), Some(&"abc-123".to_owned()));
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -12,29 +46,49 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-/// Bound key-value fields for a logger view.
+/// Immutable key-value pairs permanently attached to a logger.
 ///
-/// Created by `bind()` and merged into every record the logger emits.
+/// Created via `bind()` on a logger view. These fields are merged into
+/// every log record the logger emits. Use the builder pattern to
+/// construct a `BoundContext`.
+///
+/// # Examples
+///
+/// ```rust
+/// use context::BoundContext;
+///
+/// let ctx = BoundContext::new()
+///     .with("service", "api")
+///     .with("version", "2.1");
+/// assert_eq!(ctx.len(), 2);
+/// ```
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct BoundContext {
     values: BTreeMap<String, String>,
 }
 
 impl BoundContext {
-    /// Creates an empty context.
+    /// Creates an empty bound context.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Adds or replaces a value.
+    /// Adds or replaces a single key-value pair.
+    ///
+    /// If the key already exists, the value is overwritten.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` — The field name.
+    /// * `value` — The field value.
     #[must_use]
     pub fn with(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.values.insert(key.into(), value.into());
         self
     }
 
-    /// Adds or replaces multiple values from an iterator.
+    /// Adds or replaces multiple key-value pairs from an iterator.
     #[must_use]
     pub fn with_many<I, K, V>(mut self, iter: I) -> Self
     where
@@ -48,25 +102,29 @@ impl BoundContext {
         self
     }
 
-    /// Returns the bound values.
+    /// Returns a reference to the underlying key-value map.
     #[must_use]
     pub fn values(&self) -> &BTreeMap<String, String> {
         &self.values
     }
 
-    /// Returns the number of bound values.
+    /// Returns the number of key-value pairs in the context.
     #[must_use]
     pub fn len(&self) -> usize {
         self.values.len()
     }
 
-    /// Returns `true` if no values are bound.
+    /// Returns `true` if the context contains no key-value pairs.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
     }
 
-    /// Merges another context into this one, overwriting duplicates.
+    /// Merges another context into this one, overwriting duplicate keys.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` — The context whose values to merge in.
     #[must_use]
     pub fn merge(mut self, other: &BoundContext) -> Self {
         for (key, value) in &other.values {
@@ -76,10 +134,13 @@ impl BoundContext {
     }
 }
 
-/// Scoped context that is active for the current execution scope.
+/// Thread-safe, temporary key-value storage for the current execution scope.
 ///
-/// Used by `contextualize()` to temporarily bind values that apply to all
-/// log calls within the scope, working correctly across async boundaries.
+/// Created via `contextualize()`, a `ScopedContext` temporarily binds values
+/// that apply to all log calls within a scope. It is safe to use across
+/// async boundaries and from multiple threads.
+///
+/// Scoped values override bound values with the same key.
 #[derive(Clone, Debug, Default)]
 pub struct ScopedContext {
     values: Arc<Mutex<BTreeMap<String, String>>>,
@@ -92,14 +153,25 @@ impl ScopedContext {
         Self::default()
     }
 
-    /// Sets a value in the scoped context.
+    /// Sets a single key-value pair in the scoped context.
+    ///
+    /// If the key already exists, the value is overwritten.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` — The field name.
+    /// * `value` — The field value.
     pub fn set(&self, key: impl Into<String>, value: impl Into<String>) {
         if let Ok(mut values) = self.values.lock() {
             values.insert(key.into(), value.into());
         }
     }
 
-    /// Sets multiple values in the scoped context.
+    /// Sets multiple key-value pairs in the scoped context.
+    ///
+    /// # Arguments
+    ///
+    /// * `iter` — An iterator of `(key, value)` pairs.
     pub fn set_many<I, K, V>(&self, iter: I)
     where
         I: IntoIterator<Item = (K, V)>,
@@ -113,7 +185,10 @@ impl ScopedContext {
         }
     }
 
-    /// Returns a snapshot of the current scoped values.
+    /// Returns a snapshot of all current scoped values.
+    ///
+    /// The returned map is a clone; subsequent changes to the scoped context
+    /// do not affect it.
     #[must_use]
     pub fn snapshot(&self) -> BTreeMap<String, String> {
         self.values
@@ -121,7 +196,7 @@ impl ScopedContext {
             .map_or_else(|_| BTreeMap::new(), |v| v.clone())
     }
 
-    /// Clears all values from the scoped context.
+    /// Removes all key-value pairs from the scoped context.
     pub fn clear(&self) {
         if let Ok(mut values) = self.values.lock() {
             values.clear();
@@ -129,10 +204,33 @@ impl ScopedContext {
     }
 }
 
-/// A record-mutation hook that can modify records before dispatch.
+/// A record-mutation hook that modifies extra fields before dispatch.
+///
+/// Patcher functions receive a mutable reference to the record's `extra`
+/// map and can add, remove, or overwrite fields. Used with
+/// [`PatcherChain`].
 pub type Patcher = Box<dyn Fn(&mut BTreeMap<String, String>) + Send + Sync>;
 
-/// A collection of patchers that are applied in order.
+/// An ordered collection of [`Patcher`] hooks applied to log records.
+///
+/// Patchers are invoked in registration order when [`PatcherChain::apply`]
+/// is called. The chain is thread-safe and can be shared across threads.
+///
+/// # Examples
+///
+/// ```rust
+/// use context::PatcherChain;
+/// use std::collections::BTreeMap;
+///
+/// let chain = PatcherChain::new();
+/// chain.add(|extra| {
+///     extra.insert("host".to_owned(), "web-01".to_owned());
+/// });
+///
+/// let mut extra = BTreeMap::new();
+/// chain.apply(&mut extra);
+/// assert_eq!(extra.get("host"), Some(&"web-01".to_owned()));
+/// ```
 pub struct PatcherChain {
     patchers: Arc<Mutex<Vec<Patcher>>>,
 }
@@ -167,7 +265,14 @@ impl PatcherChain {
         }
     }
 
-    /// Adds a patcher to the chain.
+    /// Registers a new patcher in the chain.
+    ///
+    /// The patcher is appended to the end and will be called last during
+    /// [`PatcherChain::apply`].
+    ///
+    /// # Arguments
+    ///
+    /// * `patcher` — A closure that mutates the extra map.
     pub fn add<F>(&self, patcher: F)
     where
         F: Fn(&mut BTreeMap<String, String>) + Send + Sync + 'static,
@@ -177,7 +282,14 @@ impl PatcherChain {
         }
     }
 
-    /// Applies all patchers to the given extra map.
+    /// Applies all registered patchers to the given extra map.
+    ///
+    /// Patchers are invoked in registration order. Each patcher receives
+    /// a mutable reference to `extra` and can modify it freely.
+    ///
+    /// # Arguments
+    ///
+    /// * `extra` — The mutable extra map to patch.
     pub fn apply(&self, extra: &mut BTreeMap<String, String>) {
         if let Ok(patchers) = self.patchers.lock() {
             for patcher in patchers.iter() {
@@ -186,23 +298,36 @@ impl PatcherChain {
         }
     }
 
-    /// Returns the number of patchers in the chain.
+    /// Returns the number of registered patchers.
     #[must_use]
     pub fn len(&self) -> usize {
         self.patchers.lock().map_or(0, |p| p.len())
     }
 
-    /// Returns `true` if no patchers are registered.
+    /// Returns `true` if the chain contains no patchers.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
-/// Merges bound context, scoped context, and patcher results into a single
-/// extra map for a log record.
+/// Merges bound, scoped, and patcher contexts into a single extra map.
 ///
-/// Priority: scoped > bound. Patchers are applied last.
+/// The merge order is:
+///
+/// 1. Bound context values are inserted first.
+/// 2. Scoped context values overwrite bound values with the same key.
+/// 3. Patchers are applied last, potentially modifying any field.
+///
+/// # Arguments
+///
+/// * `bound` — Permanent key-value pairs from `bind()`.
+/// * `scoped` — Temporary key-value pairs from `contextualize()`.
+/// * `patchers` — Mutation hooks applied last.
+///
+/// # Returns
+///
+/// A merged `BTreeMap<String, String>` ready for the log record.
 #[must_use]
 pub fn merge_contexts(
     bound: &BoundContext,

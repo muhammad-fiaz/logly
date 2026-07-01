@@ -116,10 +116,6 @@ uv run maturin develop
 | **Type-safe config** | ✅ | ❌ |
 | **Zero unsafe Rust** | ✅ | N/A |
 
-::: info Acknowledgment
-The API design of this project is inspired by [Loguru](https://github.com/Delgan/loguru) by Delgan. Logly includes every feature you would expect from a mature logging library, plus additional capabilities like Rust-powered performance, network sinks (HTTP, TCP, UDP, Syslog), scheduled rotation, ANSI color themes, source context display, and 30+ framework integrations. We are grateful for the design inspiration.
-:::
-
 ::: info Active Development
 Logly is currently under active development and stabilizing. Due to this, performance benchmarks are not yet available. If you encounter any issues, please feel free to [report them](https://github.com/muhammad-fiaz/logly/issues/new).
 :::

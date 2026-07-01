@@ -1,3 +1,8 @@
+---
+title: PropagateHandler
+description: Bridge Logly messages back to Python's standard logging module.
+---
+
 # PropagateHandler
 
 The `PropagateHandler` bridges Logly messages back to Python's standard `logging` module.

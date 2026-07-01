@@ -5,28 +5,20 @@ description: Send log entries to Slack webhooks.
 
 # Slack
 
-`SlackHandler` sends log entries to a Slack channel via incoming webhook. Uses the Python standard library (`urllib.request`) - no extra dependencies required.
+`SlackHandler` sends log entries to a Slack channel via incoming webhook. No extra dependencies required.
 
 ## Installation
 
-This integration requires the `slack-sdk` package.
+This integration uses Python's standard library (`urllib.request`). No additional packages needed.
 
 ::: code-group
 
 ```bash [uv]
-uv add logly[slack]
+uv add logly
 ```
 
 ```bash [pip]
-pip install "logly[slack]"
-```
-
-```bash [uv (without extras)]
-uv add slack-sdk
-```
-
-```bash [pip (without extras)]
-pip install slack-sdk
+pip install logly
 ```
 
 :::

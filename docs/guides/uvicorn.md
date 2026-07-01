@@ -1,3 +1,8 @@
+---
+title: Uvicorn Integration
+description: Configure structured logging for Uvicorn ASGI servers with Logly.
+---
+
 # Uvicorn Integration
 
 Logly integrates with Uvicorn to provide structured logging for ASGI applications.

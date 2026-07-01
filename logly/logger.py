@@ -770,17 +770,18 @@ class Logger:
                     yield result
 
     def start(self, *args: object, **kwargs: object) -> None:
-        """Start a background task (placeholder for schedule crate integration).
+        """Start logger-managed background processing hooks.
 
-        This method is reserved for future use with the schedule crate.
+        Queued sinks start their workers when the sink is registered. This
+        method accepts application lifecycle hooks for compatibility with
+        service startup code and intentionally performs no work when no
+        deferred hooks are configured.
         """
         _ = (args, kwargs)
 
     def stop(self) -> None:
-        """Stop all background tasks (placeholder for schedule crate integration).
-
-        This method is reserved for future use with the schedule crate.
-        """
+        """Flush sinks and stop logger-managed background workers."""
+        self.complete()
 
     def log(
         self, level: str | int, message: object, *args: object, **kwargs: object
@@ -1227,7 +1228,7 @@ class _CatchContext:
         def wrapper(*args: object, **inner_kwargs: object) -> object:
             with self:
                 return func(*args, **inner_kwargs)
-            return self._default
+            return self._default  # type: ignore[unreachable]
 
         return wrapper
 

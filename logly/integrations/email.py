@@ -88,11 +88,13 @@ class EmailHandler:
         if not self.from_addr or not self.to_addrs:
             return
 
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         msg = MIMEMultipart()
         msg["From"] = self.from_addr
         msg["To"] = ", ".join(self.to_addrs)
         msg["Subject"] = f"{self.subject_prefix} Log Message"
-        msg.attach(MIMEText(message.rstrip("\n"), "plain"))
+        msg.attach(MIMEText(strip_ansi(message.rstrip("\n")), "plain"))
 
         try:
             server: smtplib.SMTP | smtplib.SMTP_SSL

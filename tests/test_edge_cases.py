@@ -5,6 +5,7 @@ import copy
 import logging
 import threading
 from io import StringIO
+from typing import Any
 
 import pytest
 
@@ -326,7 +327,7 @@ class TestPatching:
         log = Logger()
         messages: list[str] = []
 
-        def add_field(record: dict) -> None:
+        def add_field(record: dict[str, Any]) -> None:
             record["extra"]["patched"] = "yes"
 
         patched = log.patch(add_field)
@@ -342,10 +343,10 @@ class TestPatching:
         log = Logger()
         messages: list[str] = []
 
-        def add_a(record: dict) -> None:
+        def add_a(record: dict[str, Any]) -> None:
             record["extra"]["a"] = "1"
 
-        def add_b(record: dict) -> None:
+        def add_b(record: dict[str, Any]) -> None:
             record["extra"]["b"] = "2"
 
         patched = log.patch(add_a).patch(add_b)
@@ -364,7 +365,7 @@ class TestPatching:
         parent_msgs: list[str] = []
         child_msgs: list[str] = []
 
-        def add_field(record: dict) -> None:
+        def add_field(record: dict[str, Any]) -> None:
             record["extra"]["child_only"] = "yes"
 
         sink_id = log.add(lambda m: parent_msgs.append(m), level="DEBUG", format="{message}")

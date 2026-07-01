@@ -1,8 +1,32 @@
 //! Native formatters for Logly records.
 //!
-//! Provides a template formatter with placeholder tokens (including Python-style
+//! Provides a template formatter with placeholder tokens (including brace-style
 //! format specs like `{level:<8}`), a structured JSON formatter, and the
-//! `Formatter` trait for custom formatters.
+//! [`Formatter`] trait for custom formatters.
+//!
+//! # Formatter Types
+//!
+//! - [`TemplateFormatter`]: Placeholder-based formatting with alignment support
+//! - [`JsonFormatter`]: Structured JSON output with optional pretty-printing
+//! - [`CustomFormatter`]: Closure-based formatting for arbitrary logic
+//!
+//! # Available Tokens (`TemplateFormatter`)
+//!
+//! | Token | Description |
+//! |---|---|
+//! | `{time}` | Formatted timestamp |
+//! | `{level}` | Level name |
+//! | `{level_no}` | Numeric priority |
+//! | `{message}` | Log message |
+//! | `{name}` | Logger name |
+//! | `{file}` | Source file path |
+//! | `{line}` | Source line number |
+//! | `{function}` | Function name |
+//! | `{module}` | Module name |
+//! | `{thread}` | Thread name |
+//! | `{process}` | Process ID |
+//! | `{extra[key]}` | Bound context value (bracket syntax) |
+//! | `{extra.key}` | Bound context value (dot syntax) |
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -15,12 +39,23 @@ use record::LogRecord;
 use std::collections::BTreeMap;
 
 /// Renders a record into sink-ready text.
+///
+/// All formatters implement this trait, which is the interface between the
+/// logging engine and output sinks. Formatters must be `Send + Sync` to
+/// support concurrent logging.
+///
+/// # Implementors
+///
+/// - [`TemplateFormatter`]
+/// - [`JsonFormatter`]
+/// - [`CustomFormatter<F>`]
 pub trait Formatter: Send + Sync {
     /// Formats one record.
     ///
     /// # Errors
     ///
-    /// Implementations return an error when rendering fails.
+    /// Implementations return an error when rendering fails (e.g., template
+    /// syntax errors, I/O failures).
     fn format(&self, record: &LogRecord) -> LoglyResult<String>;
 }
 
@@ -42,6 +77,19 @@ pub trait Formatter: Send + Sync {
 /// - `<` left-align, `>` right-align, `^` center
 /// - Width: `{level:<8}` pads to 8 chars
 /// - Fill: `{level:*<8}` pads with `*`
+///
+/// # Examples
+///
+/// ```rust
+/// use format::{TemplateFormatter, Formatter};
+/// use levels::LogLevel;
+/// use record::LogRecord;
+///
+/// let fmt = TemplateFormatter::new("{level:<8} | {message}");
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "started").build();
+/// let output = fmt.format(&record).unwrap();
+/// assert_eq!(output, "INFO     | started");
+/// ```
 #[derive(Clone, Debug)]
 pub struct TemplateFormatter {
     template: String,
@@ -50,6 +98,8 @@ pub struct TemplateFormatter {
 
 impl TemplateFormatter {
     /// Creates a template formatter with the given template string.
+    ///
+    /// The default timestamp format is `"%Y-%m-%d %H:%M:%S"`.
     #[must_use]
     pub fn new(template: impl Into<String>) -> Self {
         Self {
@@ -59,6 +109,10 @@ impl TemplateFormatter {
     }
 
     /// Sets the timestamp format string (strftime-style).
+    ///
+    /// Supports both strftime tokens (`%Y`, `%m`, `%d`) and brace-style
+    /// tokens (`YYYY`, `MM`, `DD`). See [`convert_time_tokens`] for the
+    /// full token reference.
     #[must_use]
     pub fn with_timestamp_format(mut self, format: impl Into<String>) -> Self {
         self.timestamp_format = format.into();
@@ -74,7 +128,16 @@ impl Default for TemplateFormatter {
 
 /// Parses a Python-style format spec like `<8`, `>10`, `^12`, `*^20`.
 ///
-/// Returns `(align, width, fill_char)`.
+/// # Arguments
+///
+/// * `spec` - The format specification string (without surrounding `{}`)
+///
+/// # Returns
+///
+/// A tuple of `(alignment, width, fill_char)`:
+/// - `alignment`: `<` (left), `>` (right), or `^` (center)
+/// - `width`: Target width in characters
+/// - `fill_char`: Character used for padding (default: space)
 fn parse_format_spec(spec: &str) -> (char, usize, char) {
     if spec.is_empty() {
         return ('<', 0, ' ');
@@ -113,6 +176,9 @@ fn parse_format_spec(spec: &str) -> (char, usize, char) {
 }
 
 /// Applies a format spec to a value string.
+///
+/// Pads the value according to the alignment, width, and fill character.
+/// If the value is already wider than the target width, it is returned unchanged.
 fn apply_format_spec(value: &str, spec: &str) -> String {
     if spec.is_empty() {
         return value.to_owned();
@@ -141,6 +207,26 @@ fn apply_format_spec(value: &str, spec: &str) -> String {
 }
 
 /// Resolves a token name to its value from a log record.
+///
+/// # Supported Tokens
+///
+/// - `time` — formatted timestamp
+/// - `level` — level name
+/// - `level_no` — numeric priority
+/// - `message` — log message
+/// - `name` — logger name
+/// - `file` — source file path
+/// - `line` — source line number
+/// - `column` — always empty (reserved)
+/// - `function` — function name
+/// - `module` — module name
+/// - `thread` — thread name
+/// - `process` — process ID
+/// - `exception` — exception text
+/// - `file_line` / `file_line_col` — `file:line` combined
+/// - `filename` — basename of the source file
+/// - `function_location` — `function (file:line)` or `file:line`
+/// - `extra[key]` / `extra.key` — bound context value
 fn resolve_token<'a>(
     name: &'a str,
     record: &'a LogRecord,
@@ -210,6 +296,9 @@ fn resolve_token<'a>(
 }
 
 /// Formats the template by replacing `{token}` and `{token:spec}` placeholders.
+///
+/// Supports escaped braces: `{{` produces a literal `{`, and `}}` produces a
+/// literal `}`. Unknown tokens are preserved as-is (e.g., `{unknown}`).
 fn format_template(template: &str, record: &LogRecord, timestamp_format: &str) -> String {
     let mut result = String::with_capacity(template.len());
     let mut chars = template.chars().peekable();
@@ -276,12 +365,43 @@ impl Formatter for TemplateFormatter {
     }
 }
 
-/// Converts Loguru-style datetime tokens to strftime-style tokens.
+/// Converts brace-style datetime tokens to strftime-style tokens.
 ///
-/// Loguru tokens: `YYYY`, `YY`, `MM`, `DD`, `HH`, `hh`, `mm`, `ss`, `SSS`, `SS`, `S`, `A`, `ddd`, `dddd`, `MMMM`, `MMM`
-/// Strftime tokens: `%Y`, `%y`, `%m`, `%d`, `%H`, `%I`, `%M`, `%S`, `%.f`, `%f`, `%p`, `%a`, `%A`, `%B`, `%b`
+/// Supports both brace-style (`YYYY`, `MM`, `DD`) and strftime-style (`%Y`,
+/// `%m`, `%d`) tokens. Strftime tokens pass through unchanged.
+///
+/// # Token Reference
+///
+/// | Brace | Strftime | Description |
+/// |---|---|---|
+/// | `YYYY` | `%Y` | 4-digit year |
+/// | `YY` | `%y` | 2-digit year |
+/// | `MM` | `%m` | Month (01-12) |
+/// | `DD` | `%d` | Day (01-31) |
+/// | `HH` | `%H` | Hour 24h (00-23) |
+/// | `hh` | `%I` | Hour 12h (01-12) |
+/// | `mm` | `%M` | Minute (00-59) |
+/// | `ss` | `%S` | Second (00-59) |
+/// | `SSS` | `%.3f` | Milliseconds |
+/// | `SS` | `%.2f` | Centiseconds |
+/// | `S` | `%.f` | Sub-second |
+/// | `A` | `%p` | AM/PM |
+/// | `dddd` | `%A` | Full weekday name |
+/// | `ddd` | `%a` | Short weekday name |
+/// | `MMMM` | `%B` | Full month name |
+/// | `MMM` | `%b` | Short month name |
+///
+/// # Examples
+///
+/// ```rust
+/// use format::convert_time_tokens;
+///
+/// assert_eq!(convert_time_tokens("YYYY-MM-DD"), "%Y-%m-%d");
+/// assert_eq!(convert_time_tokens("HH:mm:ss"), "%H:%M:%S");
+/// assert_eq!(convert_time_tokens("%Y-%m-%d"), "%Y-%m-%d");
+/// ```
 #[must_use]
-pub fn convert_loguru_time_tokens(format: &str) -> String {
+pub fn convert_time_tokens(format: &str) -> String {
     let mut result = String::with_capacity(format.len());
     let chars: Vec<char> = format.chars().collect();
     let mut i = 0;
@@ -301,7 +421,7 @@ pub fn convert_loguru_time_tokens(format: &str) -> String {
         // Build a lookahead string from current position (up to 5 chars)
         let end = std::cmp::min(i + 5, chars.len());
         let collected: String = chars[i..end].iter().collect();
-        // Match multi-char Loguru tokens (longest first)
+        // Match multi-character tokens (longest first)
         let skip = if collected.starts_with("dddd") {
             result.push_str("%A");
             4
@@ -361,8 +481,25 @@ pub fn convert_loguru_time_tokens(format: &str) -> String {
 
 /// Formats a timestamp using the given format string.
 ///
-/// Supports both Loguru-style tokens (`YYYY`, `MM`, `DD`, etc.) and
+/// Supports both brace-style tokens (`YYYY`, `MM`, `DD`, etc.) and
 /// strftime-style tokens (`%Y`, `%m`, `%d`, etc.).
+///
+/// # Arguments
+///
+/// * `record` - The log record containing the timestamp
+/// * `format` - Format string (brace-style or strftime-style)
+///
+/// # Examples
+///
+/// ```rust
+/// use format::format_timestamp;
+/// use levels::LogLevel;
+/// use record::LogRecord;
+///
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "test").build();
+/// let ts = format_timestamp(&record, "YYYY-MM-DD");
+/// assert!(ts.contains('-'));
+/// ```
 #[must_use]
 pub fn format_timestamp(record: &LogRecord, format: &str) -> String {
     let duration = record
@@ -374,13 +511,23 @@ pub fn format_timestamp(record: &LogRecord, format: &str) -> String {
     let dt: DateTime<Local> = DateTime::from_timestamp(secs, nsecs)
         .unwrap_or_default()
         .into();
-    let strftime_fmt = convert_loguru_time_tokens(format);
+    let strftime_fmt = convert_time_tokens(format);
     dt.format(&strftime_fmt).to_string()
 }
 
 /// Minimal JSON formatter for structured sinks.
 ///
-/// Produces a single-line JSON object with all record fields.
+/// Produces a single-line JSON object with all record fields. Supports
+/// pretty-printing, key sorting, ASCII escaping, and custom separators.
+///
+/// # Configuration
+///
+/// - [`JsonFormatter::new()`]: Compact single-line output
+/// - [`JsonFormatter::pretty()`]: Pretty-printed with 4-space indent
+/// - `.with_indent(n)`: Custom indentation width
+/// - `.with_sort_keys(true)`: Alphabetical key ordering
+/// - `.with_ensure_ascii(true)`: Escape non-ASCII characters
+/// - `.with_separators(item, key)`: Custom separators
 ///
 /// # Examples
 ///
@@ -406,6 +553,8 @@ pub struct JsonFormatter {
 
 impl JsonFormatter {
     /// Creates a compact JSON formatter.
+    ///
+    /// Output is a single line with no extra whitespace.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -418,6 +567,8 @@ impl JsonFormatter {
     }
 
     /// Creates a pretty-printed JSON formatter.
+    ///
+    /// Output is indented with 4 spaces by default.
     #[must_use]
     pub fn pretty() -> Self {
         Self {
@@ -519,6 +670,22 @@ impl Formatter for JsonFormatter {
 /// A custom formatter that wraps a Rust closure.
 ///
 /// Useful for plugging in arbitrary formatting logic from the Rust side.
+/// The closure receives a `&LogRecord` and returns the formatted string.
+///
+/// # Examples
+///
+/// ```rust
+/// use format::{CustomFormatter, Formatter};
+/// use levels::LogLevel;
+/// use record::LogRecord;
+///
+/// let fmt = CustomFormatter::new(|record| {
+///     Ok(format!("[{}] {}", record.level, record.message))
+/// });
+/// let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "hello").build();
+/// let output = fmt.format(&record).unwrap();
+/// assert_eq!(output, "[INFO] hello");
+/// ```
 pub struct CustomFormatter<F>
 where
     F: Fn(&LogRecord) -> LoglyResult<String> + Send + Sync,
@@ -545,10 +712,16 @@ where
     }
 }
 
-/// Parses a log file line-by-line, yielding each non-empty line as a `LogEntry`.
+/// Parses a log file line-by-line, yielding each non-empty line as a [`LogEntry`].
 ///
 /// Without a pattern, every line is yielded. With a pattern, only lines
-/// containing the pattern substring are returned.
+/// containing the pattern substring are returned. Each entry extracts
+/// `key=value` pairs from whitespace-separated tokens.
+///
+/// # Arguments
+///
+/// * `path` - Path to the log file
+/// * `pattern` - Optional substring filter; only matching lines are included
 ///
 /// # Errors
 ///
@@ -582,6 +755,9 @@ pub fn parse_log_file(path: &std::path::Path, pattern: Option<&str>) -> LoglyRes
 }
 
 /// A parsed log entry with its message and extracted key-value groups.
+///
+/// Key-value pairs are extracted from whitespace-separated `key=value` tokens
+/// in the log line.
 #[derive(Clone, Debug)]
 pub struct LogEntry {
     /// The raw log line.
@@ -591,6 +767,20 @@ pub struct LogEntry {
 }
 
 /// Escapes a string for JSON output.
+///
+/// Wraps the string in double quotes and escapes special characters:
+/// `"` → `\"`, `\` → `\\`, `\n`, `\r`, `\t`, and control characters
+/// → `\uXXXX`.
+///
+/// # Examples
+///
+/// ```rust
+/// use format::escape_json;
+///
+/// assert_eq!(escape_json("hello"), "\"hello\"");
+/// assert_eq!(escape_json("say \"hi\""), "\"say \\\"hi\\\"\"");
+/// assert_eq!(escape_json("a\nb"), "\"a\\nb\"");
+/// ```
 #[must_use]
 pub fn escape_json(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 2);
@@ -614,6 +804,20 @@ pub fn escape_json(s: &str) -> String {
 }
 
 /// Formats a `BTreeMap` as compact JSON.
+///
+/// Keys are escaped; values are inserted as-is (expected to be pre-escaped
+/// or raw numbers/booleans).
+///
+/// # Examples
+///
+/// ```rust
+/// use format::format_btree_compact;
+/// use std::collections::BTreeMap;
+///
+/// let mut map = BTreeMap::new();
+/// map.insert("a".to_owned(), "1".to_owned());
+/// assert_eq!(format_btree_compact(&map), "{\"a\":1}");
+/// ```
 #[must_use]
 pub fn format_btree_compact(map: &BTreeMap<String, String>) -> String {
     let mut out = String::from("{");
@@ -631,12 +835,21 @@ pub fn format_btree_compact(map: &BTreeMap<String, String>) -> String {
 }
 
 /// Formats a `BTreeMap` as pretty-printed JSON.
+///
+/// Uses 4-space indentation and default separators.
 #[must_use]
 pub fn format_btree_pretty(map: &BTreeMap<String, String>) -> String {
     format_btree_pretty_with_opts(map, 4, &None)
 }
 
 /// Formats a `BTreeMap` as pretty-printed JSON with custom indentation and separators.
+///
+/// # Arguments
+///
+/// * `map` - The key-value pairs to format
+/// * `indent` - Number of spaces per indentation level
+/// * `separators` - Optional custom `(item_separator, key_separator)` pair;
+///   defaults to `(",\n", ": ")`
 #[must_use]
 pub fn format_btree_pretty_with_opts(
     map: &BTreeMap<String, String>,
@@ -1039,61 +1252,61 @@ mod tests {
     }
 
     #[test]
-    fn convert_loguru_tokens_yyyy_mm_dd() {
-        let result = convert_loguru_time_tokens("YYYY-MM-DD");
+    fn convert_time_tokens_yyyy_mm_dd() {
+        let result = convert_time_tokens("YYYY-MM-DD");
         assert_eq!(result, "%Y-%m-%d");
     }
 
     #[test]
-    fn convert_loguru_tokens_full_datetime() {
-        let result = convert_loguru_time_tokens("YYYY-MM-DD HH:mm:ss");
+    fn convert_time_tokens_full_datetime() {
+        let result = convert_time_tokens("YYYY-MM-DD HH:mm:ss");
         assert_eq!(result, "%Y-%m-%d %H:%M:%S");
     }
 
     #[test]
-    fn convert_loguru_tokens_with_millis() {
-        let result = convert_loguru_time_tokens("YYYY-MM-DD HH:mm:ss.SSS");
+    fn convert_time_tokens_with_millis() {
+        let result = convert_time_tokens("YYYY-MM-DD HH:mm:ss.SSS");
         assert_eq!(result, "%Y-%m-%d %H:%M:%S.%.3f");
     }
 
     #[test]
-    fn convert_loguru_tokens_12h() {
-        let result = convert_loguru_time_tokens("hh:mm A");
+    fn convert_time_tokens_12h() {
+        let result = convert_time_tokens("hh:mm A");
         assert_eq!(result, "%I:%M %p");
     }
 
     #[test]
-    fn convert_loguru_tokens_strftime_passthrough() {
-        let result = convert_loguru_time_tokens("%Y-%m-%d %H:%M:%S");
+    fn convert_time_tokens_strftime_passthrough() {
+        let result = convert_time_tokens("%Y-%m-%d %H:%M:%S");
         assert_eq!(result, "%Y-%m-%d %H:%M:%S");
     }
 
     #[test]
-    fn convert_loguru_tokens_mixed() {
-        let result = convert_loguru_time_tokens("YYYY-%m-%d");
+    fn convert_time_tokens_mixed() {
+        let result = convert_time_tokens("YYYY-%m-%d");
         assert_eq!(result, "%Y-%m-%d");
     }
 
     #[test]
-    fn convert_loguru_tokens_weekday() {
-        let result = convert_loguru_time_tokens("dddd, MMMM DD");
+    fn convert_time_tokens_weekday() {
+        let result = convert_time_tokens("dddd, MMMM DD");
         assert_eq!(result, "%A, %B %d");
     }
 
     #[test]
-    fn convert_loguru_tokens_short_weekday() {
-        let result = convert_loguru_time_tokens("ddd MMM DD YYYY");
+    fn convert_time_tokens_short_weekday() {
+        let result = convert_time_tokens("ddd MMM DD YYYY");
         assert_eq!(result, "%a %b %d %Y");
     }
 
     #[test]
-    fn convert_loguru_tokens_yy() {
-        let result = convert_loguru_time_tokens("YY-MM-DD");
+    fn convert_time_tokens_yy() {
+        let result = convert_time_tokens("YY-MM-DD");
         assert_eq!(result, "%y-%m-%d");
     }
 
     #[test]
-    fn format_timestamp_loguru_style() {
+    fn format_timestamp_brace_style() {
         let record = info_record("test");
         let ts = format_timestamp(&record, "YYYY-MM-DD");
         assert!(!ts.is_empty());
@@ -1104,7 +1317,7 @@ mod tests {
     }
 
     #[test]
-    fn format_timestamp_loguru_with_millis() {
+    fn format_timestamp_brace_with_millis() {
         let record = info_record("test");
         let ts = format_timestamp(&record, "YYYY-MM-DD HH:mm:ss.SSS");
         assert!(!ts.is_empty());

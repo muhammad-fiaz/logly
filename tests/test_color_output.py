@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from logly import logger
+from logly import Logger, logger
 
 
 class TestColorOutput:
@@ -62,3 +62,33 @@ class TestColorOutput:
         logger.remove(sink_id)
         # All messages should be present
         assert len(messages) >= 3
+
+
+def test_custom_level_rgb_color_output() -> None:
+    messages: list[str] = []
+    local_logger = Logger()
+
+    local_logger.level("ORANGE_RGB", no=33, color="rgb(255, 128, 0)")
+    sink_id = local_logger.add(
+        messages.append, level="TRACE", colorize=True, format="{level}:{message}"
+    )
+    local_logger.log("ORANGE_RGB", "custom color")
+    local_logger.remove(sink_id)
+
+    assert messages
+    assert "\x1b[38;2;255;128;0m" in messages[0]
+
+
+def test_custom_level_raw_ansi_color_output() -> None:
+    messages: list[str] = []
+    local_logger = Logger()
+
+    local_logger.level("RAW_GREEN", no=34, color="1;32")
+    sink_id = local_logger.add(
+        messages.append, level="TRACE", colorize=True, format="{level}:{message}"
+    )
+    local_logger.log("RAW_GREEN", "custom ansi")
+    local_logger.remove(sink_id)
+
+    assert messages
+    assert "\x1b[1;32m" in messages[0]

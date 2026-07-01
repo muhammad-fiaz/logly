@@ -3,6 +3,14 @@
 Use this when you want Logly's logger to forward messages to Python's
 standard ``logging`` module, for example to feed into existing monitoring
 or log aggregation tools that hook into stdlib logging.
+
+Install with::
+
+    # Option 1: uv (recommended)
+    uv add logly
+
+    # Option 2: pip
+    pip install logly
 """
 
 from __future__ import annotations
@@ -13,6 +21,10 @@ import logging
 class PropagateHandler(logging.Handler):
     """A ``logging.Handler`` that routes Logly records into stdlib logging.
 
+    This handler acts as a bridge from Logly to Python's standard logging
+    system. It implements the ``write()`` interface expected by Logly's
+    sink API, so it can be added via ``logger.add()``.
+
     Usage::
 
         from logly import logger
@@ -22,6 +34,10 @@ class PropagateHandler(logging.Handler):
 
     Any message logged through Logly will be emitted via the root logger
     (or the logger specified by ``name``).
+
+    Args:
+        name: Name of the stdlib logger to emit to (default ``"logly"``).
+        level: Logging level threshold (default ``NOTSET``).
     """
 
     def __init__(self, name: str = "logly", level: int = logging.NOTSET) -> None:
@@ -35,7 +51,11 @@ class PropagateHandler(logging.Handler):
         self._logger = logging.getLogger(name)
 
     def emit(self, record: logging.LogRecord) -> None:
-        """Emit a stdlib log record (no-op, this is a destination, not a source)."""
+        """Emit a stdlib log record (no-op, this is a destination, not a source).
+
+        Args:
+            record: The log record (unused).
+        """
 
     def write(self, message: str) -> None:
         """Write a formatted Logly message to stdlib logging.

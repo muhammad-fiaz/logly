@@ -1,6 +1,32 @@
-//! Compression codecs for rotated/retained log files.
+//! Compression codecs for rotated and retained log files.
 //!
-//! Provides gzip, ZIP, bzip2, XZ, and Zstandard compression.
+//! This module provides lossless compression for log files after rotation.
+//! Supported codecs:
+//!
+//! | Codec    | Extension | Typical Ratio | Speed    |
+//! |----------|-----------|---------------|----------|
+//! | `Gzip`   | `.gz`     | Good          | Fast     |
+//! | `Zip`    | `.zip`    | Good          | Fast     |
+//! | `Bz2`    | `.bz2`    | Better        | Moderate |
+//! | `Xz`     | `.xz`     | Best          | Slow     |
+//! | `Zstd`   | `.zst`    | Best          | Fast     |
+//!
+//! The [`compress_file`] function compresses a single file and returns the
+//! path of the compressed output. The original file is **not** deleted — the
+//! caller is responsible for cleanup.
+//!
+//! The [`cleanup_old_archives`] function prunes old compressed archives by
+//! count or age, useful for retention policies.
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use compress::{compress_file, CompressionCodec};
+//! use std::path::Path;
+//!
+//! let compressed = compress_file(Path::new("app.log"), &CompressionCodec::Gzip).unwrap();
+//! assert!(compressed.ends_with(".gz"));
+//! ```
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -17,7 +43,10 @@ use std::path::Path;
 use xz2::write::XzEncoder;
 use zstd::Encoder as ZstdEncoder;
 
-/// Compression codec for rotated files.
+/// Supported compression codecs for log file archiving.
+///
+/// Each variant maps to a specific compression algorithm with different
+/// trade-offs between compression ratio and CPU usage.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum CompressionCodec {
     /// No compression.
@@ -48,15 +77,25 @@ impl std::fmt::Display for CompressionCodec {
     }
 }
 
-/// Compresses a file using the specified codec.
+/// Compresses a single file using the specified codec.
 ///
-/// Returns the path of the compressed file on success. The original file
-/// is **not** deleted — the caller is responsible for cleanup.
+/// Reads the source file, applies the chosen compression algorithm, and writes
+/// the result to a new file with the appropriate extension. The original file
+/// is left untouched.
+///
+/// # Arguments
+///
+/// * `path` - Path to the file to compress.
+/// * `codec` - The compression algorithm to use.
+///
+/// # Returns
+///
+/// The path of the newly created compressed file.
 ///
 /// # Errors
 ///
-/// Returns an error if reading the source, compression, or writing the
-/// output fails.
+/// Returns a [`LoglyError::Compression`] if reading, compression, or file
+/// creation fails.
 ///
 /// # Examples
 ///
@@ -78,11 +117,28 @@ pub fn compress_file(path: &Path, codec: &CompressionCodec) -> LoglyResult<std::
     }
 }
 
-/// Deletes old compressed archives matching a pattern.
+/// Deletes old compressed archives matching a base name pattern.
+///
+/// Scans the directory for files whose names start with `base_name` and have
+/// a compressed extension (`.gz`, `.zip`, `.bz2`, `.xz`, `.zst`). Archives
+/// are pruned by two optional criteria:
+///
+/// - **Count**: Keep at most `keep_count` newest archives.
+/// - **Age**: Delete archives older than `max_age_secs`.
+///
+/// Both criteria can be combined. Files are sorted by modification time
+/// (newest first) before pruning.
+///
+/// # Arguments
+///
+/// * `dir` - Directory to scan for archives.
+/// * `base_name` - Prefix to match archive filenames against.
+/// * `keep_count` - Maximum number of archives to retain.
+/// * `max_age_secs` - Maximum age in seconds before an archive is deleted.
 ///
 /// # Errors
 ///
-/// Returns an error if directory listing or file removal fails.
+/// Returns a [`LoglyError::Compression`] if directory listing fails.
 pub fn cleanup_old_archives(
     dir: &Path,
     base_name: &str,

@@ -96,9 +96,11 @@ class KafkaHandler:
 
     def write(self, message: str) -> None:
         """Produce one log message to Kafka."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
         payload = json.dumps(
             {
-                "message": message.rstrip("\n"),
+                "message": strip_ansi(message.rstrip("\n")),
                 "timestamp": time.time(),
             }
         ).encode("utf-8")

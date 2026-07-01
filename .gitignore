@@ -125,6 +125,10 @@ venv.bak/
 
 # mkdocs documentation
 /site
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+docs/package-lock.json
 
 # mypy
 .mypy_cache/

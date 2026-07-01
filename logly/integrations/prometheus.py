@@ -104,9 +104,10 @@ class PrometheusLogSink:
         }
 
     def write(self, message: str) -> None:
-        """Track one log message."""
-        msg = message.rstrip("\n")
-        level = "INFO"
+        """Process one log entry for Prometheus metrics."""
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        msg = strip_ansi(message.rstrip("\n"))
         upper = msg.upper()
         for name in (
             "FATAL",

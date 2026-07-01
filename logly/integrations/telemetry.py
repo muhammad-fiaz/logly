@@ -110,12 +110,12 @@ class HttpJsonSink:
         self.endpoint = endpoint
         self.headers = dict(headers or {})
         self.timeout = timeout
-        self.headers = dict(headers or {})
-        self.timeout = timeout
 
     def write(self, message: str) -> None:
         """Post one rendered message to the configured endpoint."""
-        payload = json.dumps({"message": message.rstrip("\n")}).encode("utf-8")
+        from logly.integrations._utils import strip_ansi  # noqa: PLC0415
+
+        payload = json.dumps({"message": strip_ansi(message.rstrip("\n"))}).encode("utf-8")
         request = urllib.request.Request(
             self.endpoint,
             data=payload,
