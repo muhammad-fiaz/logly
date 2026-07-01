@@ -19,7 +19,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "basedpyright>=1.39.8",
+    "basedpyright>=1.39.9",
     "maturin>=1.14.1",
     "mypy[faster-cache]>=2.1.0",
     "prek>=0.4.5",
