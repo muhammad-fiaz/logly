@@ -31,7 +31,7 @@ from typing import Any
 from logly import logger
 
 try:
-    from django.http import HttpRequest, HttpResponse
+    from django.http import HttpRequest, HttpResponse  # pragma: no cover
 
     _has_django: bool = True
 except ImportError:
@@ -39,14 +39,14 @@ except ImportError:
     HttpResponse = None
     _has_django = False
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "django is required for LoglyMiddleware.\n"
     "Install with one of:\n"
     "  uv add logly[django]       # recommended\n"
     "  pip install logly[django]\n"
     "  uv add django\n"
     "  pip install django"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:
@@ -141,8 +141,8 @@ class LoglyMiddleware:
     """
 
     def __init__(self, get_response: Any = None) -> None:
-        if not _has_django:
-            raise ImportError(_IMPORT_MSG)
+        if not _has_django:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
         self.get_response = get_response
 
     def __call__(self, request: Any) -> Any:

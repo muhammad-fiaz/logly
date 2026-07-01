@@ -23,14 +23,14 @@ from __future__ import annotations
 
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "prometheus-client is required for Logly Prometheus integration.\n"
     "Install with one of:\n"
     "  uv add logly[prometheus]       # recommended\n"
     "  pip install logly[prometheus]\n"
     "  uv add prometheus-client\n"
     "  pip install prometheus-client"
-)
+)  # pragma: no cover
 
 
 class PrometheusLogSink:
@@ -62,13 +62,13 @@ class PrometheusLogSink:
             ImportError: If ``prometheus-client`` is not installed.
         """
         try:
-            from prometheus_client import (
+            from prometheus_client import (  # pragma: no cover
                 Counter,
                 Gauge,
                 Histogram,
             )
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         self._namespace = namespace
 

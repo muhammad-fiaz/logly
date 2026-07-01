@@ -25,14 +25,14 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "newrelic is required for Logly New Relic integration.\n"
     "Install with one of:\n"
     "  uv add logly[newrelic]       # recommended\n"
     "  pip install logly[newrelic]\n"
     "  uv add newrelic\n"
     "  pip install newrelic"
-)
+)  # pragma: no cover
 
 
 class NewRelicSink:
@@ -76,10 +76,10 @@ class NewRelicSink:
         Raises:
             ImportError: If ``newrelic`` is not installed.
         """
-        if importlib.util.find_spec("newrelic") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("newrelic") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        import newrelic.agent
+        import newrelic.agent  # pragma: no cover
 
         settings: dict[str, Any] = {}
         if license_key:
@@ -88,9 +88,9 @@ class NewRelicSink:
             settings["app_name"] = app_name
 
         if settings:
-            newrelic.agent.initialize(**settings)
+            newrelic.agent.initialize(**settings)  # pragma: no cover
 
-        self._application = newrelic.agent.application()
+        self._application = newrelic.agent.application()  # pragma: no cover
 
     def write(self, message: str) -> None:
         """Send one log entry to New Relic.
@@ -98,7 +98,7 @@ class NewRelicSink:
         Args:
             message: The formatted log message to send.
         """
-        import newrelic.agent  # noqa: PLC0415
+        import newrelic.agent  # noqa: PLC0415  # pragma: no cover
 
         from logly.integrations._utils import strip_ansi  # noqa: PLC0415
 
@@ -106,7 +106,7 @@ class NewRelicSink:
         severity = self._detect_severity(msg)
 
         with newrelic.agent.GroupTrace(speedscope=True, group="Logly"):
-            newrelic.agent.log(
+            newrelic.agent.log(  # pragma: no cover
                 msg,
                 level=severity,
                 attributes={},

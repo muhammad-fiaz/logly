@@ -26,14 +26,14 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     pass
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "sentry-sdk is required for Logly Sentry integration.\n"
     "Install with one of:\n"
     "  uv add logly[sentry]       # recommended\n"
     "  pip install logly[sentry]\n"
     "  uv add sentry-sdk\n"
     "  pip install sentry-sdk"
-)
+)  # pragma: no cover
 
 _LoglyLevel = Literal[
     "TRACE",
@@ -104,9 +104,9 @@ class SentrySink:
             ImportError: If ``sentry-sdk`` is not installed.
         """
         try:
-            import sentry_sdk
+            import sentry_sdk  # pragma: no cover
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         self._level = level.upper()
         init_kwargs: dict[str, Any] = {}
@@ -117,12 +117,12 @@ class SentrySink:
         if release:
             init_kwargs["release"] = release
 
-        sentry_sdk.init(**init_kwargs)
+        sentry_sdk.init(**init_kwargs)  # pragma: no cover
 
     def write(self, message: str) -> None:
         """Capture one log message as a Sentry event."""
         try:
-            import sentry_sdk  # noqa: PLC0415
+            import sentry_sdk  # noqa: PLC0415  # pragma: no cover
         except ImportError:
             return
 
@@ -143,14 +143,14 @@ class SentrySink:
 
         with sentry_sdk.new_scope() as scope:
             scope.set_level(detected_level)
-            sentry_sdk.capture_message(msg, level=detected_level)
+            sentry_sdk.capture_message(msg, level=detected_level)  # pragma: no cover
 
     def flush(self) -> None:
         """Flush Sentry transport."""
         try:
-            import sentry_sdk
+            import sentry_sdk  # pragma: no cover
 
-            sentry_sdk.flush()
+            sentry_sdk.flush()  # pragma: no cover
         except ImportError:
             pass
 

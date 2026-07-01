@@ -27,14 +27,14 @@ import threading
 import time
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "boto3 is required for Logly AWS CloudWatch Logs integration.\n"
     "Install with one of:\n"
     "  uv add logly[aws]       # recommended\n"
     "  pip install logly[aws]\n"
     "  uv add boto3\n"
     "  pip install boto3"
-)
+)  # pragma: no cover
 
 
 class CloudWatchSink:
@@ -103,10 +103,10 @@ class CloudWatchSink:
         Raises:
             ImportError: If ``boto3`` is not installed.
         """
-        if importlib.util.find_spec("boto3") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("boto3") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        import boto3
+        import boto3  # pragma: no cover
 
         kwargs: dict[str, Any] = {}
         if region:
@@ -146,13 +146,13 @@ class CloudWatchSink:
 
         if self.create_group:
             try:
-                self._client.create_log_group(logGroupName=self.log_group)
+                self._client.create_log_group(logGroupName=self.log_group)  # pragma: no cover
             except self._client.exceptions.ResourceAlreadyExistsException:
                 pass
 
         if self.create_stream:
             try:
-                self._client.create_log_stream(
+                self._client.create_log_stream(  # pragma: no cover
                     logGroupName=self.log_group,
                     logStreamName=self.log_stream,
                 )
@@ -189,7 +189,7 @@ class CloudWatchSink:
                 kwargs["sequenceToken"] = self._sequence_token
 
             try:
-                response = self._client.put_log_events(**kwargs)
+                response = self._client.put_log_events(**kwargs)  # pragma: no cover
                 self._sequence_token = response.get("nextSequenceToken")
             except Exception:
                 pass

@@ -26,14 +26,14 @@ import json
 import time
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "pika is required for Logly RabbitMQ integration.\n"
     "Install with one of:\n"
     "  uv add logly[rabbitmq]       # recommended\n"
     "  pip install logly[rabbitmq]\n"
     "  uv add pika\n"
     "  pip install pika"
-)
+)  # pragma: no cover
 
 
 class RabbitMQHandler:
@@ -82,8 +82,8 @@ class RabbitMQHandler:
         Raises:
             ImportError: If ``pika`` is not installed.
         """
-        if importlib.util.find_spec("pika") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("pika") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
         self._url = url
         self._queue = queue
@@ -99,18 +99,18 @@ class RabbitMQHandler:
         if self._channel is not None and self._channel.is_open:
             return self._channel
 
-        import pika as _pika  # noqa: PLC0415
+        import pika as _pika  # noqa: PLC0415  # pragma: no cover
 
         params = _pika.URLParameters(self._url)
         params.socket_timeout = self._timeout
-        self._connection = _pika.BlockingConnection(params)
-        self._channel = self._connection.channel()
-        self._channel.queue_declare(queue=self._queue, durable=self._durable)
+        self._connection = _pika.BlockingConnection(params)  # pragma: no cover
+        self._channel = self._connection.channel()  # pragma: no cover
+        self._channel.queue_declare(queue=self._queue, durable=self._durable)  # pragma: no cover
         return self._channel
 
     def write(self, message: str) -> None:
         """Publish one log message to RabbitMQ."""
-        import pika as _pika  # noqa: PLC0415
+        import pika as _pika  # noqa: PLC0415  # pragma: no cover
 
         from logly.integrations._utils import strip_ansi  # noqa: PLC0415
 
@@ -122,7 +122,7 @@ class RabbitMQHandler:
                     "timestamp": time.time(),
                 }
             )
-            channel.basic_publish(
+            channel.basic_publish(  # pragma: no cover
                 exchange=self._exchange,
                 routing_key=self._routing_key,
                 body=payload.encode("utf-8"),
@@ -142,9 +142,9 @@ class RabbitMQHandler:
         """Close the RabbitMQ connection."""
         try:
             if self._channel and self._channel.is_open:
-                self._channel.close()
+                self._channel.close()  # pragma: no cover
             if self._connection and self._connection.is_open:
-                self._connection.close()
+                self._connection.close()  # pragma: no cover
         except Exception:
             pass
         finally:

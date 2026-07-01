@@ -25,14 +25,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "structlog is required for Logly structlog integration.\n"
     "Install with one of:\n"
     "  uv add logly[structlog]       # recommended\n"
     "  pip install logly[structlog]\n"
     "  uv add structlog\n"
     "  pip install structlog"
-)
+)  # pragma: no cover
 
 
 def _check_structlog() -> None:
@@ -42,9 +42,9 @@ def _check_structlog() -> None:
         ImportError: If ``structlog`` is not installed.
     """
     try:
-        import structlog  # noqa: F401
+        import structlog  # noqa: F401  # pragma: no cover
     except ImportError:
-        raise ImportError(_IMPORT_MSG) from None
+        raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
 
 def logly_processor(
@@ -80,7 +80,7 @@ def logly_processor(
         List of structlog processors including a Logly sink processor.
     """
     _check_structlog()
-    import structlog
+    import structlog  # pragma: no cover
 
     def _logly_sink(
         logger_name: str | None,

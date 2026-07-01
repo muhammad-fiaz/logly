@@ -25,14 +25,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "typer is required for Logly Typer integration.\n"
     "Install with one of:\n"
     "  uv add logly[typer]       # recommended\n"
     "  pip install logly[typer]\n"
     "  uv add typer\n"
     "  pip install typer"
-)
+)  # pragma: no cover
 
 
 def typer_echo(

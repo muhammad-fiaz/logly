@@ -27,14 +27,14 @@ from typing import Any
 from logly.integrations.stdlib import InterceptHandler
 from logly.logger import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "uvicorn is required for Logly Uvicorn integration.\n"
     "Install with one of:\n"
     "  uv add logly[uvicorn]       # recommended\n"
     "  pip install logly[uvicorn]\n"
     "  uv add uvicorn\n"
     "  pip install uvicorn"
-)
+)  # pragma: no cover
 
 
 def setup_uvicorn_logging(

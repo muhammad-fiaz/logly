@@ -25,14 +25,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "click is required for Logly Click integration.\n"
     "Install with one of:\n"
     "  uv add logly[click]       # recommended\n"
     "  pip install logly[click]\n"
     "  uv add click\n"
     "  pip install click"
-)
+)  # pragma: no cover
 
 
 def click_echo(

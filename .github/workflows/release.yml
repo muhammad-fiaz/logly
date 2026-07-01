@@ -35,9 +35,152 @@ jobs:
       - name: Run Tests
         run: uv run --group dev pytest
 
+  linux:
+    name: Build Linux wheels (Python ${{ matrix.python-version }}, ${{ matrix.target }})
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+          manylinux: auto
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}-py${{ matrix.python-version }}
+          path: dist
+
+  windows:
+    name: Build Windows wheels (Python ${{ matrix.python-version }}, ${{ matrix.target }})
+    needs: [test]
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        target: [x64, x86]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.target }}
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.target }}-py${{ matrix.python-version }}
+          path: dist
+
+  macos:
+    name: Build macOS wheels (Python ${{ matrix.python-version }}, ${{ matrix.target }})
+    needs: [test]
+    runs-on: macos-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
+          path: dist
+
+  sdist:
+    name: Build source distribution
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  upload-release:
+    name: Upload wheels to GitHub Release
+    needs: [linux, windows, macos, sdist]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
   update-release:
     name: Update Release Description
-    needs: [test]
+    needs: [upload-release]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -28,14 +28,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "starlette is required for LoglyMiddleware.\n"
     "Install with one of:\n"
     "  uv add logly[fastapi]       # recommended\n"
     "  pip install logly[fastapi]\n"
     "  uv add fastapi starlette\n"
     "  pip install fastapi starlette"
-)
+)  # pragma: no cover
 
 
 def _check_starlette() -> None:
@@ -45,9 +45,9 @@ def _check_starlette() -> None:
         ImportError: If ``starlette`` is not installed.
     """
     try:
-        from starlette.middleware.base import BaseHTTPMiddleware  # noqa: F401
+        from starlette.middleware.base import BaseHTTPMiddleware  # noqa: F401  # pragma: no cover
     except ImportError:
-        raise ImportError(_IMPORT_MSG) from None
+        raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
 
 class LoglyMiddleware:
@@ -74,7 +74,7 @@ class LoglyMiddleware:
                 ``BaseHTTPMiddleware``.
         """
         _check_starlette()
-        from starlette.middleware.base import BaseHTTPMiddleware
+        from starlette.middleware.base import BaseHTTPMiddleware  # pragma: no cover
 
         self._middleware = BaseHTTPMiddleware(app, **kwargs)
 

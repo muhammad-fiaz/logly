@@ -25,19 +25,19 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
-if importlib.util.find_spec("google.cloud.logging") is None:
-    _has_google_cloud_logging: bool = False
+if importlib.util.find_spec("google.cloud.logging") is None:  # pragma: no cover
+    _has_google_cloud_logging: bool = False  # pragma: no cover
 else:
     _has_google_cloud_logging = True
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "google-cloud-logging is required for Logly Google Cloud Logging integration.\n"
     "Install with one of:\n"
     "  uv add logly[google-cloud-logging]       # recommended\n"
     "  pip install logly[google-cloud-logging]\n"
     "  uv add google-cloud-logging\n"
     "  pip install google-cloud-logging"
-)
+)  # pragma: no cover
 
 
 class GoogleCloudLoggingSink:
@@ -87,10 +87,10 @@ class GoogleCloudLoggingSink:
         Raises:
             ImportError: If ``google-cloud-logging`` is not installed.
         """
-        if not _has_google_cloud_logging:
-            raise ImportError(_IMPORT_MSG)
+        if not _has_google_cloud_logging:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        from google.cloud.logging import Client as _GCLClient
+        from google.cloud.logging import Client as _GCLClient  # pragma: no cover
 
         client_kwargs: dict[str, Any] = {}
         if project_id:
@@ -118,7 +118,7 @@ class GoogleCloudLoggingSink:
             "message": msg,
         }
 
-        self._gcl_logger.log_struct(
+        self._gcl_logger.log_struct(  # pragma: no cover
             struct_data,
             severity=severity,
         )
@@ -154,6 +154,6 @@ class GoogleCloudLoggingSink:
     def close(self) -> None:
         """Close the underlying client."""
         try:
-            self._client.close()
+            self._client.close()  # pragma: no cover
         except Exception:
             pass

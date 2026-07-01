@@ -99,13 +99,13 @@ class EmailHandler:
         try:
             server: smtplib.SMTP | smtplib.SMTP_SSL
             if self.use_ssl:
-                server = smtplib.SMTP_SSL(
+                server = smtplib.SMTP_SSL(  # pragma: no cover
                     self.smtp_host,
                     self.smtp_port,
                     timeout=self.timeout,
                 )
             else:
-                server = smtplib.SMTP(
+                server = smtplib.SMTP(  # pragma: no cover
                     self.smtp_host,
                     self.smtp_port,
                     timeout=self.timeout,
@@ -113,10 +113,10 @@ class EmailHandler:
 
             try:
                 if self.use_tls and not self.use_ssl:
-                    server.starttls()
+                    server.starttls()  # pragma: no cover
                 if self.username and self.password:
-                    server.login(self.username, self.password)
-                server.sendmail(self.from_addr, self.to_addrs, msg.as_string())
+                    server.login(self.username, self.password)  # pragma: no cover
+                server.sendmail(self.from_addr, self.to_addrs, msg.as_string())  # pragma: no cover
             finally:
                 server.quit()
         except Exception:

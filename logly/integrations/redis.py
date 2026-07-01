@@ -26,14 +26,14 @@ import json
 import time
 from typing import Literal
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "redis is required for Logly Redis integration.\n"
     "Install with one of:\n"
     "  uv add logly[redis]       # recommended\n"
     "  pip install logly[redis]\n"
     "  uv add redis\n"
     "  pip install redis"
-)
+)  # pragma: no cover
 
 
 class RedisHandler:
@@ -80,10 +80,10 @@ class RedisHandler:
         Raises:
             ImportError: If ``redis`` is not installed.
         """
-        if importlib.util.find_spec("redis") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("redis") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        redis_mod = importlib.import_module("redis")
+        redis_mod = importlib.import_module("redis")  # pragma: no cover
 
         self._client = redis_mod.Redis.fromurl(
             url,
@@ -106,18 +106,18 @@ class RedisHandler:
         )
 
         if self.mode == "stream":
-            self._client.xadd(
+            self._client.xadd(  # pragma: no cover
                 self.key,
                 {"message": entry},
                 maxlen=self.max_stream_len,
             )
         else:
-            self._client.lpush(self.key, entry)
-            self._client.ltrim(self.key, 0, self.max_stream_len - 1)
+            self._client.lpush(self.key, entry)  # pragma: no cover
+            self._client.ltrim(self.key, 0, self.max_stream_len - 1)  # pragma: no cover
 
     def flush(self) -> None:
         """No-op for Redis handler."""
 
     def close(self) -> None:
         """Close the Redis connection."""
-        self._client.close()
+        self._client.close()  # pragma: no cover

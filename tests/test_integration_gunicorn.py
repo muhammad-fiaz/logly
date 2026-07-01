@@ -1,4 +1,4 @@
-"""Tests for Django integration."""
+"""Tests for Gunicorn integration."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from logly.integrations.django import (
-    LoglyHandler,
-    LoglyMiddleware,
+from logly.integrations.gunicorn import (
+    LoglyWorker,
+    _GunicornHandler,
     _resolve_level,
+    setup_gunicorn_logging,
 )
 
 
@@ -36,66 +37,61 @@ class TestResolveLevel:
         record = logging.LogRecord("test", logging.CRITICAL, "", 0, "msg", (), None)
         assert _resolve_level(record) == "CRITICAL"
 
-    def test_custom_level_fallback(self) -> None:
-        record = logging.LogRecord("test", 25, "", 0, "msg", (), None)
-        record.levelname = "CUSTOM"
-        assert _resolve_level(record) == "CUSTOM"
 
-
-class TestDjangoLoglyHandler:
+class TestGunicornHandler:
     def test_emit_routes_to_logly(self) -> None:
-        handler = LoglyHandler()
+        handler = _GunicornHandler()
         record = logging.LogRecord("test", logging.INFO, "", 0, "hello", (), None)
-        with patch("logly.integrations.django.logger") as mock_logger:
+        with patch("logly.integrations.gunicorn.logger") as mock_logger:
             mock_logger.opt.return_value.log = MagicMock()
             handler.emit(record)
             mock_logger.opt.return_value.log.assert_called_once()
 
     def test_emit_with_exception(self) -> None:
-        handler = LoglyHandler()
+        handler = _GunicornHandler()
         try:
             raise ValueError("boom")
         except ValueError:
             exc_info = sys.exc_info()
         record = logging.LogRecord("test", logging.ERROR, "", 0, "err", (), exc_info)
-        with patch("logly.integrations.django.logger") as mock_logger:
+        with patch("logly.integrations.gunicorn.logger") as mock_logger:
             mock_logger.opt.return_value.log = MagicMock()
             handler.emit(record)
             assert mock_logger.opt.call_args[1]["exception"] is not None
 
     def test_emit_none_record(self) -> None:
-        handler = LoglyHandler()
+        handler = _GunicornHandler()
         handler.emit(None)
 
     def test_handle_error(self) -> None:
-        handler = LoglyHandler()
+        handler = _GunicornHandler()
         with patch("builtins.print") as mock_print:
             handler.handleError(None)
             mock_print.assert_called_once()
 
     def test_handle_error_print_exception(self) -> None:
-        handler = LoglyHandler()
+        handler = _GunicornHandler()
         with patch("builtins.print", side_effect=Exception("fail")):
             handler.handleError(None)
 
 
-class TestDjangoMiddleware:
-    def test_init_requires_django(self) -> None:
-        with patch("logly.integrations.django._has_django", False):
-            with pytest.raises(ImportError, match="django is required"):
-                LoglyMiddleware(get_response=MagicMock())
+class TestSetupGunicornLogging:
+    def test_setup_configures_loggers(self) -> None:
+        with patch("logly.integrations.gunicorn.logger") as mock_logger:
+            mock_logger.add = MagicMock()
+            setup_gunicorn_logging(level="INFO")
+            assert mock_logger.add.called
 
-    def test_get_client_ip_forwarded(self) -> None:
-        request = MagicMock()
-        request.META = {"HTTP_X_FORWARDED_FOR": "1.2.3.4, 5.6.7.8", "REMOTE_ADDR": "9.9.9.9"}
-        assert LoglyMiddleware._get_client_ip(request) == "1.2.3.4"
 
-    def test_get_client_ip_remote_addr(self) -> None:
-        request = MagicMock()
-        request.META = {"REMOTE_ADDR": "9.9.9.9"}
-        assert LoglyMiddleware._get_client_ip(request) == "9.9.9.9"
-
-    def test_get_client_ip_unknown(self) -> None:
-        request = MagicMock()
-        request.META = {}
-        assert LoglyMiddleware._get_client_ip(request) == "unknown"
+class TestLoglyWorker:
+    def test_init_import_guard(self) -> None:
+        saved = sys.modules.get("gunicorn.workers.sync")
+        sys.modules["gunicorn.workers.sync"] = None  # type: ignore[assignment]
+        try:
+            with pytest.raises(ImportError, match="gunicorn"):
+                LoglyWorker()
+        finally:
+            if saved is not None:
+                sys.modules["gunicorn.workers.sync"] = saved
+            else:
+                sys.modules.pop("gunicorn.workers.sync", None)

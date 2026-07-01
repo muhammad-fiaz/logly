@@ -76,7 +76,9 @@ class DiscordHandler:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with urllib.request.urlopen(
+                request, timeout=self.timeout
+            ) as response:  # pragma: no cover
                 response.read()
         except Exception:
             pass

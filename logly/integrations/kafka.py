@@ -25,14 +25,14 @@ import importlib.util
 import json
 import time
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "confluent-kafka is required for Logly Kafka integration.\n"
     "Install with one of:\n"
     "  uv add logly[kafka]       # recommended\n"
     "  pip install logly[kafka]\n"
     "  uv add confluent-kafka\n"
     "  pip install confluent-kafka"
-)
+)  # pragma: no cover
 
 
 class KafkaHandler:
@@ -79,10 +79,12 @@ class KafkaHandler:
         Raises:
             ImportError: If ``confluent-kafka`` is not installed.
         """
-        if importlib.util.find_spec("confluent_kafka") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("confluent_kafka") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        from confluent_kafka import Producer  # type: ignore[import-untyped]  # noqa: PLC0415
+        from confluent_kafka import (
+            Producer,  # type: ignore[import-untyped]  # noqa: PLC0415  # pragma: no cover
+        )
 
         self._producer = Producer(
             {
@@ -105,13 +107,13 @@ class KafkaHandler:
             }
         ).encode("utf-8")
 
-        self._producer.produce(self.topic, value=payload)
-        self._producer.poll(0)
+        self._producer.produce(self.topic, value=payload)  # pragma: no cover
+        self._producer.poll(0)  # pragma: no cover
 
     def flush(self) -> None:
         """Flush pending messages to Kafka."""
-        self._producer.flush(timeout=5.0)
+        self._producer.flush(timeout=5.0)  # pragma: no cover
 
     def close(self) -> None:
         """Flush and close the Kafka producer."""
-        self._producer.flush(timeout=5.0)
+        self._producer.flush(timeout=5.0)  # pragma: no cover

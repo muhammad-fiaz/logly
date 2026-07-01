@@ -23,6 +23,8 @@ jobs:
           components: clippy
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: clippy
       - name: Run cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
@@ -36,6 +38,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: rust-tests
       - name: Run cargo test
         run: cargo test --workspace
 
@@ -63,12 +67,15 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
+          cache-key: lint
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
+        with:
+          key: lint
       - name: Install Dependencies
         run: |
           uv sync --frozen --group dev
@@ -111,12 +118,15 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
+          cache-key: test-${{ matrix.os }}-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
+        with:
+          key: test-${{ matrix.os }}-${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
           uv sync --frozen --group dev --extra rich --extra fastapi --extra starlette --extra django --extra flask --extra gunicorn --extra sqlalchemy --extra structlog --extra opentelemetry --extra prometheus --extra elasticsearch --extra sentry --extra celery --extra uvicorn --extra redis --extra rabbitmq --extra mongodb --extra postgresql --extra discord --extra slack --extra apscheduler --extra rq --extra click --extra typer --extra compression --extra pydantic --extra tqdm --extra aws --extra gcloud --extra azure --extra newrelic

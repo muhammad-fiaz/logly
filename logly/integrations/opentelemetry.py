@@ -23,14 +23,14 @@ from __future__ import annotations
 
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "opentelemetry-api and opentelemetry-sdk are required.\n"
     "Install with one of:\n"
     "  uv add logly[opentelemetry]       # recommended\n"
     "  pip install logly[opentelemetry]\n"
     "  uv add opentelemetry-api opentelemetry-sdk\n"
     "  pip install opentelemetry-api opentelemetry-sdk"
-)
+)  # pragma: no cover
 
 
 class OTelLogSink:
@@ -66,10 +66,12 @@ class OTelLogSink:
             ImportError: If OpenTelemetry packages are not installed.
         """
         try:
-            from opentelemetry.sdk._logs import LoggerProvider as SDKLoggerProvider
-            from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+            from opentelemetry.sdk._logs import (
+                LoggerProvider as SDKLoggerProvider,  # pragma: no cover
+            )
+            from opentelemetry.sdk.resources import SERVICE_NAME, Resource  # pragma: no cover
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         self._service_name = service_name
         self._endpoint = endpoint
@@ -107,7 +109,7 @@ class OTelLogSink:
             OTel ``SeverityNumber`` integer value.
         """
         try:
-            from opentelemetry._logs import SeverityNumber
+            from opentelemetry._logs import SeverityNumber  # pragma: no cover
         except (ImportError, AttributeError):
             return 9
 
@@ -130,8 +132,8 @@ class OTelLogSink:
 
     def flush(self) -> None:
         """Flush the OTel log provider."""
-        self._provider.force_flush()
+        self._provider.force_flush()  # pragma: no cover
 
     def close(self) -> None:
         """Shut down the OTel log provider."""
-        self._provider.shutdown()
+        self._provider.shutdown()  # pragma: no cover

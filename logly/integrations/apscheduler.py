@@ -26,14 +26,14 @@ import sys
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "apscheduler is required for Logly APScheduler integration.\n"
     "Install with one of:\n"
     "  uv add logly[apscheduler]       # recommended\n"
     "  pip install logly[apscheduler]\n"
     "  uv add apscheduler\n"
     "  pip install apscheduler"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:

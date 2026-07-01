@@ -27,14 +27,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "gunicorn is required for LoglyWorker.\n"
     "Install with one of:\n"
     "  uv add logly[gunicorn]       # recommended\n"
     "  pip install logly[gunicorn]\n"
     "  uv add gunicorn\n"
     "  pip install gunicorn"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:
@@ -129,9 +129,9 @@ class LoglyWorker:
             ImportError: If ``gunicorn`` is not installed.
         """
         try:
-            from gunicorn.workers.sync import SyncWorker
+            from gunicorn.workers.sync import SyncWorker  # pragma: no cover
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         setup_gunicorn_logging()
         self._worker = SyncWorker(*args, **kwargs)

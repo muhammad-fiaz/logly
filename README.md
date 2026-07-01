@@ -104,17 +104,156 @@ A Rust-powered, high-performance logging library for Python with structured sink
 
 ## Installation
 
-### pip
+### Quick Install
 
 ```bash
 pip install logly
-```
-
-### uv
-
-```bash
+# or
 uv add logly
 ```
+
+> [!TIP]
+> Install with optional extras for integrations: `pip install "logly[rich,fastapi]"`
+
+<details>
+<summary>All Optional Extras (42 integrations)</summary>
+
+```bash
+# Core
+pip install logly                            # core only (no optional deps)
+
+# Frameworks & Libraries
+pip install "logly[rich]"                    # Rich console output
+pip install "logly[fastapi]"                 # FastAPI middleware
+pip install "logly[starlette]"               # Starlette middleware
+pip install "logly[django]"                  # Django handler + middleware
+pip install "logly[flask]"                   # Flask handler
+pip install "logly[gunicorn]"                # Gunicorn worker hooks
+pip install "logly[uvicorn]"                 # Uvicorn log config
+pip install "logly[sqlalchemy]"              # SQLAlchemy query logging
+pip install "logly[structlog]"               # Structlog processor
+pip install "logly[celery]"                  # Celery task logging
+pip install "logly[click]"                   # Click CLI output
+pip install "logly[typer]"                   # Typer CLI output
+pip install "logly[apscheduler]"             # APScheduler job logging
+pip install "logly[rq]"                      # RQ worker logging
+pip install "logly[pydantic]"                # Pydantic log handler
+pip install "logly[tqdm]"                    # tqdm progress bar sink
+
+# Monitoring & Observability
+pip install "logly[opentelemetry]"           # OpenTelemetry export
+pip install "logly[prometheus]"              # Prometheus metrics
+pip install "logly[elasticsearch]"           # Elasticsearch indexing
+pip install "logly[sentry]"                  # Sentry error tracking
+pip install "logly[datadog]"                 # Datadog Logs API (stdlib)
+pip install "logly[newrelic]"                # New Relic agent
+pip install "logly[seq]"                     # Seq structured logs (stdlib)
+pip install "logly[telemetry]"               # Generic telemetry (stdlib)
+
+# Cloud Providers
+pip install "logly[aws]"                     # AWS CloudWatch Logs
+pip install "logly[gcloud]"                  # Google Cloud Logging
+pip install "logly[azure]"                   # Azure Monitor
+
+# Data Stores
+pip install "logly[redis]"                   # Redis lists/streams
+pip install "logly[kafka]"                   # Kafka topics (requires librdkafka)
+pip install "logly[mongodb]"                 # MongoDB collections
+pip install "logly[postgresql]"              # PostgreSQL tables
+pip install "logly[rabbitmq]"                # RabbitMQ queues
+
+# Log Aggregation
+pip install "logly[logstash]"                # Logstash TCP/UDP (stdlib)
+pip install "logly[graylog]"                 # Graylog GELF (stdlib)
+pip install "logly[loki]"                    # Grafana Loki
+
+# Notifications
+pip install "logly[discord]"                 # Discord webhooks (stdlib)
+pip install "logly[slack]"                   # Slack webhooks (stdlib)
+pip install "logly[email]"                   # Email via SMTP (stdlib)
+pip install "logly[http]"                    # HTTP endpoint (stdlib)
+
+# Utilities
+pip install "logly[compression]"             # Zstandard compression
+
+# Everything
+pip install "logly[all]"                     # all of the above
+```
+
+> [!NOTE]
+> Several integrations (`datadog`, `seq`, `logstash`, `graylog`, `discord`, `slack`, `email`, `http`, `telemetry`) use only Python stdlib and require no extra dependencies.
+
+> [!WARNING]
+> The `kafka` extra requires `librdkafka` to be installed on your system. See [Kafka integration docs](https://muhammad-fiaz.github.io/logly/integrations/kafka/) for details.
+
+</details>
+
+<details>
+<summary>uv Install Commands</summary>
+
+```bash
+# Core
+uv add logly
+
+# Frameworks & Libraries
+uv add "logly[rich]"
+uv add "logly[fastapi]"
+uv add "logly[starlette]"
+uv add "logly[django]"
+uv add "logly[flask]"
+uv add "logly[gunicorn]"
+uv add "logly[uvicorn]"
+uv add "logly[sqlalchemy]"
+uv add "logly[structlog]"
+uv add "logly[celery]"
+uv add "logly[click]"
+uv add "logly[typer]"
+uv add "logly[apscheduler]"
+uv add "logly[rq]"
+uv add "logly[pydantic]"
+uv add "logly[tqdm]"
+
+# Monitoring & Observability
+uv add "logly[opentelemetry]"
+uv add "logly[prometheus]"
+uv add "logly[elasticsearch]"
+uv add "logly[sentry]"
+uv add "logly[datadog]"
+uv add "logly[newrelic]"
+uv add "logly[seq]"
+uv add "logly[telemetry]"
+
+# Cloud Providers
+uv add "logly[aws]"
+uv add "logly[gcloud]"
+uv add "logly[azure]"
+
+# Data Stores
+uv add "logly[redis]"
+uv add "logly[kafka]"
+uv add "logly[mongodb]"
+uv add "logly[postgresql]"
+uv add "logly[rabbitmq]"
+
+# Log Aggregation
+uv add "logly[logstash]"
+uv add "logly[graylog]"
+uv add "logly[loki]"
+
+# Notifications
+uv add "logly[discord]"
+uv add "logly[slack]"
+uv add "logly[email]"
+uv add "logly[http]"
+
+# Utilities
+uv add "logly[compression]"
+
+# Everything
+uv add "logly[all]"
+```
+
+</details>
 
 ### From Source
 

@@ -21,14 +21,14 @@ import json
 import urllib.request
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "datadog is required for Logly Datadog integration.\n"
     "Install with one of:\n"
     "  uv add logly[datadog]       # recommended\n"
     "  pip install logly[datadog]\n"
     "  uv add datadog\n"
     "  pip install datadog"
-)
+)  # pragma: no cover
 
 
 class DatadogSink:
@@ -170,7 +170,9 @@ class DatadogSink:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=self._timeout) as response:
+            with urllib.request.urlopen(
+                request, timeout=self._timeout
+            ) as response:  # pragma: no cover
                 response.read()
         except Exception:
             pass

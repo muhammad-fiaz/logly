@@ -1,4 +1,4 @@
-"""Tests for Django integration."""
+"""Tests for Flask integration."""
 
 from __future__ import annotations
 
@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from logly.integrations.django import (
+from logly.integrations.flask import (
     LoglyHandler,
-    LoglyMiddleware,
     _resolve_level,
+    init_app,
 )
 
 
-class TestResolveLevel:
+class TestFlaskResolveLevel:
     def test_debug(self) -> None:
         record = logging.LogRecord("test", logging.DEBUG, "", 0, "msg", (), None)
         assert _resolve_level(record) == "DEBUG"
@@ -36,17 +36,12 @@ class TestResolveLevel:
         record = logging.LogRecord("test", logging.CRITICAL, "", 0, "msg", (), None)
         assert _resolve_level(record) == "CRITICAL"
 
-    def test_custom_level_fallback(self) -> None:
-        record = logging.LogRecord("test", 25, "", 0, "msg", (), None)
-        record.levelname = "CUSTOM"
-        assert _resolve_level(record) == "CUSTOM"
 
-
-class TestDjangoLoglyHandler:
+class TestFlaskLoglyHandler:
     def test_emit_routes_to_logly(self) -> None:
         handler = LoglyHandler()
         record = logging.LogRecord("test", logging.INFO, "", 0, "hello", (), None)
-        with patch("logly.integrations.django.logger") as mock_logger:
+        with patch("logly.integrations.flask.logger") as mock_logger:
             mock_logger.opt.return_value.log = MagicMock()
             handler.emit(record)
             mock_logger.opt.return_value.log.assert_called_once()
@@ -58,7 +53,7 @@ class TestDjangoLoglyHandler:
         except ValueError:
             exc_info = sys.exc_info()
         record = logging.LogRecord("test", logging.ERROR, "", 0, "err", (), exc_info)
-        with patch("logly.integrations.django.logger") as mock_logger:
+        with patch("logly.integrations.flask.logger") as mock_logger:
             mock_logger.opt.return_value.log = MagicMock()
             handler.emit(record)
             assert mock_logger.opt.call_args[1]["exception"] is not None
@@ -79,23 +74,21 @@ class TestDjangoLoglyHandler:
             handler.handleError(None)
 
 
-class TestDjangoMiddleware:
-    def test_init_requires_django(self) -> None:
-        with patch("logly.integrations.django._has_django", False):
-            with pytest.raises(ImportError, match="django is required"):
-                LoglyMiddleware(get_response=MagicMock())
+class TestFlaskInitApp:
+    def test_init_app_requires_flask(self) -> None:
+        with patch("logly.integrations.flask._has_flask", False):
+            with pytest.raises(ImportError, match="Flask"):
+                init_app(MagicMock())
 
-    def test_get_client_ip_forwarded(self) -> None:
-        request = MagicMock()
-        request.META = {"HTTP_X_FORWARDED_FOR": "1.2.3.4, 5.6.7.8", "REMOTE_ADDR": "9.9.9.9"}
-        assert LoglyMiddleware._get_client_ip(request) == "1.2.3.4"
-
-    def test_get_client_ip_remote_addr(self) -> None:
-        request = MagicMock()
-        request.META = {"REMOTE_ADDR": "9.9.9.9"}
-        assert LoglyMiddleware._get_client_ip(request) == "9.9.9.9"
-
-    def test_get_client_ip_unknown(self) -> None:
-        request = MagicMock()
-        request.META = {}
-        assert LoglyMiddleware._get_client_ip(request) == "unknown"
+    def test_init_app_registers_hooks(self) -> None:
+        mock_app = MagicMock()
+        mock_app.before_request = MagicMock(side_effect=lambda f: f)
+        mock_app.after_request = MagicMock(side_effect=lambda f: f)
+        mock_app.teardown_request = MagicMock(side_effect=lambda f: f)
+        with patch("logly.integrations.flask._has_flask", True):
+            with patch("logly.integrations.flask.logger") as mock_logger:
+                mock_logger.add = MagicMock()
+                init_app(mock_app, level="DEBUG")
+                mock_app.before_request.assert_called()
+                mock_app.after_request.assert_called()
+                mock_app.teardown_request.assert_called()

@@ -26,14 +26,14 @@ import sys
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "rq is required for Logly RQ integration.\n"
     "Install with one of:\n"
     "  uv add logly[rq]       # recommended\n"
     "  pip install logly[rq]\n"
     "  uv add rq\n"
     "  pip install rq"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:

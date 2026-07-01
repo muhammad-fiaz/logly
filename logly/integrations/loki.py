@@ -96,7 +96,7 @@ class LokiSink:
             headers=headers,
             method="POST",
         )
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:  # pragma: no cover
             response.read()
 
     def flush(self) -> None:

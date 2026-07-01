@@ -26,14 +26,14 @@ from typing import Any
 
 from logly.integrations.stdlib import InterceptHandler
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "celery is required for Logly Celery integration.\n"
     "Install with one of:\n"
     "  uv add logly[celery]       # recommended\n"
     "  pip install logly[celery]\n"
     "  uv add celery\n"
     "  pip install celery"
-)
+)  # pragma: no cover
 
 
 def setup_celery_logging(

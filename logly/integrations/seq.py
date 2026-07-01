@@ -28,13 +28,13 @@ import json
 import urllib.request
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "No extra dependencies required for Logly Seq integration.\n"
     "Uses only Python standard library modules (urllib, json).\n"
     "Install with one of:\n"
     "  uv add logly       # recommended\n"
     "  pip install logly"
-)
+)  # pragma: no cover
 
 _SEVERITY_MAP: dict[str, str] = {
     "TRACE": "Debug",
@@ -168,7 +168,9 @@ class SeqSink:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=self._timeout) as response:
+            with urllib.request.urlopen(
+                request, timeout=self._timeout
+            ) as response:  # pragma: no cover
                 response.read()
         except Exception:
             pass

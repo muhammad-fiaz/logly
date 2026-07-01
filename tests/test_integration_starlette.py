@@ -1,4 +1,4 @@
-"""Tests for FastAPI integration."""
+"""Tests for Starlette integration."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from logly.integrations.fastapi import LoglyMiddleware
+from logly.integrations.starlette import LoglyMiddleware
 
 
-class TestFastAPIMiddlewareInit:
+class TestLoglyMiddlewareInit:
     def test_init_import_guard(self) -> None:
         saved = sys.modules.get("starlette.middleware.base")
         sys.modules["starlette.middleware.base"] = None  # type: ignore[assignment]
@@ -32,8 +32,8 @@ class TestFastAPIMiddlewareInit:
             assert middleware is not None
 
 
-class TestFastAPIMiddlewareCall:
-    def test_call_lifespan_passthrough(self) -> None:
+class TestLoglyMiddlewareCall:
+    def test_call_non_http_passthrough(self) -> None:
         mock_base = MagicMock()
         inner = AsyncMock()
         mock_base.BaseHTTPMiddleware.return_value = inner
@@ -46,14 +46,14 @@ class TestFastAPIMiddlewareCall:
             asyncio.run(middleware(scope, receive, send))
             inner.assert_called_once_with(scope, receive, send)
 
-    def test_call_http_logs(self) -> None:
+    def test_call_http_logs_request(self) -> None:
         mock_base = MagicMock()
         inner = AsyncMock()
         mock_base.BaseHTTPMiddleware.return_value = inner
         with patch.dict(sys.modules, {"starlette.middleware.base": mock_base}):
             app = AsyncMock()
             middleware = LoglyMiddleware(app, level="INFO")
-            scope = {"type": "http", "method": "POST", "path": "/api/test"}
+            scope = {"type": "http", "method": "GET", "path": "/test"}
             receive = AsyncMock()
             send = AsyncMock()
             asyncio.run(middleware(scope, receive, send))

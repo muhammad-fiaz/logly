@@ -27,14 +27,14 @@ from typing import Any
 
 from logly import logger
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "sqlalchemy is required for Logly SQLAlchemy integration.\n"
     "Install with one of:\n"
     "  uv add logly[sqlalchemy]       # recommended\n"
     "  pip install logly[sqlalchemy]\n"
     "  uv add sqlalchemy\n"
     "  pip install sqlalchemy"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:

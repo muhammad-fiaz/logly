@@ -25,14 +25,14 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "rich is required for LoglyRichSink.\n"
     "Install with one of:\n"
     "  uv add logly[rich]       # recommended\n"
     "  pip install logly[rich]\n"
     "  uv add rich\n"
     "  pip install rich"
-)
+)  # pragma: no cover
 
 
 class LoglyRichSink:
@@ -69,10 +69,10 @@ class LoglyRichSink:
             ImportError: If ``rich`` is not installed.
         """
         try:
-            from rich.console import Console
-            from rich.text import Text
+            from rich.console import Console  # pragma: no cover
+            from rich.text import Text  # pragma: no cover
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         self._console: Any = Console(file=file or sys.stderr, **kwargs)
         self._text_class: Any = Text
@@ -92,7 +92,7 @@ class LoglyRichSink:
 
     def flush(self) -> None:
         """Flush the Rich console."""
-        self._console.file.flush()
+        self._console.file.flush()  # pragma: no cover
 
 
 RichSink = LoglyRichSink
@@ -121,9 +121,9 @@ class RichHandler:
             ImportError: If ``rich`` is not installed.
         """
         try:
-            from rich.logging import RichHandler as _RichHandler
+            from rich.logging import RichHandler as _RichHandler  # pragma: no cover
         except ImportError:
-            raise ImportError(_IMPORT_MSG) from None
+            raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
         self._handler: Any = _RichHandler(*args, **kwargs)
 

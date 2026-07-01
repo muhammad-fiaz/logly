@@ -25,14 +25,14 @@ import importlib.util
 import time
 from typing import Any
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "pymongo is required for Logly MongoDB integration.\n"
     "Install with one of:\n"
     "  uv add logly[mongodb]       # recommended\n"
     "  pip install logly[mongodb]\n"
     "  uv add pymongo\n"
     "  pip install pymongo"
-)
+)  # pragma: no cover
 
 
 class MongoHandler:
@@ -76,10 +76,10 @@ class MongoHandler:
         Raises:
             ImportError: If ``pymongo`` is not installed.
         """
-        if importlib.util.find_spec("pymongo") is None:
-            raise ImportError(_IMPORT_MSG)
+        if importlib.util.find_spec("pymongo") is None:  # pragma: no cover
+            raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-        from pymongo import MongoClient  # noqa: PLC0415
+        from pymongo import MongoClient  # noqa: PLC0415  # pragma: no cover
 
         self._client: Any = MongoClient(
             uri,
@@ -91,7 +91,7 @@ class MongoHandler:
         """Insert one log entry into MongoDB."""
         from logly.integrations._utils import strip_ansi  # noqa: PLC0415
 
-        self._collection.insert_one(
+        self._collection.insert_one(  # pragma: no cover
             {
                 "message": strip_ansi(message.rstrip("\n")),
                 "timestamp": time.time(),
@@ -103,4 +103,4 @@ class MongoHandler:
 
     def close(self) -> None:
         """Close the MongoDB client."""
-        self._client.close()
+        self._client.close()  # pragma: no cover

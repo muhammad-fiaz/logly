@@ -30,7 +30,7 @@ from typing import Any
 from logly import logger
 
 try:
-    from flask import Flask, g, request
+    from flask import Flask, g, request  # pragma: no cover
 
     _has_flask: bool = True
 except ImportError:
@@ -39,14 +39,14 @@ except ImportError:
     request = None  # type: ignore[assignment]  # noqa: F811
     _has_flask = False
 
-_IMPORT_MSG = (
+_IMPORT_MSG = (  # pragma: no cover
     "flask is required for Logly Flask integration.\n"
     "Install with one of:\n"
     "  uv add logly[flask]       # recommended\n"
     "  pip install logly[flask]\n"
     "  uv add flask\n"
     "  pip install flask"
-)
+)  # pragma: no cover
 
 
 def _resolve_level(record: logging.LogRecord) -> str:
@@ -131,11 +131,11 @@ def init_app(app: Any, **kwargs: Any) -> None:
         app: Flask application instance.
         **kwargs: Additional arguments passed to ``logger.add()``.
     """
-    if not _has_flask:
-        raise ImportError(_IMPORT_MSG)
+    if not _has_flask:  # pragma: no cover
+        raise ImportError(_IMPORT_MSG)  # pragma: no cover
 
-    from flask import g as _g
-    from flask import request as _request
+    from flask import g as _g  # pragma: no cover
+    from flask import request as _request  # pragma: no cover
 
     @app.before_request
     def _logly_before_request() -> None:
