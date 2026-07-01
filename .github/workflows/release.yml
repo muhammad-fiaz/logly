@@ -30,7 +30,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Install Dependencies
         run: |
-          uv sync --frozen --group dev --all-extras
+          uv sync --frozen --group dev --extra rich --extra fastapi --extra starlette --extra django --extra flask --extra gunicorn --extra sqlalchemy --extra structlog --extra opentelemetry --extra prometheus --extra elasticsearch --extra sentry --extra celery --extra uvicorn --extra redis --extra rabbitmq --extra mongodb --extra postgresql --extra discord --extra slack --extra apscheduler --extra rq --extra click --extra typer --extra compression --extra pydantic --extra tqdm --extra aws --extra gcloud --extra azure --extra newrelic
           uv run --group dev maturin develop
       - name: Run Tests
         run: uv run --group dev pytest
