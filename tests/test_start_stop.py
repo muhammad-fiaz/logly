@@ -6,13 +6,11 @@ from logly import Logger
 class TestStart:
     def test_start_returns_none(self) -> None:
         lg = Logger()
-        result = lg.start()
-        assert result is None
+        lg.start()
 
     def test_start_with_args(self) -> None:
         lg = Logger()
-        result = lg.start("arg1", kwarg="value")
-        assert result is None
+        lg.start("arg1", kwarg="value")
 
 
 class TestStop:

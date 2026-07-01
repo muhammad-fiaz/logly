@@ -11,7 +11,7 @@ from logly.integrations.sentry import _SENTRY_LEVEL_MAP, SentrySink
 class TestSentrySinkInit:
     def test_init_import_guard(self) -> None:
         saved = sys.modules.get("sentry_sdk")
-        sys.modules["sentry_sdk"] = None
+        sys.modules["sentry_sdk"] = None  # type: ignore[assignment]
         try:
             with pytest.raises(ImportError, match="sentry-sdk is required"):
                 SentrySink(dsn="https://fake@sentry.io/1")
@@ -108,7 +108,7 @@ class TestSentrySinkWrite:
         mock_sdk.new_scope.return_value.__enter__ = MagicMock(return_value=MagicMock())
         mock_sdk.new_scope.return_value.__exit__ = MagicMock(return_value=False)
         with patch.dict(sys.modules, {"sentry_sdk": mock_sdk}):
-            sink = SentrySink(dsn="https://key@sentry.io/1", level=level)
+            sink = SentrySink(dsn="https://key@sentry.io/1", level=level)  # type: ignore[arg-type]
         return sink
 
     def test_write_sends_above_threshold(self) -> None:

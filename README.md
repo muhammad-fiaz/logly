@@ -13,6 +13,12 @@
 <a href="https://codecov.io/gh/muhammad-fiaz/logly"><img src="https://codecov.io/gh/muhammad-fiaz/logly/graph/badge.svg?token=1G3MU8SDX1" alt="codecov"></a>
 <a href="https://github.com/muhammad-fiaz/logly"><img src="https://img.shields.io/github/license/muhammad-fiaz/logly" alt="License"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/testing.yml/badge.svg" alt="Testing"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml/badge.svg" alt="PyPI Publish"></a>
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml/badge.svg" alt="Docs Deploy"></a>
+<img src="https://img.shields.io/badge/platforms-linux%20%7C%20windows%20%7C%20macos-blue" alt="Supported Platforms">
+<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+<a href="https://github.com/muhammad-fiaz/logly/releases/latest"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly?label=Latest%20Release&style=flat-square" alt="Latest Release"></a>
+<a href="https://github.com/sponsors/muhammad-fiaz"><img src="https://img.shields.io/badge/Sponsor-&#x1F496;-pink?style=social&logo=github" alt="GitHub Sponsors"></a>
 
 <p><em>A Rust-powered, high-performance logging library for Python.</em></p>
 
@@ -23,58 +29,101 @@
 
 </div>
 
-
 A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations.
 
-> [!IMPORTANT]
-> **Logly v0.2.0** is a major rewrite of v0.1.6, featuring a rebuilt Rust-powered core, improved APIs, and new features. See the [documentation](https://muhammad-fiaz.github.io/logly/) for details. This project is under active development. If you encounter any issues, bugs, or have feature requests, please open an issue on GitHub. Contributions are welcome!
+> [!NOTE]
+> This project is under active development. If you encounter any issues, bugs, or have feature requests, please open an issue on GitHub. Contributions are welcome!
 
 **If you love `logly`, make sure to give it a star!**
 
 ---
 
-## Features
+<details>
+<summary><strong>Table of Contents</strong> (click to expand)</summary>
 
-| Feature | Description |
-|---------|-------------|
-| **Rust-native engine** | High-performance logging via PyO3 with zero unsafe Rust |
-| **10 built-in levels** | TRACE, DEBUG, INFO, NOTICE, SUCCESS, WARNING, ERROR, FAIL, CRITICAL, FATAL |
-| **Custom levels** | Define your own levels with custom priorities and colors |
-| **Multiple sinks** | Console, file, callable, and network outputs simultaneously |
-| **File rotation** | Time-based and size-based rotation with retention policies |
-| **Compression** | gzip, zip, bz2, xz, zstd support out of the box |
-| **JSON logging** | Structured JSON output for storage and analysis |
-| **Context binding** | Attach persistent key-value pairs to logs |
-| **Exception catching** | `catch()` decorator and context manager |
-| **Background workers** | Non-blocking writes with `enqueue=True` |
-| **40+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more |
+- [Installation](#installation)
+  - [pip](#pip)
+  - [uv](#uv)
+  - [From Source](#from-source)
+- [Quick Start](#quick-start)
+- [Usage Examples](#usage-examples)
+  - [File Logging](#file-logging)
+  - [Context Binding](#context-binding)
+  - [Exception Catching](#exception-catching)
+  - [Multiple Sinks](#multiple-sinks)
+  - [Independent Loggers](#independent-loggers)
+  - [Lazy Evaluation](#lazy-evaluation)
+  - [Custom Levels](#custom-levels)
+- [Log Levels](#log-levels)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Building from Source](#building-from-source)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+- [Links](#links)
 
-For full details, see the [documentation](https://muhammad-fiaz.github.io/logly/).
+</details>
 
----
+----
+
+<details>
+<summary><strong>Features of Logly</strong> (click to expand)</summary>
+
+| Feature | Description | Documentation |
+|---------|-------------|---------------|
+| **Rust-native engine** | High-performance logging via PyO3 with zero unsafe Rust | [Docs](https://muhammad-fiaz.github.io/logly/) |
+| **10 built-in levels** | TRACE, DEBUG, INFO, NOTICE, SUCCESS, WARNING, ERROR, FAIL, CRITICAL, FATAL | [Docs](https://muhammad-fiaz.github.io/logly/getting-started/) |
+| **Custom levels** | Define your own levels with custom priorities and colors | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-levels/) |
+| **Multiple sinks** | Console, file, callable, and network outputs simultaneously | [Docs](https://muhammad-fiaz.github.io/logly/guides/sinks/) |
+| **File rotation** | Time-based and size-based rotation with retention policies | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
+| **Compression** | gzip, zip, bz2, xz, zstd support out of the box | [Docs](https://muhammad-fiaz.github.io/logly/guides/compression-options/) |
+| **JSON logging** | Structured JSON output for storage and analysis | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
+| **Context binding** | Attach persistent key-value pairs to logs | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
+| **Exception catching** | `catch()` decorator and context manager | [Docs](https://muhammad-fiaz.github.io/logly/guides/exception-handling/) |
+| **Background workers** | Non-blocking writes with `enqueue=True` | [Docs](https://muhammad-fiaz.github.io/logly/guides/queue-async/) |
+| **40+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more | [Docs](https://muhammad-fiaz.github.io/logly/integrations/) |
+| **Thread-safe** | Safe concurrent logging from multiple threads | [Docs](https://muhammad-fiaz.github.io/logly/guides/concurrency/) |
+| **Source location** | Optional clickable `file:line` output | [Docs](https://muhammad-fiaz.github.io/logly/guides/source-location/) |
+| **Network logging** | HTTP, TCP, UDP, Syslog sinks | [Docs](https://muhammad-fiaz.github.io/logly/guides/network-logging/) |
+| **Color themes** | Custom ANSI color themes per level | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-colors/) |
+| **Independent loggers** | Separate sink sets per logger instance | [Docs](https://muhammad-fiaz.github.io/logly/guides/independent-loggers/) |
+
+</details>
+
+----
+
+## Prerequisites
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **Python** | 3.10+ | Download from [python.org](https://www.python.org/downloads/) |
+| **Rust** | Latest stable | Only needed for building from source |
+| **Operating System** | Linux, macOS, Windows | Cross-platform support |
 
 ## Installation
 
-::: code-group
+### pip
 
-```bash [pip]
+```bash
 pip install logly
 ```
 
-```bash [uv]
+### uv
+
+```bash
 uv add logly
 ```
 
-```bash [From Source]
+### From Source
+
+```bash
 git clone https://github.com/muhammad-fiaz/logly.git
 cd logly
 uv sync
 uv run maturin develop
 ```
-
-:::
-
----
 
 ## Quick Start
 
@@ -94,11 +143,6 @@ logger.fatal("Fatal system failure!")
 
 logger.complete()
 ```
-
-> [!TIP]
-> Logly is designed for production Python services that need structured records, multiple sinks, rotation, compression, background dispatch, color themes, source context display, and framework integrations without giving up native performance.
-
----
 
 ## Usage Examples
 

@@ -12,8 +12,8 @@ class TestOTelLogSinkInit:
     def test_init_import_guard(self) -> None:
         saved = sys.modules.get("opentelemetry.sdk._logs")
         saved_resource = sys.modules.get("opentelemetry.sdk.resources")
-        sys.modules["opentelemetry.sdk._logs"] = None
-        sys.modules["opentelemetry.sdk.resources"] = None
+        sys.modules["opentelemetry.sdk._logs"] = None  # type: ignore[assignment]
+        sys.modules["opentelemetry.sdk.resources"] = None  # type: ignore[assignment]
         try:
             with pytest.raises(ImportError, match="opentelemetry-api and opentelemetry-sdk"):
                 OTelLogSink(service_name="test")

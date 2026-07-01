@@ -110,7 +110,7 @@ class TestDatadogSinkWrite:
             req = mock_urlopen.call_args[0][0]
             assert isinstance(req, urllib.request.Request)
             assert req.data is not None
-            payload = json.loads(req.data)
+            payload = json.loads(req.data)  # type: ignore[arg-type]
             assert payload["message"] == "[ERROR] something broke"
             assert payload["status"] == "error"
             assert payload["ddsource"] == "python"

@@ -76,13 +76,13 @@ class TestKafkaHandlerWrite:
     def test_write_produces_message(self) -> None:
         handler = self._make_handler()
         handler.write("hello kafka\n")
-        handler._producer.produce.assert_called_once()
-        handler._producer.poll.assert_called_once_with(0)
+        handler._producer.produce.assert_called_once()  # type: ignore[attr-defined]
+        handler._producer.poll.assert_called_once_with(0)  # type: ignore[attr-defined]
 
     def test_write_payload_is_json(self) -> None:
         handler = self._make_handler()
         handler.write("test msg\n")
-        call_args = handler._producer.produce.call_args
+        call_args = handler._producer.produce.call_args  # type: ignore[attr-defined]
         payload = json.loads(call_args[1]["value"])
         assert payload["message"] == "test msg"
         assert "timestamp" in payload
@@ -90,14 +90,14 @@ class TestKafkaHandlerWrite:
     def test_write_strips_newline(self) -> None:
         handler = self._make_handler()
         handler.write("msg\n\n")
-        call_args = handler._producer.produce.call_args
+        call_args = handler._producer.produce.call_args  # type: ignore[attr-defined]
         payload = json.loads(call_args[1]["value"])
         assert payload["message"] == "msg"
 
     def test_write_empty_message(self) -> None:
         handler = self._make_handler()
         handler.write("\n")
-        handler._producer.produce.assert_called_once()
+        handler._producer.produce.assert_called_once()  # type: ignore[attr-defined]
 
 
 class TestKafkaHandlerFlush:

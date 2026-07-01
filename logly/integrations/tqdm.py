@@ -73,12 +73,12 @@ class TqdmSink:
         Raises:
             ImportError: If ``tqdm`` is not installed.
         """
-        if importlib.util.find_spec("tqdm") is None:
-            raise ImportError(_IMPORT_MSG)
-
         if tqdm_instance is not None:
             self._tqdm = tqdm_instance
         else:
+            if importlib.util.find_spec("tqdm") is None:
+                raise ImportError(_IMPORT_MSG)
+
             import tqdm as _tqdm  # noqa: PLC0415
 
             self._tqdm = _tqdm

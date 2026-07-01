@@ -95,18 +95,18 @@ class TestHandleError:
     def test_handle_error_prints_to_stderr(self) -> None:
         handler = PydanticLogHandler()
         with patch("builtins.print") as mock_print:
-            handler.handleError(None)
+            handler.handleError(None)  # type: ignore[arg-type]
             mock_print.assert_called_once_with("Logly PydanticLogHandler error:", file=sys.stderr)
 
     def test_handle_error_stderr_none(self) -> None:
         handler = PydanticLogHandler()
         with patch("sys.stderr", None):
-            handler.handleError(None)
+            handler.handleError(None)  # type: ignore[arg-type]
 
     def test_handle_error_print_exception(self) -> None:
         handler = PydanticLogHandler()
         with patch("builtins.print", side_effect=Exception("fail")):
-            handler.handleError(None)
+            handler.handleError(None)  # type: ignore[arg-type]
 
 
 class TestLoglyFormatterInit:

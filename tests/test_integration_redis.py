@@ -54,7 +54,7 @@ class TestRedisHandlerWrite:
         mock_redis.Redis.fromurl.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
-                handler = RedisHandler(mode=mode)
+                handler = RedisHandler(mode=mode)  # type: ignore[arg-type]
         return handler
 
     def test_write_list_mode(self) -> None:
