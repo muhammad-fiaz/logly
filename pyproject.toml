@@ -101,7 +101,7 @@ click = [
     "click>=8.0",
 ]
 typer = [
-    "typer>=0.9",
+    "typer>=0.26.8",
 ]
 all = [
     "rich>=14.2.0",
@@ -128,7 +128,7 @@ all = [
     "apscheduler>=3.10",
     "rq>=1.10",
     "click>=8.0",
-    "typer>=0.9",
+    "typer>=0.26.8",
 ]
 
 [tool.maturin]
