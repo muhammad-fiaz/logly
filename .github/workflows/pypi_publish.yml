@@ -1,15 +1,16 @@
-name: PyPi Publish
+name: PyPI Publish
 
 on:
   release:
-    types:
-      - published
+    types: [published]
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
 jobs:
   linux:
+    name: Linux (${{ matrix.target }}, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -41,6 +42,7 @@ jobs:
           path: dist
 
   windows:
+    name: Windows (${{ matrix.target }}, Python ${{ matrix.python-version }})
     runs-on: windows-latest
     timeout-minutes: 25
     strategy:
@@ -73,6 +75,7 @@ jobs:
           path: dist
 
   macos:
+    name: macOS (${{ matrix.target }}, Python ${{ matrix.python-version }})
     runs-on: macos-latest
     timeout-minutes: 25
     strategy:
@@ -103,6 +106,7 @@ jobs:
           path: dist
 
   sdist:
+    name: Source distribution
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -126,28 +130,105 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  release:
+  publish-pypi:
     name: Publish to PyPI
+    needs: [linux, windows, macos, sdist]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      id-token: write
-      contents: write
-    if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [linux, windows, macos, sdist]
     steps:
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
+      - name: List artifacts
+        run: ls -la dist/
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
       - name: Publish to PyPI
         run: uv publish dist/*
-      - name: Upload wheels to GitHub Release
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+
+  upload-github-release:
+    name: Upload wheels to GitHub Release
+    needs: [linux, windows, macos, sdist]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+  update-release-notes:
+    name: Update Release Notes
+    needs: [publish-pypi, upload-github-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Update Release Body
+        uses: softprops/action-gh-release@v3
+        with:
+          body: |
+            ${{ github.event.release.body }}
+
+            ---
+
+            ## Installation
+
+            ### pip
+
+            ```bash
+            pip install logly==${{ github.event.release.tag_name }}
+            ```
+
+            ### uv
+
+            ```bash
+            uv add logly==${{ github.event.release.tag_name }}
+            ```
+
+            ### From Source
+
+            ```bash
+            git clone https://github.com/muhammad-fiaz/logly.git
+            cd logly
+            git checkout ${{ github.event.release.tag_name }}
+            uv sync
+            uv run maturin develop
+            ```
+
+            ## Quick Start
+
+            ```python
+            from logly import logger
+
+            logger.info("Hello from Logly!")
+            logger.add("app.log", rotation="daily", retention="30 days", compression="gzip")
+            logger.bind(user_id="12345").info("User logged in")
+
+            with logger.catch():
+                risky_operation()
+
+            logger.complete()
+            ```
+
+            ## Links
+
+            - [PyPI](https://pypi.org/project/logly/${{ github.event.release.tag_name }}/)
+            - [Documentation](https://muhammad-fiaz.github.io/logly/)
+            - [GitHub](https://github.com/muhammad-fiaz/logly)
+            - [Changelog](https://github.com/muhammad-fiaz/logly/releases)
+            - [Issue Tracker](https://github.com/muhammad-fiaz/logly/issues)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
