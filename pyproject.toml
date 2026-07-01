@@ -74,7 +74,7 @@ uvicorn = [
     "uvicorn>=0.20",
 ]
 redis = [
-    "redis>=4.0",
+    "redis>=8.0.1",
 ]
 kafka = [
     "confluent-kafka>=2.0",
@@ -119,7 +119,7 @@ all = [
     "sentry-sdk>=2.0",
     "celery>=5.0",
     "uvicorn>=0.20",
-    "redis>=4.0",
+    "redis>=8.0.1",
     "confluent-kafka>=2.0",
     "pymongo>=4.0",
     "psycopg2-binary>=2.9",
