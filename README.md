@@ -16,7 +16,6 @@
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/pypi_publish.yml/badge.svg" alt="PyPI Publish"></a>
 <a href="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/docs_publish.yml/badge.svg" alt="Docs Deploy"></a>
 <img src="https://img.shields.io/badge/platforms-linux%20%7C%20windows%20%7C%20macos-blue" alt="Supported Platforms">
-<a href="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml"><img src="https://github.com/muhammad-fiaz/logly/actions/workflows/release.yml/badge.svg" alt="Release"></a>
 <a href="https://github.com/muhammad-fiaz/logly/releases/latest"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly?label=Latest%20Release&style=flat-square" alt="Latest Release"></a>
 <a href="https://github.com/sponsors/muhammad-fiaz"><img src="https://img.shields.io/badge/Sponsor-&#x1F496;-pink?style=social&logo=github" alt="GitHub Sponsors"></a>
 
