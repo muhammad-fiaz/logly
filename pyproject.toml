@@ -19,16 +19,15 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "basedpyright>=1.39.8",
     "maturin>=1.14.1",
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.7.6",
-    "mkdocstrings[python]>=1.0.4",
     "mypy[faster-cache]>=2.1.0",
     "prek>=0.4.5",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.18",
+]
+typing = [
+    "basedpyright>=1.39.8",
 ]
 
 [project.optional-dependencies]
