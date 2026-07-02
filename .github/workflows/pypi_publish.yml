@@ -10,13 +10,12 @@ permissions:
   id-token: write
 
 jobs:
-  linux:
-    name: Linux (${{ matrix.target }}, Python ${{ matrix.python-version }})
+  linux-x86_64:
+    name: Linux (x86_64, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       matrix:
-        target: [x86_64, x86, aarch64, armv7, s390x]
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     steps:
@@ -32,14 +31,43 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.target }}-py${{ matrix.python-version }}
+          name: wheels-linux-x86_64-py${{ matrix.python-version }}
+          path: dist
+
+  linux-aarch64:
+    name: Linux (aarch64, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+          manylinux: auto
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-aarch64-py${{ matrix.python-version }}
           path: dist
 
   windows:
@@ -133,7 +161,7 @@ jobs:
 
   publish-pypi:
     name: Publish to PyPI
-    needs: [linux, windows, macos, sdist]
+    needs: [linux-x86_64, linux-aarch64, windows, macos, sdist]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -150,14 +178,11 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
       - name: Publish to PyPI
-        # Uses PyPI Trusted Publishing through GitHub OIDC. Configure the
-        # trusted publisher on PyPI for this repository, workflow, and
-        # environment name (`pypi`). No API token is required.
         run: uv publish --trusted-publishing always dist/*
 
   upload-github-release:
     name: Upload wheels to GitHub Release
-    needs: [linux, windows, macos, sdist]
+    needs: [linux-x86_64, linux-aarch64, windows, macos, sdist]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -214,16 +239,8 @@ jobs:
             case "$PLATFORM" in
               *linux*x86_64*|*manylinux*x86_64*)
                 OS="Linux"; ARCH="x86_64" ;;
-              *linux*i686*|*manylinux*i686*)
-                OS="Linux"; ARCH="x86" ;;
               *linux*aarch64*|*manylinux*aarch64*)
                 OS="Linux"; ARCH="aarch64" ;;
-              *linux*armv7l*)
-                OS="Linux"; ARCH="armv7" ;;
-              *linux*s390x*)
-                OS="Linux"; ARCH="s390x" ;;
-              *linux*ppc64le*)
-                OS="Linux"; ARCH="ppc64le" ;;
               *win_amd64*)
                 OS="Windows"; ARCH="x64" ;;
               *win32*)
