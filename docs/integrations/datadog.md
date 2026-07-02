@@ -5,7 +5,7 @@ description: Send log records to Datadog Logs.
 
 # Datadog
 
-`DatadogHandler` sends log records to Datadog via the HTTP Logs API. No extra dependencies required.
+`DatadogSink` sends log records to Datadog via the HTTP Logs API. No extra dependencies required.
 
 ## Installation
 
@@ -27,10 +27,10 @@ pip install logly
 
 ```python
 from logly import logger
-from logly.integrations.datadog import DatadogHandler
+from logly.integrations.datadog import DatadogSink
 
 logger.add(
-    DatadogHandler(
+    DatadogSink(
         api_key="your-datadog-api-key",
         service="my-app",
     )
@@ -41,10 +41,10 @@ logger.add(
 
 ```python
 from logly import logger
-from logly.integrations.datadog import DatadogHandler
+from logly.integrations.datadog import DatadogSink
 
 logger.add(
-    DatadogHandler(
+    DatadogSink(
         api_key="abc123def456",
         service="my-api",
         source="python",

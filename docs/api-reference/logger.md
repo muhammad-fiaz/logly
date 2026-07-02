@@ -221,7 +221,11 @@ Get or create a custom log level.
 
 ```python
 # Get existing level
-name, no, color = logger.level("INFO")
+level_obj = logger.level("INFO")
+print(level_obj.name)    # "INFO"
+print(level_obj.no)      # 20
+print(level_obj.color)   # None
+print(level_obj.icon)    # None
 
 # Create custom level
 logger.level("AUDIT", no=35, color="<green><bold>", icon="🔒")
@@ -233,7 +237,7 @@ logger.level("AUDIT", no=35, color="<green><bold>", icon="🔒")
 - `color` (`str | None`): ANSI color markup
 - `icon` (`str | None`): Level icon
 
-**Returns:** `tuple[str, int, str | None]` - `(name, numeric_value, color)`
+**Returns:** `Level` - level object with `.name`, `.no`, `.color`, `.icon` attributes
 
 ---
 

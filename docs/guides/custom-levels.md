@@ -1,127 +1,158 @@
----
-title: Custom Levels
-description: Register and use custom log levels with priorities and colors
----
-
 # Custom Levels
 
-Logly has 10 built-in levels, but you can register custom levels with your own priorities and colors.
+Logly supports custom log levels with full control over name, numeric severity, ANSI color, and icon/emoji.
 
-## Registering Custom Levels
+## Built-in Levels
 
-```python
-from logly import logger
+| Level | Number | Color |
+|-------|--------|-------|
+| TRACE | 5 | dim |
+| DEBUG | 10 | blue |
+| INFO | 20 | - |
+| NOTICE | 25 | cyan |
+| SUCCESS | 30 | green |
+| WARNING | 40 | yellow |
+| ERROR | 50 | red |
+| FAIL | 55 | magenta |
+| CRITICAL | 60 | bold_red |
+| FATAL | 70 | bold_red |
 
-# Register with priority and color
-logger.level("AUDIT", no=25, color="<magenta>")
-logger.level("SECURITY", no=35, color="<red><bold>")
-logger.level("METRIC", no=28, color="<blue>")
-
-# Use them
-logger.log("AUDIT", "User action recorded")
-logger.log("SECURITY", "Unauthorized access attempt")
-logger.log("METRIC", "Response time: 235ms")
-```
-
-## Priority Ordering
-
-Custom levels are ordered by priority. Choose priorities that fit between built-in levels:
-
-| Built-in | Priority | Custom levels fit at |
-|----------|----------|---------------------|
-| TRACE | 5 | |
-| DEBUG | 10 | |
-| INFO | 20 | |
-| NOTICE | 25 | |
-| SUCCESS | 30 | |
-| | | AUDIT (25), METRIC (28) |
-| WARNING | 40 | |
-| | | SECURITY (35) |
-| ERROR | 50 | |
-| FAIL | 55 | |
-| CRITICAL | 60 | |
-| FATAL | 70 | |
-
-## Inspecting Levels
+## Register a Custom Level
 
 ```python
 from logly import logger
 
-# Inspect a level
-name, priority, color = logger.level("AUDIT")
-print(f"Name: {name}, Priority: {priority}, Color: {color}")
-
-# List all registered levels
-print("All levels:", logger.levels)
-# ['TRACE', 'DEBUG', 'INFO', 'NOTICE', 'SUCCESS', 'AUDIT', 'WARNING', 'METRIC', ...]
+logger.level("VERBOSE", no=15, color="cyan", icon=">")
 ```
 
-## Using Custom Levels with Sinks
+Parameters:
+
+* `name` – Level name (e.g. `"VERBOSE"`, `"HTTP"`, `"SECURITY"`)
+* `no` – Numeric severity (must be unique)
+* `color` – ANSI color name (e.g. `"green"`, `"bold_red"`, `"#ff0000"`)
+* `icon` – Optional icon/emoji displayed in formatted output
+
+## Inspect a Level
 
 ```python
 from logly import logger
 
-# Register custom level
-logger.level("AUDIT", no=25, color="<magenta>")
-
-# Add sink that only receives AUDIT and above
-logger.add("audit.log", level="AUDIT")
-
-# Add sink for SECURITY and above
-logger.add("security.log", level="SECURITY")
-
-# Usage
-logger.log("AUDIT", "User login")
-logger.log("SECURITY", "Password changed")
+info = logger.level("INFO")
+print(info.name)    # "INFO"
+print(info.no)      # 20
+print(info.color)   # None
+print(info.icon)    # None
 ```
 
-## Custom Level with Extra Data
+Returns a `Level` object with `.name`, `.no`, `.color`, `.icon` attributes.
+
+## Log with Custom Level
 
 ```python
 from logly import logger
 
-logger.level("METRIC", no=28, color="<blue>")
+logger.level("METRIC", no=28, color="magenta", icon="#")
 
-# Bind extra fields with custom level
-logger.bind(response_time=235).log("METRIC", "Request completed")
-logger.bind(cpu_usage=85.2).log("METRIC", "CPU spike detected")
+logger.log("METRIC", "request latency 42ms")
 ```
 
-## Custom Level Examples
+## Use Icon in Format Strings
 
 ```python
 from logly import logger
 
-# Audit logging
-logger.level("AUDIT", no=25, color="<magenta>")
-logger.add("audit.log", level="AUDIT", format="{time} | {level} | {message}")
+logger.level("HTTP", no=21, color="blue", icon=">")
 
-# Security events
-logger.level("SECURITY", no=35, color="<red><bold>")
-logger.add("security.log", level="SECURITY", serialize=True)
+sink_id = logger.add(
+    lambda msg: print(msg, end=""),
+    format="{level_icon} {level} | {message}",
+    level="TRACE",
+)
 
-# Performance metrics
-logger.level("METRIC", no=28, color="<blue>")
-logger.add("metrics.log", level="METRIC", format="{time:HH:mm:ss} | {message}")
+logger.log("HTTP", "GET /api/users")
+logger.info("Application started")
 
-# Usage
-logger.log("AUDIT", "User alice logged in from 10.0.0.1")
-logger.log("SECURITY", "Failed login attempt for user bob")
-logger.log("METRIC", "GET /api/users 200 235ms")
+logger.remove(sink_id)
 ```
 
-## Level Registration from Native API
+Output:
+
+```text
+> HTTP | GET /api/users
+ INFO | Application started
+```
+
+Available format tokens:
+
+| Token | Description |
+|-------|-------------|
+| `{level}` | Level name |
+| `{level_no}` | Numeric priority |
+| `{level_icon}` | Level icon/emoji |
+| `{message}` | Log message |
+| `{time}` | Timestamp |
+| `{name}` | Logger name |
+| `{file}` | Source file |
+| `{line}` | Line number |
+| `{function}` | Function name |
+
+## Register Multiple Custom Levels
 
 ```python
-from logly._logly import register_custom_level, inspect_level, list_levels
+from logly import logger
 
-# Register via native API
-register_custom_level("CUSTOM", 30, None)
+CUSTOM_LEVELS = [
+    ("HTTP", 21, "blue", ">"),
+    ("DATABASE", 22, "magenta", "*"),
+    ("SECURITY", 35, "red", "!"),
+    ("METRIC", 28, "cyan", "#"),
+]
 
-# Inspect
-name, priority, color = inspect_level("CUSTOM")
-print(f"{name}: priority={priority}, color={color}")
+for name, no, color, icon in CUSTOM_LEVELS:
+    logger.level(name, no=no, color=color, icon=icon)
 
-# List all
-print(list_levels())
+logger.log("HTTP", "GET /api/users")
+logger.log("DATABASE", "Connected to PostgreSQL")
+logger.log("SECURITY", "Authentication failed")
+logger.log("METRIC", "request latency 42ms")
+```
+
+## Modify Existing Levels
+
+```python
+from logly import logger
+
+# Change the color of an existing level
+logger.level("INFO", no=20, color="bold_green", icon="i")
+
+# Verify the change
+info = logger.level("INFO")
+print(info.color)   # "bold_green"
+print(info.icon)    # "i"
+```
+
+## List All Registered Levels
+
+```python
+from logly import list_levels
+
+levels = list_levels()
+print(levels)
+# ["TRACE", "DEBUG", "INFO", "NOTICE", "SUCCESS", "WARNING", "ERROR", "FAIL", "CRITICAL", "FATAL", "HTTP", ...]
+```
+
+## Level Class Reference
+
+```python
+from logly import Level
+
+# Level is a frozen dataclass
+info = logger.level("INFO")
+assert isinstance(info, Level)
+
+# Access properties
+assert info.name == "INFO"
+assert info.no == 20
+assert info.color is None
+assert info.icon is None
 ```

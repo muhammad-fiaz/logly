@@ -57,23 +57,21 @@ Rotate at fixed time intervals:
 ```python
 from logly import logger
 
-# Daily rotation
+# Named intervals
 logger.add("app.log", rotation="daily")
-
-# Hourly rotation
 logger.add("app.log", rotation="hourly")
-
-# Weekly rotation
 logger.add("app.log", rotation="weekly")
-
-# Monthly rotation
 logger.add("app.log", rotation="monthly")
-
-# Yearly rotation
 logger.add("app.log", rotation="yearly")
-
-# Every minute
 logger.add("app.log", rotation="minutely")
+
+# Quantity-based intervals
+logger.add("app.log", rotation="1 day")
+logger.add("app.log", rotation="12 hours")
+logger.add("app.log", rotation="30 minutes")
+logger.add("app.log", rotation="10 seconds")
+logger.add("app.log", rotation="1 week")
+logger.add("app.log", rotation="1 month")
 ```
 
 **Supported time intervals:**
@@ -86,6 +84,13 @@ logger.add("app.log", rotation="minutely")
 | `"weekly"` / `"week"` | Every week | 604,800 |
 | `"monthly"` / `"month"` | Every month | 2,592,000 |
 | `"yearly"` / `"year"` | Every year | 31,536,000 |
+| `"N seconds"` | Every N seconds | N |
+| `"N minutes"` | Every N minutes | N * 60 |
+| `"N hours"` | Every N hours | N * 3,600 |
+| `"N days"` | Every N days | N * 86,400 |
+| `"N weeks"` | Every N weeks | N * 604,800 |
+| `"N months"` | Every N months | N * 2,592,000 |
+| `"N years"` | Every N years | N * 31,536,000 |
 
 ### Clock Rotation
 
@@ -122,6 +127,11 @@ logger.add("app.log", rotation="friday")
 
 # Rotate every Sunday
 logger.add("app.log", rotation="sunday")
+
+# Rotate on a specific weekday at a specific time
+logger.add("app.log", rotation="friday at 18:00")
+logger.add("app.log", rotation="monday at 03:30")
+logger.add("app.log", rotation="wednesday at 23:59")
 ```
 
 **Supported weekday names:**
@@ -135,6 +145,8 @@ logger.add("app.log", rotation="sunday")
 | `"friday"` | Friday |
 | `"saturday"` | Saturday |
 | `"sunday"` | Sunday |
+
+Combined weekday+clock format: `"<weekday> at <HH:MM>"` (e.g., `"friday at 18:00"`).
 
 ### No Rotation
 
@@ -207,6 +219,7 @@ logger.add("app.log", retention="6 months")
 | `"30 days"` | 2,592,000 |
 | `"2 weeks"` | 1,209,600 |
 | `"3 months"` | 7,776,000 |
+| `"1 year"` | 31,536,000 |
 
 **Abbreviations:**
 
@@ -281,6 +294,16 @@ logger.add("app.log", rotation="daily", compression="zstd")
 
 Output files: `app.log.zst`
 
+### tar
+
+```python
+from logly import logger
+
+logger.add("app.log", rotation="daily", compression="tar")
+```
+
+Output files: `app.log.tar` (uncompressed tar archive)
+
 ### No Compression
 
 ```python
@@ -294,11 +317,12 @@ logger.add("app.log", rotation="daily", compression=None)
 | Codec | String | Aliases | Extension |
 |-------|--------|---------|-----------|
 | None | `"none"` | `None` | N/A |
-| gzip | `"gzip"` | `"gz"`, `"tar"`, `"tar.gz"`, `"tgz"` | `.gz` |
+| gzip | `"gzip"` | `"gz"`, `"tar.gz"`, `"tgz"` | `.gz` |
 | zip | `"zip"` | N/A | `.zip` |
 | bz2 | `"bz2"` | `"tar.bz2"` | `.bz2` |
 | xz | `"xz"` | `"lzma"`, `"tar.xz"` | `.xz` |
 | zstd | `"zstd"` | N/A | `.zst` |
+| tar | `"tar"` | N/A | `.tar` |
 
 ## Complete Examples
 
@@ -380,3 +404,85 @@ logger.add(
     compression="gzip",
 )
 ```
+
+## Watch Mode
+
+Reopen the log file if it is deleted or replaced (useful with external log rotation tools):
+
+```python
+from logly import logger
+
+logger.add("app.log", watch=True)
+```
+
+## Delay File Creation
+
+Don't create the log file until the first message is written:
+
+```python
+from logly import logger
+
+logger.add("app.log", delay=True)
+```
+
+## Complete `logger.add()` Options
+
+```python
+logger.add(
+    sink,
+    *,
+    level="DEBUG",
+    format="{time} {level} {message}",
+    filter=None,
+    colorize=None,
+    serialize=False,
+    pretty_json=None,
+    backtrace=True,
+    diagnose=False,
+    enqueue=False,
+    catch=True,
+    rotation=None,
+    retention=None,
+    compression=None,
+    delay=False,
+    watch=False,
+    mode="a",
+    buffering=1,
+    encoding="utf-8",
+    opener=None,
+    patch=None,
+    context=None,
+    loop=None,
+)
+```
+
+### Rotation Values Accepted
+
+| Type | Examples |
+|------|----------|
+| File sizes | `"100 KB"`, `"10 MB"`, `"1 GB"` |
+| Named intervals | `"daily"`, `"hourly"`, `"weekly"`, `"monthly"`, `"yearly"`, `"minutely"` |
+| Quantity intervals | `"1 day"`, `"12 hours"`, `"30 minutes"`, `"10 seconds"`, `"1 week"`, `"1 month"`, `"1 year"` |
+| Clock times | `"00:00"`, `"12:30"`, `"18:45"` |
+| Weekdays | `"monday"`, `"friday"`, `"sunday"` |
+| Weekday+clock | `"friday at 18:00"`, `"monday at 03:30"` |
+
+### Retention Values Accepted
+
+| Type | Examples |
+|------|----------|
+| Count | `7`, `30` |
+| Time strings | `"30 days"`, `"2 weeks"`, `"3 months"`, `"1 year"` |
+| Abbreviations | `"30s"`, `"5min"`, `"2h"`, `"7d"`, `"2w"` |
+
+### Compression Values Accepted
+
+| Codec | Strings |
+|-------|---------|
+| gzip | `"gzip"`, `"gz"`, `"tar.gz"`, `"tgz"` |
+| zip | `"zip"` |
+| bz2 | `"bz2"`, `"tar.bz2"` |
+| xz/lzma | `"xz"`, `"lzma"`, `"tar.xz"` |
+| zstd | `"zstd"` |
+| tar | `"tar"` |
+| none | `None`, `"none"` |

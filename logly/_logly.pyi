@@ -24,6 +24,34 @@ from logly.models import PrettyJsonConfig
 __version__: str
 """Current version of the logly package."""
 
+class Level:
+    """Represents a registered log level.
+
+    Returned by ``logger.level("NAME")``. Contains the level name, numeric
+    severity, optional ANSI color, and optional icon/emoji.
+
+    Attributes:
+        name: Level name (e.g. ``"INFO"``).
+        no: Numeric severity priority.
+        color: ANSI color name or ``None``.
+        icon: Icon/emoji string or ``None``.
+
+    Example::
+
+        info = logger.level("INFO")
+        print(info.name)    # "INFO"
+        print(info.no)      # 20
+        print(info.color)   # None
+        print(info.icon)    # None
+    """
+
+    name: str
+    no: int
+    color: str | None
+    icon: str | None = None
+
+    def __init__(self, name: str, no: int, color: str | None, icon: str | None = None) -> None: ...
+
 class _Logger:
     """Native Rust logger engine (internal).
 
@@ -281,6 +309,7 @@ class Logger:
         patch: Callable[[dict[str, object]], None] | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
+        watch: bool = False,
         context: str | Any | None = None,
         catch: bool = True,
         mode: str = "a",
@@ -525,28 +554,31 @@ class Logger:
         no: int | None = None,
         color: str | None = None,
         icon: str | None = None,
-    ) -> tuple[str, int, str | None]:
+    ) -> Level:
         """Inspect or register a custom log level.
 
-        When called with only ``name``, returns the current configuration.
-        When called with ``no``, registers a new level.
+        When called with only ``name``, returns the current configuration
+        as a :class:`Level` object. When ``no`` is provided, registers
+        a new level.
 
         Args:
             name: Level name to inspect or register (e.g. ``"VERBOSE"``).
             no: Numeric priority for new levels. Lower = more verbose.
             color: ANSI color code for the level (e.g. ``"red"``, ``"#ff0000"``).
-            icon: Icon character for the level.
+            icon: Icon/emoji for the level (e.g. ``"🚀"``).
 
         Returns:
-            Tuple of ``(name, numeric_priority, color_or_none)``.
+            :class:`Level` with ``.name``, ``.no``, ``.color``, ``.icon``.
 
         Example::
 
-            # Inspect existing level
-            name, pri, color = logger.level("INFO")
+            # Register a custom level
+            logger.level("SUCCESS_PLUS", no=35, color="green", icon="🚀")
 
-            # Register custom level
-            logger.level("VERBOSE", no=5, color="cyan")
+            # Inspect an existing level
+            info = logger.level("INFO")
+            print(info.name)    # "INFO"
+            print(info.no)      # 20
         """
         ...
     def enable(self, name: str) -> None:
@@ -1009,37 +1041,43 @@ class SyslogSink:
         """Flush any pending writes."""
         ...
 
-def register_custom_level(name: str, priority: int, color: str | None = None) -> str:
+def register_custom_level(
+    name: str,
+    priority: int,
+    color: str | None = None,
+    icon: str | None = None,
+) -> str:
     """Register a custom log level.
 
     Args:
         name: Level name (e.g. ``"VERBOSE"``).
         priority: Numeric priority (lower = more verbose).
         color: Optional ANSI color code (e.g. ``"red"``, ``"#ff0000"``).
+        icon: Optional icon/emoji for the level (e.g. ``">"``).
 
     Returns:
         The registered level name.
 
     Example::
 
-        register_custom_level("VERBOSE", 5, "cyan")
+        register_custom_level("VERBOSE", 5, "cyan", icon=">")
         logger.log("VERBOSE", "Detailed info")
     """
     ...
 
-def inspect_level(name: str) -> tuple[str, int, str | None]:
+def inspect_level(name: str) -> tuple[str, int, str | None, str | None]:
     """Inspect a log level's configuration.
 
     Args:
         name: Level name to inspect.
 
     Returns:
-        Tuple of ``(name, numeric_priority, color_or_none)``.
+        Tuple of ``(name, numeric_priority, color_or_none, icon_or_none)``.
 
     Example::
 
-        name, pri, color = inspect_level("INFO")
-        # ("INFO", 20, "green")
+        name, pri, color, icon = inspect_level("INFO")
+        # ("INFO", 20, None, None)
     """
     ...
 

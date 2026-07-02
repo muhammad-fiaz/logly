@@ -36,10 +36,10 @@ def test_custom_levels() -> None:
     register_custom_level("METRIC", 15, "bright_cyan")
     register_custom_level("HIGHLIGHT", 36, "bold red on white")
 
-    assert inspect_level("AUDIT") == ("AUDIT", 35, "rgb(255, 128, 0)")
-    assert inspect_level("SECURITY") == ("SECURITY", 45, "#ff0066")
-    assert inspect_level("METRIC") == ("METRIC", 15, "bright_cyan")
-    assert inspect_level("HIGHLIGHT") == ("HIGHLIGHT", 36, "bold red on white")
+    assert inspect_level("AUDIT") == ("AUDIT", 35, "rgb(255, 128, 0)", None)
+    assert inspect_level("SECURITY") == ("SECURITY", 45, "#ff0066", None)
+    assert inspect_level("METRIC") == ("METRIC", 15, "bright_cyan", None)
+    assert inspect_level("HIGHLIGHT") == ("HIGHLIGHT", 36, "bold red on white", None)
 
 
 def test_parse_functions() -> None:

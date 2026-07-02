@@ -77,18 +77,14 @@ pub enum RotationPolicy {
     /// Rotate when the file reaches this many bytes.
     SizeBytes(u64),
     /// Rotate after this many seconds since the file was created/last rotated.
-    ///
-    /// Common presets: 60 (minutely), 3600 (hourly), 86400 (daily),
-    /// 604800 (weekly), 2592000 (monthly).
     IntervalSeconds(u64),
     /// Rotate at a specific time of day (HH:MM format, 24-hour).
-    ///
-    /// The file is rotated when the system clock reaches the specified time.
     ClockRotation(String),
     /// Rotate on a specific day of the week (0=Monday through 6=Sunday).
-    ///
-    /// The file is rotated at midnight on the specified weekday.
     WeekdayRotation(u8),
+    /// Rotate on a specific day of the week at a specific time.
+    /// Tuple of `(weekday_index, time_string)`.
+    WeekdayClockRotation(u8, String),
 }
 
 /// Retention policy for rotated files.
@@ -164,6 +160,8 @@ pub enum CompressionCodec {
     Xz,
     /// Zstandard compression. Excellent speed and ratio; recommended for most use cases.
     Zstd,
+    /// Tar archive without compression.
+    Tar,
 }
 
 /// Displays the codec name in lowercase (e.g., `"gzip"`, `"zstd"`).
@@ -176,6 +174,7 @@ impl std::fmt::Display for CompressionCodec {
             Self::Bz2 => write!(f, "bz2"),
             Self::Xz => write!(f, "xz"),
             Self::Zstd => write!(f, "zstd"),
+            Self::Tar => write!(f, "tar"),
         }
     }
 }
@@ -432,7 +431,6 @@ pub fn resolve_compression_codec(value: &str) -> LoglyResult<CompressionCodec> {
     let text = value.trim().to_lowercase();
     let aliases: std::collections::HashMap<&str, &str> = [
         ("gz", "gzip"),
-        ("tar", "gzip"),
         ("tar.gz", "gzip"),
         ("tgz", "gzip"),
         ("tar.bz2", "bz2"),
@@ -448,6 +446,7 @@ pub fn resolve_compression_codec(value: &str) -> LoglyResult<CompressionCodec> {
         "bz2" => Ok(CompressionCodec::Bz2),
         "xz" | "lzma" => Ok(CompressionCodec::Xz),
         "zstd" => Ok(CompressionCodec::Zstd),
+        "tar" => Ok(CompressionCodec::Tar),
         _ => Err(LoglyError::Config(format!(
             "unsupported compression codec: {value}"
         ))),
@@ -481,6 +480,45 @@ pub fn resolve_rotation_policy(value: &str) -> LoglyResult<RotationPolicy> {
         "yearly" | "year" => Ok(RotationPolicy::IntervalSeconds(31_536_000)),
         "minutely" | "minute" => Ok(RotationPolicy::IntervalSeconds(60)),
         _ => {
+            // Check for combined weekday+clock: "friday at 18:00", "monday at 03:30"
+            if let Some(at_pos) = text.find(" at ") {
+                let day_part = text[..at_pos].trim();
+                let time_part = text[at_pos + 4..].trim();
+                let weekdays = [
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                    "sunday",
+                ];
+                if let Some(idx) = weekdays.iter().position(|&d| d == day_part) {
+                    // Validate time part as HH:MM
+                    if time_part.contains(':') && time_part.len() <= 5 {
+                        let parts: Vec<&str> = time_part.split(':').collect();
+                        if parts.len() == 2
+                            && let (Ok(h), Ok(m)) =
+                                (parts[0].parse::<u32>(), parts[1].parse::<u32>())
+                            && h <= 23
+                            && m <= 59
+                        {
+                            #[expect(
+                                clippy::cast_possible_truncation,
+                                reason = "weekday index is always 0..6"
+                            )]
+                            return Ok(RotationPolicy::WeekdayClockRotation(
+                                idx as u8,
+                                time_part.to_owned(),
+                            ));
+                        }
+                    }
+                }
+            }
+            // Check for quantity-based time rotation: "1 day", "12 hours", "30 minutes", "10 seconds", "1 week", "1 month"
+            if let Some(secs) = parse_time_quantity(&text) {
+                return Ok(RotationPolicy::IntervalSeconds(secs));
+            }
             // Check for clock rotation (HH:MM)
             if text.contains(':') && text.len() <= 5 {
                 let parts: Vec<&str> = text.split(':').collect();
@@ -566,6 +604,16 @@ pub fn resolve_retention_policy(value: &str) -> LoglyResult<RetentionPolicy> {
         .collect();
     let num: u64 = num_str.parse().unwrap_or(0);
     // Try full word forms first (longest first to avoid suffix collisions)
+    if text.ends_with(" years")
+        || text.ends_with(" year")
+        || text.ends_with(" yrs")
+        || text.ends_with(" yr")
+    {
+        return Ok(RetentionPolicy {
+            count: None,
+            seconds: Some(num * 31_536_000),
+        });
+    }
     if text.ends_with(" months") || text.ends_with(" month") {
         return Ok(RetentionPolicy {
             count: None,
@@ -638,6 +686,29 @@ pub fn resolve_retention_policy(value: &str) -> LoglyResult<RetentionPolicy> {
     )))
 }
 
+/// Parses a time quantity string like "1 day", "12 hours", "30 minutes", "10 seconds", "1 week", "1 month" into seconds.
+fn parse_time_quantity(text: &str) -> Option<u64> {
+    let num_str: String = text
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    let num: u64 = num_str.parse().ok()?;
+    if num == 0 {
+        return None;
+    }
+    let unit = text[num_str.len()..].trim();
+    match unit {
+        "second" | "seconds" | "sec" | "secs" => Some(num),
+        "minute" | "minutes" | "min" | "mins" => Some(num * 60),
+        "hour" | "hours" | "hr" | "hrs" => Some(num * 3_600),
+        "day" | "days" => Some(num * 86_400),
+        "week" | "weeks" | "wk" | "wks" => Some(num * 604_800),
+        "month" | "months" => Some(num * 2_592_000),
+        "year" | "years" | "yr" | "yrs" => Some(num * 31_536_000),
+        _ => None,
+    }
+}
+
 /// Parses a rotation policy to its string representation.
 ///
 /// # Errors
@@ -664,6 +735,27 @@ pub fn parse_rotation_to_str(value: &str) -> LoglyResult<String> {
     }
     if text == "minutely" || text == "minute" {
         return Ok("interval:60".to_owned());
+    }
+    // Check for quantity-based time rotation: "1 day", "12 hours", etc.
+    if let Some(secs) = parse_time_quantity(&text) {
+        return Ok(format!("interval:{secs}"));
+    }
+    // Check for combined weekday+clock: "friday at 18:00"
+    if let Some(at_pos) = text.find(" at ") {
+        let day_part = text[..at_pos].trim();
+        let time_part = text[at_pos + 4..].trim();
+        let weekdays = [
+            ("monday", 0),
+            ("tuesday", 1),
+            ("wednesday", 2),
+            ("thursday", 3),
+            ("friday", 4),
+            ("saturday", 5),
+            ("sunday", 6),
+        ];
+        if let Some((_, val)) = weekdays.iter().find(|(d, _)| *d == day_part) {
+            return Ok(format!("weekday_clock:{val}:{time_part}"));
+        }
     }
     if text.contains(':') && text.len() <= 5 {
         return Ok(format!("clock:{}", value.trim()));

@@ -49,7 +49,7 @@ from logly.exceptions import (
     RotationError,
     SinkError,
 )
-from logly.logger import Logger, logger
+from logly.logger import Level, Logger, logger
 from logly.models import PrettyJsonConfig
 
 __all__ = [
@@ -58,6 +58,7 @@ __all__ = [
     "FilterError",
     "FormatterError",
     "HttpJsonSink",
+    "Level",
     "Logger",
     "LoglyError",
     "PrettyJsonConfig",

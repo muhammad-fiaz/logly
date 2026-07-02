@@ -8,16 +8,15 @@ description: Integrating Logly with Flask applications
 ## Basic Setup
 
 ```python
-from flask import Flask, g, request
-from logly import logger
-from logly.integrations.flask import LoglyMiddleware
+from flask import Flask
+from logly.integrations.flask import init_app
 
 app = Flask(__name__)
-LoglyMiddleware(app)
+init_app(app)
 ```
 
 ::: tip
-The `LoglyMiddleware` adds request context (request_id, method, path) to all log messages during request handling.
+`init_app` adds request context (request_id, method, path) to all log messages during request handling, and routes Flask logs through Logly.
 :::
 
 ## Manual Setup
@@ -27,6 +26,7 @@ import time
 import uuid
 from flask import Flask, g, request
 from logly import logger
+from logly.integrations.flask import LoglyHandler
 
 app = Flask(__name__)
 
@@ -51,6 +51,10 @@ def logly_after_request(response):
         elapsed_ms,
     )
     return response
+
+# Route Flask logs through Logly
+app.logger.handlers = [LoglyHandler()]
+app.logger.propagate = False
 ```
 
 ## Request Context

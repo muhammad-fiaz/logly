@@ -56,10 +56,12 @@ pub enum RotationPolicy {
     /// Rotate after this many seconds.
     IntervalSeconds(u64),
     /// Rotate at a specific time of day (HH:MM format, 24-hour).
-    /// The string is the time specification, e.g., "00:00" for midnight.
     ClockRotation(String),
     /// Rotate on a specific day of the week (0=Monday through 6=Sunday).
     WeekdayRotation(Weekday),
+    /// Rotate on a specific day of the week at a specific time.
+    /// Tuple of `(weekday_index, time_string)`.
+    WeekdayClockRotation(u8, String),
 }
 
 impl std::fmt::Display for RotationPolicy {
@@ -70,6 +72,9 @@ impl std::fmt::Display for RotationPolicy {
             Self::IntervalSeconds(s) => write!(f, "IntervalSeconds({s})"),
             Self::ClockRotation(s) => write!(f, "ClockRotation(\"{s}\")"),
             Self::WeekdayRotation(d) => write!(f, "WeekdayRotation({d})"),
+            Self::WeekdayClockRotation(d, t) => {
+                write!(f, "WeekdayClockRotation({d}, \"{t}\")")
+            }
         }
     }
 }
@@ -240,6 +245,31 @@ pub fn check_rotation(
                 let modified = metadata.modified().unwrap_or_else(|_| SystemTime::now());
                 let elapsed = modified.elapsed().unwrap_or_default().as_secs();
                 if elapsed > 3600 {
+                    return Ok(RotationAction::RotateTo(generate_rotated_path(path)));
+                }
+            }
+            Ok(RotationAction::None)
+        }
+        RotationPolicy::WeekdayClockRotation(target_day, time_spec) => {
+            if !path.exists() {
+                return Ok(RotationAction::None);
+            }
+            let Some((target_hours, target_minutes)) = parse_clock_spec(time_spec) else {
+                return Ok(RotationAction::None);
+            };
+            let now = chrono::Local::now();
+            #[expect(clippy::cast_possible_truncation, reason = "weekday is always 0..6")]
+            let current_weekday = now.weekday().num_days_from_monday() as u8;
+            if current_weekday != *target_day {
+                return Ok(RotationAction::None);
+            }
+            let current_minutes_since_midnight = now.hour() * 60 + now.minute();
+            let target_minutes_since_midnight = target_hours * 60 + target_minutes;
+            if current_minutes_since_midnight >= target_minutes_since_midnight {
+                let metadata = path.metadata()?;
+                let modified = metadata.modified().unwrap_or_else(|_| SystemTime::now());
+                let elapsed = modified.elapsed().unwrap_or_default().as_secs();
+                if elapsed > 60 {
                     return Ok(RotationAction::RotateTo(generate_rotated_path(path)));
                 }
             }

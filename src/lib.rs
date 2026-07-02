@@ -15,7 +15,7 @@ use engine::LoggerEngine;
 use error::LoglyError;
 use filter::LevelFilter;
 use format::{JsonFormatter, TemplateFormatter};
-use levels::{level, levels, register_level};
+use levels::{level, levels, register_level_with_icon};
 use pyo3::IntoPyObject;
 use pyo3::exceptions::{PyKeyError, PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
@@ -463,6 +463,22 @@ fn parse_canonical_rotation(canonical: &str) -> PyResult<rotate::RotationPolicy>
     {
         return Ok(rotate::RotationPolicy::IntervalSeconds(secs));
     }
+    if let Some(time) = canonical.strip_prefix("clock:") {
+        return Ok(rotate::RotationPolicy::ClockRotation(time.to_owned()));
+    }
+    if let Some(rest) = canonical.strip_prefix("weekday:")
+        && let Ok(day) = rest.parse::<u8>()
+    {
+        return Ok(rotate::RotationPolicy::WeekdayRotation(day));
+    }
+    if let Some(rest) = canonical.strip_prefix("weekday_clock:") {
+        let parts: Vec<&str> = rest.splitn(2, ':').collect();
+        if parts.len() == 2
+            && let (Ok(day), time) = (parts[0].parse::<u8>(), parts[1].to_owned())
+        {
+            return Ok(rotate::RotationPolicy::WeekdayClockRotation(day, time));
+        }
+    }
     Ok(rotate::RotationPolicy::Never)
 }
 
@@ -527,6 +543,7 @@ fn resolve_compression_codec_py(
         config::CompressionCodec::Bz2 => Ok(compress::CompressionCodec::Bz2),
         config::CompressionCodec::Xz => Ok(compress::CompressionCodec::Xz),
         config::CompressionCodec::Zstd => Ok(compress::CompressionCodec::Zstd),
+        config::CompressionCodec::Tar => Ok(compress::CompressionCodec::Tar),
     }
 }
 
@@ -930,23 +947,29 @@ impl PyLogger {
     }
 }
 
-/// Registers a custom logging level.
+/// Registers a custom logging level with optional icon.
 #[pyfunction]
-#[pyo3(signature = (name, priority, color = None))]
-fn register_custom_level(name: &str, priority: u16, color: Option<String>) -> PyResult<String> {
-    register_level(name, priority, color)
+#[pyo3(signature = (name, priority, color = None, icon = None))]
+fn register_custom_level(
+    name: &str,
+    priority: u16,
+    color: Option<String>,
+    icon: Option<String>,
+) -> PyResult<String> {
+    register_level_with_icon(name, priority, color, icon)
         .map(|level| level.name().to_owned())
         .map_err(to_py_error)
 }
 
-/// Inspects a level and returns `(name, priority, color)`.
+/// Inspects a level and returns `(name, priority, color, icon)`.
 #[pyfunction]
-fn inspect_level(name: &str) -> PyResult<(String, u16, Option<String>)> {
+fn inspect_level(name: &str) -> PyResult<(String, u16, Option<String>, Option<String>)> {
     let level = level(name).map_err(to_py_error)?;
     Ok((
         level.name().to_owned(),
         level.priority(),
         level.color().map(str::to_owned),
+        level.icon().map(str::to_owned),
     ))
 }
 

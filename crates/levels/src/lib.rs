@@ -227,6 +227,27 @@ pub fn register_level_with_icon(
             "level name cannot be empty".to_owned(),
         ));
     }
+    let upper = name.trim().to_ascii_uppercase();
+    let builtins = [
+        "TRACE", "DEBUG", "INFO", "NOTICE", "SUCCESS", "WARNING", "ERROR", "FAIL", "CRITICAL",
+        "FATAL",
+    ];
+    if builtins.contains(&upper.as_str()) {
+        // Allow updating properties of existing builtin levels (color, icon) but not the name
+        let mut guard = registry()
+            .write()
+            .map_err(|_| LoglyError::InvalidLevel("level registry is unavailable".to_owned()))?;
+        if let Some(existing) = guard.get(&upper) {
+            let updated = LogLevel::with_icon(
+                &existing.name,
+                existing.priority,
+                color.or(existing.color.clone()),
+                icon.or(existing.icon.clone()),
+            );
+            guard.insert(upper, updated.clone());
+            return Ok(updated);
+        }
+    }
     let level = LogLevel::with_icon(name.trim(), priority, color, icon);
     let mut guard = registry()
         .write()

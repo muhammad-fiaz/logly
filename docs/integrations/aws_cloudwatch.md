@@ -5,7 +5,7 @@ description: Send log records to AWS CloudWatch Logs.
 
 # AWS CloudWatch
 
-`CloudWatchHandler` sends log records to AWS CloudWatch Logs with batching and background flushing. Automatically creates log groups and streams.
+`CloudWatchSink` sends log records to AWS CloudWatch Logs with batching and background flushing. Automatically creates log groups and streams.
 
 ## Installation
 
@@ -43,10 +43,10 @@ ModuleNotFoundError: No module named 'boto3'
 
 ```python
 import logging
-from logly.integrations.aws_cloudwatch import CloudWatchHandler
+from logly.integrations.aws_cloudwatch import CloudWatchSink
 
 logger = logging.getLogger("myapp")
-logger.addHandler(CloudWatchHandler(
+logger.addHandler(CloudWatchSink(
     log_group="my-app",
     log_stream="main",
 ))
@@ -69,12 +69,12 @@ logger.setLevel(logging.INFO)
 
 ```python
 import logging
-from logly.integrations.aws_cloudwatch import CloudWatchHandler
+from logly.integrations.aws_cloudwatch import CloudWatchSink
 
 logger = logging.getLogger("myapp")
 logger.setLevel(logging.DEBUG)
 
-handler = CloudWatchHandler(
+handler = CloudWatchSink(
     log_group="/aws/lambda/my-function",
     log_stream="2024-01-15",
     region="us-east-1",

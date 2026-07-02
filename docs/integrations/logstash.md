@@ -5,7 +5,7 @@ description: Send log records to Logstash via TCP/UDP.
 
 # Logstash
 
-`LogstashHandler` sends log records to a Logstash instance over TCP or UDP in JSON format. Supports field prefixes and tags for filtering.
+`LogstashSink` sends log records to a Logstash instance over TCP or UDP in JSON format. Supports field prefixes and tags for filtering.
 
 ## Installation
 
@@ -15,10 +15,10 @@ No additional dependencies required. This integration uses Python's standard lib
 
 ```python
 import logging
-from logly.integrations.logstash import LogstashHandler
+from logly.integrations.logstash import LogstashSink
 
 logger = logging.getLogger("myapp")
-logger.addHandler(LogstashHandler(host="localhost", port=5044))
+logger.addHandler(LogstashSink(host="localhost", port=5044))
 logger.setLevel(logging.INFO)
 ```
 
@@ -37,13 +37,13 @@ logger.setLevel(logging.INFO)
 
 ```python
 import logging
-from logly.integrations.logstash import LogstashHandler
+from logly.integrations.logstash import LogstashSink
 
 logger = logging.getLogger("myapp")
 logger.setLevel(logging.DEBUG)
 
 # TCP handler
-tcp_handler = LogstashHandler(
+tcp_handler = LogstashSink(
     host="logstash.example.com",
     port=5044,
     protocol="tcp",
@@ -53,7 +53,7 @@ tcp_handler = LogstashHandler(
 logger.addHandler(tcp_handler)
 
 # UDP handler
-udp_handler = LogstashHandler(
+udp_handler = LogstashSink(
     host="logstash.example.com",
     port=5045,
     protocol="udp",

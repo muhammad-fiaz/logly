@@ -55,14 +55,11 @@ logger.add(sys.stderr, level="INFO")
 ```python
 from logly import logger
 
-# 1. Increase queue size
-logger.add("app.log", enqueue=True, queue_size=10000)
-
-# 2. Use a dedicated worker
-logger.add("app.log", enqueue=True, workers=2)
-
-# 3. Remove enqueue for synchronous logging
+# 1. Remove enqueue for synchronous logging
 logger.add("app.log")  # No enqueue
+
+# 2. Use a higher log level to reduce volume
+logger.add("app.log", enqueue=True, level="WARNING")
 ```
 
 ### Rotation not working
@@ -210,7 +207,7 @@ LOGGING = {
     "version": 1,
     "handlers": {
         "logly": {
-            "class": "logly.integrations.django.DjangoLoglyHandler",
+            "class": "logly.integrations.django.LoglyHandler",
         },
     },
     "root": {
@@ -225,9 +222,14 @@ LOGGING = {
 **Solution:**
 
 ```python
-from logly.integrations.structlog import configure_structlog
+import structlog
+from logly.integrations.structlog import logly_processor
 
-configure_structlog()
+structlog.configure(
+    processors=[logly_processor()],
+    logger_factory=structlog.PrintLoggerFactory(),
+    wrapper_class=structlog.BoundLogger,
+)
 ```
 
 ## Debugging

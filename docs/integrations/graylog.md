@@ -5,7 +5,7 @@ description: Send log records to Graylog in GELF format.
 
 # Graylog
 
-`GraylogHandler` sends log records to a Graylog server in GELF (Graylog Extended Log Format). Supports GELF 1.0 and 1.1, TCP/UDP, UDP chunking, and zlib compression.
+`GraylogSink` sends log records to a Graylog server in GELF (Graylog Extended Log Format). Supports GELF 1.0 and 1.1, TCP/UDP, UDP chunking, and zlib compression.
 
 ## Installation
 
@@ -15,10 +15,10 @@ No additional dependencies required. This integration uses Python's standard lib
 
 ```python
 import logging
-from logly.integrations.graylog import GraylogHandler
+from logly.integrations.graylog import GraylogSink
 
 logger = logging.getLogger("myapp")
-logger.addHandler(GraylogHandler(host="localhost", port=12201))
+logger.addHandler(GraylogSink(host="localhost", port=12201))
 logger.setLevel(logging.INFO)
 ```
 
@@ -37,13 +37,13 @@ logger.setLevel(logging.INFO)
 
 ```python
 import logging
-from logly.integrations.graylog import GraylogHandler
+from logly.integrations.graylog import GraylogSink
 
 logger = logging.getLogger("myapp")
 logger.setLevel(logging.DEBUG)
 
 # UDP with compression
-handler = GraylogHandler(
+handler = GraylogSink(
     host="graylog.example.com",
     port=12201,
     protocol="udp",

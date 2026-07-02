@@ -120,43 +120,6 @@ logger.info("Detailed source info")
 # Output: 2026-07-01 14:30:45.123 | INFO     | app.py:20 in main | Detailed source info
 ```
 
-## Source Context Display
-
-Logly can read surrounding lines from source files to provide context around the log call site. This is useful for understanding the code context without opening the file.
-
-### Configuring Context Lines
-
-```python
-from logly import logger
-
-logger.remove()
-
-# Show 2 lines before and after the log call
-logger.add(
-    "app.log",
-    format="{time} | {level} | {file}:{line}\n{source}\n{message}",
-    source_context=2,  # lines of context before/after
-)
-```
-
-### Example Output
-
-When `source_context=2` and the log call is on line 42:
-
-```
-2026-07-01 14:30:45 | INFO | app.py:42
-   40 |     for item in data:
-   41 |         result = process(item)
->> 42 |         logger.info("Processed item")
-   43 |         results.append(result)
-   44 |     return results
-Processed item
-```
-
-::: info
-Source context reads the actual source file at log time. This feature requires the source file to be accessible on disk.
-:::
-
 ## Depth Parameter for Decorator Wrapping
 
 When using decorators or wrapper functions, the source location points to the wrapper instead of the original call site. Use the `depth` parameter to skip stack frames.
@@ -359,7 +322,6 @@ Source capture has different performance characteristics depending on configurat
 |---------------|----------|-------|
 | `capture=False` | None | Skip all source capture |
 | `capture=True` (default) | Low | Captures file/line/function via stack inspection |
-| `source_context=N` | Medium | Reads source file from disk per call |
 | `depth=N` | Low | Additional stack frame traversal |
 
 ### Optimizing for Performance
@@ -378,14 +340,6 @@ logger.add(
     rotation="100 MB",
 )
 
-# Debug only: enable full source context
-logger.add(
-    "debug.log",
-    level="DEBUG",
-    source_context=3,
-    format="{time} | {level:<8} | {file}:{line} | {source} | {message}",
-)
-
 # Production: minimal source info
 logger.add(
     "prod.log",
@@ -395,7 +349,7 @@ logger.add(
 ```
 
 ::: warning
-Avoid using `source_context` in production for high-throughput logging. Reading the source file from disk on every log call adds significant I/O overhead. Use it during development and debugging only.
+Source context reads the actual source file at log time. This feature requires the source file to be accessible on disk and adds I/O overhead per log call. Use it during development and debugging only.
 :::
 
 ## Complete Examples
@@ -420,14 +374,13 @@ logger.add(
     colorize=True,
 )
 
-# File with source context
+# File with source info
 logger.add(
     "debug.log",
     level="DEBUG",
-    source_context=2,
     format=(
         "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | "
-        "{file}:{line} in {function}\n{source}\n{message}"
+        "{file}:{line} in {function}\n{message}"
     ),
 )
 

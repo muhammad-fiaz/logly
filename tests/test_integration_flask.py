@@ -85,10 +85,16 @@ class TestFlaskInitApp:
         mock_app.before_request = MagicMock(side_effect=lambda f: f)
         mock_app.after_request = MagicMock(side_effect=lambda f: f)
         mock_app.teardown_request = MagicMock(side_effect=lambda f: f)
+        mock_flask_g = MagicMock()
+        mock_flask_request = MagicMock()
+        mock_flask_module = MagicMock()
+        mock_flask_module.g = mock_flask_g
+        mock_flask_module.request = mock_flask_request
         with patch("logly.integrations.flask._has_flask", True):
             with patch("logly.integrations.flask.logger") as mock_logger:
                 mock_logger.add = MagicMock()
-                init_app(mock_app, level="DEBUG")
-                mock_app.before_request.assert_called()
-                mock_app.after_request.assert_called()
-                mock_app.teardown_request.assert_called()
+                with patch.dict("sys.modules", {"flask": mock_flask_module}):
+                    init_app(mock_app, level="DEBUG")
+                    mock_app.before_request.assert_called()
+                    mock_app.after_request.assert_called()
+                    mock_app.teardown_request.assert_called()

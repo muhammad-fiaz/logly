@@ -5,7 +5,7 @@ description: Send log records to Azure Monitor/Application Insights.
 
 # Azure Monitor
 
-`AzureMonitorHandler` sends log records to Azure Monitor or Application Insights. Supports connection string configuration and severity mapping.
+`AzureMonitorSink` sends log records to Azure Monitor or Application Insights. Supports connection string configuration and severity mapping.
 
 ## Installation
 
@@ -43,10 +43,10 @@ ModuleNotFoundError: No module named 'azure.monitor'
 
 ```python
 from logly import logger
-from logly.integrations.azure_monitor import AzureMonitorHandler
+from logly.integrations.azure_monitor import AzureMonitorSink
 
 logger.add(
-    AzureMonitorHandler(connection_string="InstrumentationKey=...")
+    AzureMonitorSink(connection_string="InstrumentationKey=...")
 )
 ```
 
@@ -54,10 +54,10 @@ logger.add(
 
 ```python
 from logly import logger
-from logly.integrations.azure_monitor import AzureMonitorHandler
+from logly.integrations.azure_monitor import AzureMonitorSink
 
 logger.add(
-    AzureMonitorHandler(
+    AzureMonitorSink(
         connection_string="InstrumentationKey=abc123;IngestionEndpoint=https://.../",
         service_name="my-api",
         cloud_role="production",

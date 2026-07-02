@@ -420,10 +420,10 @@ class TestLevelManagement:
 
     def test_custom_level_registration(self) -> None:
         log = Logger()
-        name, pri, color = log.level("MYLEVEL", no=42, color="magenta")
-        assert name == "MYLEVEL"
-        assert pri == 42
-        assert color == "magenta"
+        lv = log.level("MYLEVEL", no=42, color="magenta")
+        assert lv.name == "MYLEVEL"
+        assert lv.no == 42
+        assert lv.color == "magenta"
 
     def test_level_priority_ordering(self) -> None:
         log = Logger()

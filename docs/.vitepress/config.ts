@@ -386,6 +386,7 @@ gtag('config', '${GA_ID}');`,
             { text: "Configure", link: "/guides/configure" },
             { text: "Color Markup", link: "/guides/color-markup" },
             { text: "Custom Colors", link: "/guides/custom-colors" },
+            { text: "Custom Levels", link: "/guides/custom-levels" },
             {
               text: "Color Operations",
               link: "/guides/color-operations",

@@ -5,7 +5,7 @@ description: Send log records to Seq structured log server.
 
 # Seq
 
-`SeqHandler` sends structured log events to Seq via the HTTP Ingest API. No extra dependencies required.
+`SeqSink` sends structured log events to Seq via the HTTP Ingest API. No extra dependencies required.
 
 ## Installation
 
@@ -27,10 +27,10 @@ pip install logly
 
 ```python
 from logly import logger
-from logly.integrations.seq import SeqHandler
+from logly.integrations.seq import SeqSink
 
 logger.add(
-    SeqHandler(
+    SeqSink(
         server_url="http://localhost:5341",
     )
 )
@@ -40,10 +40,10 @@ logger.add(
 
 ```python
 from logly import logger
-from logly.integrations.seq import SeqHandler
+from logly.integrations.seq import SeqSink
 
 logger.add(
-    SeqHandler(
+    SeqSink(
         server_url="http://localhost:5341",
         api_key="your-api-key",
         event_type="MyApp",

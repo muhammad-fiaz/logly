@@ -17,6 +17,7 @@
 //! | `{time}` | Formatted timestamp |
 //! | `{level}` | Level name |
 //! | `{level_no}` | Numeric priority |
+//! | `{level_icon}` | Level icon/emoji |
 //! | `{message}` | Log message |
 //! | `{name}` | Logger name |
 //! | `{file}` | Source file path |
@@ -213,6 +214,7 @@ fn apply_format_spec(value: &str, spec: &str) -> String {
 /// - `time` — formatted timestamp
 /// - `level` — level name
 /// - `level_no` — numeric priority
+/// - `level_icon` — level icon/emoji
 /// - `message` — log message
 /// - `name` — logger name
 /// - `file` — source file path
@@ -236,6 +238,7 @@ fn resolve_token<'a>(
         "time" => Some(format_timestamp(record, timestamp_format)),
         "level" => Some(record.level.name().to_owned()),
         "level_no" => Some(record.level.priority().to_string()),
+        "level_icon" => Some(record.level.icon().unwrap_or("").to_owned()),
         "message" => Some(record.message.clone()),
         "name" => Some(record.name.clone()),
         "file" => Some(record.file.as_deref().unwrap_or("").to_owned()),

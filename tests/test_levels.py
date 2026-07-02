@@ -34,27 +34,28 @@ class TestBuiltinLevels:
         assert priorities == sorted(priorities)
 
     def test_level_inspect_returns_tuple(self) -> None:
-        """inspect_level should return (name, priority, color)."""
-        name, priority, color = inspect_level("INFO")
+        """inspect_level should return (name, priority, color, icon)."""
+        name, priority, color, icon = inspect_level("INFO")
         assert name == "INFO"
         assert priority == 20
         assert color is None or isinstance(color, str)
+        assert icon is None or isinstance(icon, str)
 
     def test_level_case_insensitive_lookup(self) -> None:
         """Level lookup should be case-insensitive."""
-        name1, pri1, _ = inspect_level("info")
-        name2, pri2, _ = inspect_level("INFO")
+        name1, pri1, _, _ = inspect_level("info")
+        name2, pri2, _, _ = inspect_level("INFO")
         assert name1 == name2
         assert pri1 == pri2
 
     def test_trace_level_priority(self) -> None:
         """TRACE should have the lowest priority."""
-        _, priority, _ = inspect_level("TRACE")
+        _, priority, _, _ = inspect_level("TRACE")
         assert priority == 5
 
     def test_fatal_level_priority(self) -> None:
         """FATAL should have the highest priority."""
-        _, priority, _ = inspect_level("FATAL")
+        _, priority, _, _ = inspect_level("FATAL")
         assert priority == 70
 
     def test_level_unknown_raises(self) -> None:

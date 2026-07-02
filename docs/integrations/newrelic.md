@@ -5,7 +5,7 @@ description: Send log records to New Relic.
 
 # New Relic
 
-`NewRelicHandler` sends log records to New Relic via the Log API. Supports license key authentication and structured logging.
+`NewRelicSink` sends log records to New Relic via the Log API. Supports license key authentication and structured logging.
 
 ## Installation
 
@@ -43,10 +43,10 @@ ModuleNotFoundError: No module named 'newrelic'
 
 ```python
 from logly import logger
-from logly.integrations.newrelic import NewRelicHandler
+from logly.integrations.newrelic import NewRelicSink
 
 logger.add(
-    NewRelicHandler(
+    NewRelicSink(
         license_key="your-license-key",
         app_name="my-app",
     )
@@ -57,10 +57,10 @@ logger.add(
 
 ```python
 from logly import logger
-from logly.integrations.newrelic import NewRelicHandler
+from logly.integrations.newrelic import NewRelicSink
 
 logger.add(
-    NewRelicHandler(
+    NewRelicSink(
         license_key="abc123def456",
         app_name="my-api",
         insert_key="your-insights-insert-key",

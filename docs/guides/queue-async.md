@@ -78,13 +78,9 @@ logger.complete()
 - **Order preservation**: Messages are processed in FIFO order
 - **Error handling**: Worker errors are caught and logged to stderr
 
-## Backpressure Modes
+## Queue Behavior
 
-When the queue fills up (e.g., during high-throughput logging), Logly applies backpressure. Configure the backpressure mode with the `backpressure` parameter:
-
-### Block Mode (Default)
-
-Blocks the calling thread until the queue has space:
+When the queue fills up during high-throughput logging, Logly applies backpressure by blocking the calling thread until space is available. This ensures no messages are lost.
 
 ```python
 from logly import logger
@@ -94,7 +90,7 @@ logger.remove()
 logger.add(
     "app.log",
     enqueue=True,
-    backpressure="block",  # Default behavior
+    rotation="100 MB",
 )
 
 # If queue is full, this call blocks until space is available
@@ -103,68 +99,6 @@ for i in range(100000):
 
 logger.complete()
 ```
-
-**When to use**: When you must not lose any messages and can tolerate the calling thread blocking.
-
-### DropNewest Mode
-
-Drops the newest message when the queue is full:
-
-```python
-from logly import logger
-
-logger.remove()
-
-logger.add(
-    "app.log",
-    enqueue=True,
-    backpressure="drop_newest",
-)
-
-# If queue is full, newest messages are dropped
-for i in range(100000):
-    logger.info("Message {}", i)
-
-logger.complete()
-```
-
-**When to use**: When you need non-blocking logging and can tolerate losing some messages during bursts.
-
-### Grow Mode
-
-Increases queue size when full:
-
-```python
-from logly import logger
-
-logger.remove()
-
-logger.add(
-    "app.log",
-    enqueue=True,
-    backpressure="grow",
-)
-
-# Queue grows as needed (memory usage increases)
-for i in range(1000000):
-    logger.info("Message {}", i)
-
-logger.complete()
-```
-
-**When to use**: When you have sufficient memory and want to avoid blocking or dropping messages.
-
-::: warning
-`backpressure="grow"` can cause memory exhaustion if logging is faster than processing for extended periods. Use with caution.
-:::
-
-### Backpressure Comparison
-
-| Mode | Behavior | Message Loss | Memory | Latency |
-|------|----------|--------------|--------|---------|
-| `block` | Blocks caller when full | None | Bounded | May increase |
-| `drop_newest` | Drops new messages | Some | Bounded | Low |
-| `grow` | Increases queue size | None | Unbounded | Low |
 
 ## `complete()` for Flushing
 
@@ -228,8 +162,6 @@ logger.complete()
 
 ### Timeout
 
-Specify a timeout to avoid waiting indefinitely:
-
 ```python
 from logly import logger
 
@@ -238,8 +170,8 @@ logger.add("app.log", enqueue=True)
 
 logger.info("Message")
 
-# Wait up to 5 seconds
-logger.complete(timeout=5)
+# Wait for all pending messages to be processed
+logger.complete()
 ```
 
 ::: tip
@@ -358,9 +290,7 @@ logger.complete()
 | Mode | Typical Latency | P99 Latency |
 |------|-----------------|-------------|
 | Sync | < 1ms | < 5ms |
-| Enqueue (block) | < 1ms | < 10ms |
-| Enqueue (drop_newest) | < 1ms | < 1ms |
-| Enqueue (grow) | < 1ms | < 5ms |
+| Enqueue | < 1ms | < 10ms |
 
 ## When to Use Enqueue vs Sync
 
@@ -414,11 +344,10 @@ import time
 
 logger.remove()
 
-# High-throughput with bounded queue
+# High-throughput with enqueue
 logger.add(
     "app.log",
     enqueue=True,
-    backpressure="block",
     rotation="100 MB",
     retention="7 days",
     compression="gzip",
@@ -450,7 +379,6 @@ logger.remove()
 logger.add(
     "access.log",
     enqueue=True,
-    backpressure="drop_newest",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {message}",
 )
 
@@ -458,7 +386,6 @@ logger.add(
 logger.add(
     "errors.log",
     enqueue=True,
-    backpressure="block",
     level="ERROR",
     format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {message}",
     backtrace=True,

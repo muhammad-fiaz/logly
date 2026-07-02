@@ -5,7 +5,7 @@ description: Send log records to Google Cloud Logging (Stackdriver).
 
 # Google Cloud Logging
 
-`GoogleCloudLoggingHandler` sends log records to Google Cloud Logging (formerly Stackdriver). Supports structured logging, severity mapping, and resource configuration.
+`GoogleCloudLoggingSink` sends log records to Google Cloud Logging (formerly Stackdriver). Supports structured logging, severity mapping, and resource configuration.
 
 ## Installation
 
@@ -43,19 +43,19 @@ ModuleNotFoundError: No module named 'google.cloud.logging'
 
 ```python
 from logly import logger
-from logly.integrations.google_cloud_logging import GoogleCloudLoggingHandler
+from logly.integrations.google_cloud_logging import GoogleCloudLoggingSink
 
-logger.add(GoogleCloudLoggingHandler(project_id="my-project"))
+logger.add(GoogleCloudLoggingSink(project_id="my-project"))
 ```
 
 ## Full Example
 
 ```python
 from logly import logger
-from logly.integrations.google_cloud_logging import GoogleCloudLoggingHandler
+from logly.integrations.google_cloud_logging import GoogleCloudLoggingSink
 
 logger.add(
-    GoogleCloudLoggingHandler(
+    GoogleCloudLoggingSink(
         project_id="my-project",
         log_name="my-app-log",
         resource_type="gae_app",

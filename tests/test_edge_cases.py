@@ -71,10 +71,10 @@ class TestLevelOperations:
 
     def test_register_custom_level(self) -> None:
         log = Logger()
-        name, pri, color = log.level("CUSTOM", no=55, color="red")
-        assert name == "CUSTOM"
-        assert pri == 55
-        assert color == "red"
+        lv = log.level("CUSTOM", no=55, color="red")
+        assert lv.name == "CUSTOM"
+        assert lv.no == 55
+        assert lv.color == "red"
 
     def test_resolve_unknown_level_error(self) -> None:
         log = Logger()

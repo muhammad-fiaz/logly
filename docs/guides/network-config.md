@@ -80,7 +80,6 @@ logger.add(
     http_sink,
     level="WARNING",
     enqueue=True,
-    backpressure="block",
 )
 ```
 
@@ -572,7 +571,6 @@ logger.add(
     http_json_sink,
     level="WARNING",
     enqueue=True,
-    backpressure="block",
 )
 
 # Local file for all logs
@@ -707,7 +705,6 @@ logger.add(
     batch_http_sink,
     level="INFO",
     enqueue=True,
-    backpressure="drop_newest",
 )
 
 # Process millions of events

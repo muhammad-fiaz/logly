@@ -190,7 +190,7 @@ LOGGING = {
     "version": 1,
     "handlers": {
         "logly": {
-            "class": "logly.integrations.django.DjangoLoglyHandler",
+            "class": "logly.integrations.django.LoglyHandler",
         },
     },
     "root": {
@@ -203,9 +203,10 @@ LOGGING = {
 ### How do I use with Rich?
 
 ```python
-from logly.integrations.rich import install_rich_handler
+from logly.integrations.rich import LoglyRichSink
+from logly import logger
 
-install_rich_handler()
+logger.add(LoglyRichSink(), colorize=True)
 ```
 
 ## Performance

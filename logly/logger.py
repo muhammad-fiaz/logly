@@ -54,6 +54,34 @@ _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", def
 _logly_level_tls: threading.local = threading.local()
 
 
+@dataclass(frozen=True, slots=True)
+class Level:
+    """Represents a registered log level.
+
+    Returned by ``logger.level("NAME")``. Contains the level name, numeric
+    severity, optional ANSI color, and optional icon/emoji.
+
+    Attributes:
+        name: Level name (e.g. ``"INFO"``).
+        no: Numeric severity priority.
+        color: ANSI color name or ``None``.
+        icon: Icon/emoji string or ``None``.
+
+    Example::
+
+        info = logger.level("INFO")
+        print(info.name)    # "INFO"
+        print(info.no)      # 20
+        print(info.color)   # None
+        print(info.icon)    # None
+    """
+
+    name: str
+    no: int
+    color: str | None
+    icon: str | None = None
+
+
 def _current_context() -> dict[str, object]:
     """Return a copy of the current context variables.
 
@@ -158,6 +186,7 @@ class Logger:
         patch: Callable[[dict[str, object]], None] | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
+        watch: bool = False,
         context: str | multiprocessing.context.BaseContext | None = None,
         catch: bool = True,
         mode: str = "a",
@@ -203,6 +232,8 @@ class Logger:
             patch: Callable that mutates the record dict before dispatch.
             encoding: File encoding (default ``"utf-8"``).
             delay: If ``True``, delay file opening until first write.
+            watch: If ``True``, reopen the log file if it is deleted or
+                replaced (useful with external log rotation tools).
             context: Multiprocessing context for queue-based sinks.
             catch: If ``True``, catch sink errors silently.
             mode: File mode (``"a"`` for append, ``"w"`` for overwrite).
@@ -324,7 +355,7 @@ class Logger:
             retention=retention,
             compression=compression,
             delay=delay,
-            watch=False,
+            watch=watch,
             mode=mode,
             encoding=encoding,
             filter=filter,
@@ -590,32 +621,38 @@ class Logger:
         no: int | None = None,
         color: str | None = None,
         icon: str | None = None,
-    ) -> tuple[str, int, str | None]:
+    ) -> Level:
         """Inspect or register a custom log level.
 
         When called with only ``name``, returns the level's current
-        configuration. When ``no`` is provided, registers a new level.
+        configuration as a :class:`Level` object. When ``no`` is provided,
+        registers a new level.
 
         Args:
             name: Level name (e.g. ``"VERBOSE"``).
             no: Numeric priority. If provided, registers the level.
             color: ANSI color code for the level (e.g. ``"green"``).
-            icon: Icon/emoji for the level.
+            icon: Icon/emoji for the level (e.g. ``"🚀"``).
 
         Returns:
-            Tuple of ``(name, numeric_priority, color_or_none)``.
+            :class:`Level` with ``.name``, ``.no``, ``.color``, ``.icon``.
 
         Example::
 
             # Register a custom level
-            logger.level("TRACE", no=5, color="cyan")
+            logger.level("SUCCESS_PLUS", no=35, color="green", icon="🚀")
 
             # Inspect an existing level
-            name, priority, color = logger.level("INFO")
+            info = logger.level("INFO")
+            print(info.name)    # "INFO"
+            print(info.no)      # 20
+            print(info.color)   # None
+            print(info.icon)    # None
         """
         if no is not None:
-            register_custom_level(name, no, color)
-        return inspect_level(name)
+            register_custom_level(name, no, color, icon)
+        name_str, priority, color_opt, icon_opt = inspect_level(name)
+        return Level(name=name_str, no=priority, color=color_opt, icon=icon_opt)
 
     def enable(self, name: str) -> None:
         """Enable log emission for a logger name pattern.

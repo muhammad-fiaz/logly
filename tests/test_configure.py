@@ -20,9 +20,9 @@ def test_configure_handlers_replaces_sinks() -> None:
 def test_configure_levels_registers_custom() -> None:
     logger = Logger()
     logger.configure(levels=[{"name": "CUSTOM_LV", "no": 55, "color": "red"}])
-    name, pri, _ = logger.level("CUSTOM_LV")
-    assert name == "CUSTOM_LV"
-    assert pri == 55
+    level = logger.level("CUSTOM_LV")
+    assert level.name == "CUSTOM_LV"
+    assert level.no == 55
 
 
 def test_configure_extra_bind_fields() -> None:
