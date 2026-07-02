@@ -165,28 +165,40 @@ jobs:
         run: uv run pytest
 
   testing-windows-arm64:
-    name: Tests (Python ${{ matrix.python-version }}, windows-latest arm64)
-    runs-on: windows-latest
+    name: Tests (Python ${{ matrix.python-version }}, windows-11-arm)
+    runs-on: windows-11-arm
     strategy:
       fail-fast: false
       matrix:
         python-version:
-          ["3.10.11", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+          ["3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+          cache-suffix: test-windows-arm64-${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           architecture: arm64
-      - name: Build wheel
-        uses: PyO3/maturin-action@v1
+      - name: Install Rust aarch64 target
+        run: rustup target add aarch64-pc-windows-msvc
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
         with:
-          target: arm64
-          args: --release --out dist --find-interpreter --compatibility off
-          sccache: "true"
-      - name: Verify wheel exists
-        run: ls -la dist/
+          key: test-windows-arm64-${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          uv sync
+          uv run maturin develop --release --target aarch64-pc-windows-msvc
+          uv pip install pytest pytest-cov
+      - name: Test with pytest
+        run: uv run pytest
 
   testing-linux-x86:
     name: Tests (Python ${{ matrix.python-version }}, ubuntu-latest x86)
