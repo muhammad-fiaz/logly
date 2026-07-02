@@ -68,7 +68,7 @@ elasticsearch = [
     "elasticsearch>=8.0",
 ]
 sentry = [
-    "sentry-sdk>=2.0",
+    "sentry-sdk>=2.64.0",
 ]
 celery = [
     "celery>=5.0",
@@ -144,7 +144,7 @@ all = [
     "opentelemetry-sdk>=1.20",
     "prometheus-client>=0.20",
     "elasticsearch>=8.0",
-    "sentry-sdk>=2.0",
+    "sentry-sdk>=2.64.0",
     "celery>=5.0",
     "uvicorn>=0.20",
     "redis>=4.0",
