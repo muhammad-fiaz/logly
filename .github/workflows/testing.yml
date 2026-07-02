@@ -66,7 +66,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: pyproject.toml
           cache-key: lint
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -78,8 +78,8 @@ jobs:
           key: lint
       - name: Install Dependencies
         run: |
-          uv sync --frozen --group dev
-          uv run --group dev maturin develop
+          uv sync --group dev
+          uv run --group dev maturin develop --release
       - name: Ruff format check
         run: uv run --group dev ruff format logly tests --check
       - name: Lint with ruff
@@ -103,7 +103,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: pyproject.toml
           cache-key: test-${{ matrix.os }}-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -115,10 +115,13 @@ jobs:
           key: test-${{ matrix.os }}-${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
-          uv sync --frozen --group dev --extra rich --extra fastapi --extra starlette --extra django --extra flask --extra gunicorn --extra sqlalchemy --extra structlog --extra opentelemetry --extra prometheus --extra elasticsearch --extra sentry --extra celery --extra uvicorn --extra redis --extra rabbitmq --extra mongodb --extra discord --extra slack --extra apscheduler --extra rq --extra click --extra typer --extra compression --extra pydantic --extra tqdm --extra aws --extra gcloud --extra azure --extra newrelic
-          uv run --group dev maturin develop
+          uv sync --group dev
+          uv run --group dev maturin develop --release
       - name: Test with pytest
-        run: uv run --group dev pytest
+        # Run the normal suite without installing all optional service clients.
+        # This keeps Windows/macOS from spending most of the job resolving and
+        # building integration-only dependencies.
+        run: uv run --group dev pytest -q
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         uses: codecov/codecov-action@v7

@@ -145,6 +145,10 @@ dmypy.json
 # Rust
 /target
 
+# uv lock files are intentionally not committed for this native extension
+# project; CI resolves from pyproject.toml for each Python/platform target.
+uv.lock
+
 # Log files
 *.log
 logs/
