@@ -164,6 +164,30 @@ jobs:
       - name: Test with pytest
         run: uv run pytest
 
+  testing-windows-arm64:
+    name: Tests (Python ${{ matrix.python-version }}, windows-latest arm64)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          ["3.10.11", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: arm64
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: arm64
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+      - name: Verify wheel exists
+        run: ls -la dist/
+
   testing-linux-x86:
     name: Tests (Python ${{ matrix.python-version }}, ubuntu-latest x86)
     runs-on: ubuntu-latest

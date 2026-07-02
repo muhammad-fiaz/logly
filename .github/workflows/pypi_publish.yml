@@ -110,6 +110,12 @@ jobs:
         target: [x64, x86, arm64]
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+        exclude:
+          - target: arm64
+            python-version: "3.10"
+        include:
+          - target: arm64
+            python-version: "3.10.11"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -135,12 +141,11 @@ jobs:
           path: dist
 
   macos:
-    name: macOS (${{ matrix.target }}, Python ${{ matrix.python-version }})
+    name: macOS (${{ matrix.python-version }})
     runs-on: macos-latest
     timeout-minutes: 25
     strategy:
       matrix:
-        target: [x86_64, aarch64]
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     steps:
@@ -156,13 +161,12 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
+          name: wheels-macos-py${{ matrix.python-version }}
           path: dist
 
   sdist:
@@ -278,10 +282,10 @@ jobs:
                 OS="Windows"; ARCH="x86" ;;
               *win_arm64*)
                 OS="Windows"; ARCH="arm64" ;;
-              *macosx*x86_64*)
-                OS="macOS"; ARCH="x86_64 (Intel)" ;;
               *macosx*arm64*)
                 OS="macOS"; ARCH="aarch64 (Apple Silicon)" ;;
+              *macosx*x86_64*)
+                OS="macOS"; ARCH="x86_64 (Intel)" ;;
               *)
                 OS="Unknown"; ARCH="$PLATFORM" ;;
             esac
