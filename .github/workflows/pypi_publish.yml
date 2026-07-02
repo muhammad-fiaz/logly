@@ -40,6 +40,37 @@ jobs:
           name: wheels-linux-x86_64-py${{ matrix.python-version }}
           path: dist
 
+  linux-x86:
+    name: Linux (x86, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: x86
+          args: --release --out dist --find-interpreter --compatibility off
+          sccache: "true"
+          manylinux: auto
+      - name: Upload wheel
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-linux-x86-py${{ matrix.python-version }}
+          path: dist
+
   linux-aarch64:
     name: Linux (aarch64, Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04-arm
@@ -161,7 +192,7 @@ jobs:
 
   publish-pypi:
     name: Publish to PyPI
-    needs: [linux-x86_64, linux-aarch64, windows, macos, sdist]
+    needs: [linux-x86_64, linux-x86, linux-aarch64, windows, macos, sdist]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

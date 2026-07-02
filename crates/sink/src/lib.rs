@@ -289,7 +289,8 @@ impl Sink for FileSink {
         // Check rotation
         let action = rotate::check_rotation(&self.path, &self.rotation, line_bytes)?;
         if let rotate::RotationAction::RotateTo(rotated_path) = action {
-            if let Some(f) = guard.take() {
+            if let Some(mut f) = guard.take() {
+                let _ = f.flush();
                 drop(f);
             }
             rotate::perform_rotation(&self.path, rotate::OverwriteMode::Append)?;
