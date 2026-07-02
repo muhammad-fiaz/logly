@@ -90,21 +90,69 @@ template: |
 
   ## Wheel Downloads
 
-  | Platform | Architecture | Python Versions | File |
-  |----------|-------------|-----------------|------|
-  | Linux | x86_64 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-manylinux_*_x86_64.whl` |
-  | Linux | x86 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-manylinux_*_i686.whl` |
-  | Linux | aarch64 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-manylinux_*_aarch64.whl` |
-  | Linux | armv7 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-linux_armv7l.whl` |
-  | Linux | s390x | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-linux_s390x.whl` |
-  | Linux | ppc64le | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-linux_ppc64le.whl` |
-  | Windows | x64 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-win_amd64.whl` |
-  | Windows | x86 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-win32.whl` |
-  | macOS | x86_64 (Intel) | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-macosx_*_x86_64.whl` |
-  | macOS | aarch64 (Apple Silicon) | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 | `logly-$RESOLVED_VERSION-cpXY-cpXY-macosx_*_arm64.whl` |
-  | Source | All platforms | 3.10+ | `logly-$RESOLVED_VERSION.tar.gz` |
-
-  > `cpXY` = CPython version (e.g., `cp313` for Python 3.13). Full list of wheel files is below.
+  | Platform | Architecture | Python | Download |
+  |----------|-------------|--------|----------|
+  | Linux | x86_64 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_x86_64.whl) |
+  | Linux | x86_64 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_x86_64.whl) |
+  | Linux | x86_64 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_x86_64.whl) |
+  | Linux | x86_64 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_x86_64.whl) |
+  | Linux | x86_64 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_x86_64.whl) |
+  | Linux | x86_64 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_x86_64.whl) |
+  | Linux | x86 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_i686.whl) |
+  | Linux | x86 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_i686.whl) |
+  | Linux | x86 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_i686.whl) |
+  | Linux | x86 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_i686.whl) |
+  | Linux | x86 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_i686.whl) |
+  | Linux | x86 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_i686.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_i686.whl) |
+  | Linux | aarch64 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-manylinux_2_17_aarch64.whl) |
+  | Linux | aarch64 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-manylinux_2_17_aarch64.whl) |
+  | Linux | aarch64 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-manylinux_2_17_aarch64.whl) |
+  | Linux | aarch64 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-manylinux_2_17_aarch64.whl) |
+  | Linux | aarch64 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-manylinux_2_17_aarch64.whl) |
+  | Linux | aarch64 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_aarch64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-manylinux_2_17_aarch64.whl) |
+  | Linux | armv7 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-linux_armv7l.whl) |
+  | Linux | armv7 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-linux_armv7l.whl) |
+  | Linux | armv7 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-linux_armv7l.whl) |
+  | Linux | armv7 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-linux_armv7l.whl) |
+  | Linux | armv7 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-linux_armv7l.whl) |
+  | Linux | armv7 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-linux_armv7l.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-linux_armv7l.whl) |
+  | Linux | s390x | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-linux_s390x.whl) |
+  | Linux | s390x | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-linux_s390x.whl) |
+  | Linux | s390x | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-linux_s390x.whl) |
+  | Linux | s390x | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-linux_s390x.whl) |
+  | Linux | s390x | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-linux_s390x.whl) |
+  | Linux | s390x | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-linux_s390x.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-linux_s390x.whl) |
+  | Linux | ppc64le | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-linux_ppc64le.whl) |
+  | Linux | ppc64le | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-linux_ppc64le.whl) |
+  | Linux | ppc64le | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-linux_ppc64le.whl) |
+  | Linux | ppc64le | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-linux_ppc64le.whl) |
+  | Linux | ppc64le | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-linux_ppc64le.whl) |
+  | Linux | ppc64le | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-linux_ppc64le.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-linux_ppc64le.whl) |
+  | Windows | x64 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-win_amd64.whl) |
+  | Windows | x64 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-win_amd64.whl) |
+  | Windows | x64 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-win_amd64.whl) |
+  | Windows | x64 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-win_amd64.whl) |
+  | Windows | x64 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-win_amd64.whl) |
+  | Windows | x64 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-win_amd64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-win_amd64.whl) |
+  | Windows | x86 | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-win32.whl) |
+  | Windows | x86 | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-win32.whl) |
+  | Windows | x86 | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-win32.whl) |
+  | Windows | x86 | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-win32.whl) |
+  | Windows | x86 | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-win32.whl) |
+  | Windows | x86 | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-win32.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-win32.whl) |
+  | macOS | x86_64 (Intel) | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-macosx_11_0_x86_64.whl) |
+  | macOS | x86_64 (Intel) | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-macosx_11_0_x86_64.whl) |
+  | macOS | x86_64 (Intel) | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-macosx_11_0_x86_64.whl) |
+  | macOS | x86_64 (Intel) | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-macosx_11_0_x86_64.whl) |
+  | macOS | x86_64 (Intel) | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-macosx_11_0_x86_64.whl) |
+  | macOS | x86_64 (Intel) | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-macosx_11_0_x86_64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-macosx_11_0_x86_64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.10 | [logly-$RESOLVED_VERSION-cp310-cp310-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp310-cp310-macosx_11_0_arm64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.11 | [logly-$RESOLVED_VERSION-cp311-cp311-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp311-cp311-macosx_11_0_arm64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.12 | [logly-$RESOLVED_VERSION-cp312-cp312-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp312-cp312-macosx_11_0_arm64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.13 | [logly-$RESOLVED_VERSION-cp313-cp313-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp313-cp313-macosx_11_0_arm64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.14 | [logly-$RESOLVED_VERSION-cp314-cp314-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp314-cp314-macosx_11_0_arm64.whl) |
+  | macOS | aarch64 (Apple Silicon) | 3.15 | [logly-$RESOLVED_VERSION-cp315-cp315-macosx_11_0_arm64.whl](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION-cp315-cp315-macosx_11_0_arm64.whl) |
+  | Source | All platforms | 3.10+ | [logly-$RESOLVED_VERSION.tar.gz](https://github.com/muhammad-fiaz/logly/releases/download/v$RESOLVED_VERSION/logly-$RESOLVED_VERSION.tar.gz) |
 
   ## Quick Start
 
