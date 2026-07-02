@@ -1,4 +1,4 @@
-name-template: "$RESOLVED_VERSION"
+name-template: "v$RESOLVED_VERSION"
 tag-template: "$RESOLVED_VERSION"
 categories:
   - title: "Breaking Changes"
@@ -60,6 +60,7 @@ change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&'
 no-changes-template: "No changes since last release."
 template: |-
+
   ## Installation
 
   ### pip
