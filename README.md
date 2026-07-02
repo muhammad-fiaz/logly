@@ -179,10 +179,8 @@ pip install "logly[compression]"             # Zstandard compression
 pip install "logly[all]"                     # all of the above
 ```
 
-> [!NOTE]
 > Several integrations (`datadog`, `seq`, `logstash`, `graylog`, `discord`, `slack`, `email`, `http`, `telemetry`) use only Python stdlib and require no extra dependencies.
 
-> [!WARNING]
 > The `kafka` extra requires `librdkafka` to be installed on your system. See [Kafka integration docs](https://muhammad-fiaz.github.io/logly/integrations/kafka/) for details.
 
 </details>
