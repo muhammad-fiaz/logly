@@ -95,7 +95,7 @@ discord = [
     "aiohttp>=3.0",
 ]
 slack = [
-    "slack-sdk>=3.0",
+    "slack-sdk>=3.43.0",
 ]
 apscheduler = [
     "apscheduler>=3.10",
@@ -153,7 +153,7 @@ all = [
     "pymongo>=4.0",
     "psycopg2-binary>=2.9",
     "aiohttp>=3.0",
-    "slack-sdk>=3.0",
+    "slack-sdk>=3.43.0",
     "apscheduler>=3.10",
     "rq>=1.10",
     "click>=8.0",
