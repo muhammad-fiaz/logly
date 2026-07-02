@@ -128,8 +128,6 @@ venv.bak/
 docs/node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
-docs/package-lock.json
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -144,10 +142,16 @@ dmypy.json
 
 # Rust
 /target
+Cargo.lock
 
 # uv lock files are intentionally not committed for this native extension
 # project; CI resolves from pyproject.toml for each Python/platform target.
 uv.lock
+
+# Package manager lock files
+package-lock.json
+bun.lock
+docs/bun.lock
 
 # Log files
 *.log
