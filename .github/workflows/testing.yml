@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
@@ -91,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     runs-on: ${{ matrix.os }}
@@ -117,9 +120,6 @@ jobs:
           uv sync --group dev
           uv run --group dev maturin develop --release
       - name: Test with pytest
-        # Run the normal suite without installing all optional service clients.
-        # This keeps Windows/macOS from spending most of the job resolving and
-        # building integration-only dependencies.
         run: uv run --group dev pytest -q
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
@@ -127,3 +127,62 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  testing-windows-x86:
+    name: Tests (Python ${{ matrix.python-version }}, windows-latest x86)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+          cache-key: test-windows-x86-${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x86
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test-windows-x86-${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          uv sync --group dev
+          uv run --group dev maturin develop --release
+      - name: Test with pytest
+        run: uv run --group dev pytest -q
+
+  testing-cross-linux:
+    name: Cross Tests (Linux ${{ matrix.target }}, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86, aarch64, armv7, s390x, ppc64le]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist
+          sccache: "true"
+          manylinux: auto
+          rust-toolchain: stable
+      - name: Verify wheel exists
+        run: ls -la dist/

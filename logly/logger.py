@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import inspect
 import logging
 import multiprocessing.context
 import os
@@ -296,7 +297,7 @@ class Logger:
             sink = _handler_sink
 
         # Detect coroutine function — schedule on event loop
-        if callable(sink) and asyncio.iscoroutinefunction(sink):
+        if callable(sink) and inspect.iscoroutinefunction(sink):
             target_loop = loop
             if target_loop is None:
                 try:

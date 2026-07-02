@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 
 from logly import Logger
 
@@ -77,5 +78,5 @@ def test_async_sink_is_coroutine_function_detection() -> None:
     async def is_async(msg: str) -> None:
         pass
 
-    assert asyncio.iscoroutinefunction(is_async)
-    assert not asyncio.iscoroutinefunction(not_async)
+    assert inspect.iscoroutinefunction(is_async)
+    assert not inspect.iscoroutinefunction(not_async)
