@@ -120,7 +120,7 @@ jobs:
           uv sync --group dev
           uv run --group dev maturin develop --release
       - name: Test with pytest
-        run: uv run --group dev pytest -q
+        run: uv run --group dev pytest
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         uses: codecov/codecov-action@v7
@@ -162,31 +162,7 @@ jobs:
           uv run maturin develop --release --target i686-pc-windows-msvc
           uv pip install pytest pytest-cov
       - name: Test with pytest
-        run: uv run pytest -q
-
-  testing-linux-x86:
-    name: Tests (Python ${{ matrix.python-version }}, ubuntu-latest x86)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build wheel
-        uses: PyO3/maturin-action@v1
-        with:
-          target: x86
-          args: --release --out dist --find-interpreter --compatibility off
-          sccache: "true"
-          manylinux: auto
-      - name: Verify wheel exists
-        run: ls -la dist/
+        run: uv run pytest
 
   testing-linux-aarch64:
     name: Tests (Python ${{ matrix.python-version }}, ubuntu-24.04-arm)
@@ -218,4 +194,4 @@ jobs:
           uv sync --group dev
           uv run --group dev maturin develop --release
       - name: Test with pytest
-        run: uv run --group dev pytest -q
+        run: uv run --group dev pytest

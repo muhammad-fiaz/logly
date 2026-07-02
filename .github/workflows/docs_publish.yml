@@ -55,10 +55,16 @@ jobs:
         working-directory: ./docs
         run: bun run docs:build
 
+      - name: Package artifact
+        working-directory: ./docs/.vitepress/dist
+        run: tar -czf github-pages.tar.gz .
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
-          path: docs/.vitepress/dist
+          name: github-pages
+          path: docs/.vitepress/dist/github-pages.tar.gz
+          compression-level: 0
 
   deploy:
     needs: build-docs
