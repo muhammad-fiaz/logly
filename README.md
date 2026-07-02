@@ -77,7 +77,7 @@ A Rust-powered, high-performance logging library for Python with structured sink
 | **Custom levels** | Define your own levels with custom priorities and colors | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-levels/) |
 | **Multiple sinks** | Console, file, callable, and network outputs simultaneously | [Docs](https://muhammad-fiaz.github.io/logly/guides/sinks/) |
 | **File rotation** | Size-based, time-based, clock-based, and weekday rotation | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
-| **Compression** | gzip, zip, bz2, xz, zstd, tar support out of the box | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
+| **Compression** | gzip, zip, bz2, xz, zstd with tar-compatible aliases | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
 | **JSON logging** | Structured JSON output for storage and analysis | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
 | **Context binding** | Attach persistent key-value pairs to logs | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
 | **Exception catching** | `catch()` decorator and context manager | [Docs](https://muhammad-fiaz.github.io/logly/guides/exception-handling/) |
@@ -423,7 +423,7 @@ Logly is built as a modular Rust workspace with a thin PyO3 binding:
 | `format` | Template, JSON, and custom formatters |
 | `filter` | Level, prefix, extra, and chain filters |
 | `rotate` | File rotation policies and execution |
-| `compress` | Compression codecs (gzip, zip, bz2, xz, zstd, tar) |
+| `compress` | Compression codecs (gzip, zip, bz2, xz, zstd) |
 | `concurrency` | Background workers and thread pool |
 | `schedule` | Scheduled tasks and scheduler |
 | `context` | Bound context, scoped context, patchers |

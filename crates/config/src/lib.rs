@@ -160,8 +160,6 @@ pub enum CompressionCodec {
     Xz,
     /// Zstandard compression. Excellent speed and ratio; recommended for most use cases.
     Zstd,
-    /// Tar archive without compression.
-    Tar,
 }
 
 /// Displays the codec name in lowercase (e.g., `"gzip"`, `"zstd"`).
@@ -174,7 +172,6 @@ impl std::fmt::Display for CompressionCodec {
             Self::Bz2 => write!(f, "bz2"),
             Self::Xz => write!(f, "xz"),
             Self::Zstd => write!(f, "zstd"),
-            Self::Tar => write!(f, "tar"),
         }
     }
 }
@@ -431,6 +428,7 @@ pub fn resolve_compression_codec(value: &str) -> LoglyResult<CompressionCodec> {
     let text = value.trim().to_lowercase();
     let aliases: std::collections::HashMap<&str, &str> = [
         ("gz", "gzip"),
+        ("tar", "gzip"),
         ("tar.gz", "gzip"),
         ("tgz", "gzip"),
         ("tar.bz2", "bz2"),
@@ -446,7 +444,6 @@ pub fn resolve_compression_codec(value: &str) -> LoglyResult<CompressionCodec> {
         "bz2" => Ok(CompressionCodec::Bz2),
         "xz" | "lzma" => Ok(CompressionCodec::Xz),
         "zstd" => Ok(CompressionCodec::Zstd),
-        "tar" => Ok(CompressionCodec::Tar),
         _ => Err(LoglyError::Config(format!(
             "unsupported compression codec: {value}"
         ))),

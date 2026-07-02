@@ -84,13 +84,15 @@ class CompressionPolicy(BaseModel):
             - ``"gzip"`` / ``"gz"``: Gzip compression.
             - ``"zip"``: Zip archive.
             - ``"bz2"``: Bzip2 compression.
-            - ``"xz"``: XZ compression.
-            - ``"lzma"``: LZMA compression.
+            - ``"xz"`` / ``"lzma"``: XZ compression.
             - ``"zstd"``: Zstandard compression.
-            - ``"tar"``: Tar archive.
-            - ``"tar.gz"`` / ``"tgz"``: Tar + gzip.
-            - ``"tar.bz2"``: Tar + bzip2.
-            - ``"tar.xz"``: Tar + xz.
+
+            Aliases that resolve to their base codec:
+
+            - ``"tar"`` → ``"gzip"``
+            - ``"tar.gz"`` / ``"tgz"`` → ``"gzip"``
+            - ``"tar.bz2"`` → ``"bz2"``
+            - ``"tar.xz"`` → ``"xz"``
 
     Example::
 

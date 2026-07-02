@@ -119,10 +119,10 @@ policy = CompressionPolicy(codec="none")
 | `"bz2"` | `.bz2` | Bzip2 compression |
 | `"xz"` / `"lzma"` | `.xz` | XZ/LZMA compression |
 | `"zstd"` | `.zst` | Zstandard compression |
-| `"tar"` | `.tar` | Tar archive (uncompressed) |
-| `"tar.gz"` / `"tgz"` | `.tar.gz` | Tar + gzip |
-| `"tar.bz2"` | `.tar.bz2` | Tar + bzip2 |
-| `"tar.xz"` | `.tar.xz` | Tar + xz |
+| `"tar"` | `.gz` | Alias for gzip |
+| `"tar.gz"` / `"tgz"` | `.gz` | Alias for gzip |
+| `"tar.bz2"` | `.bz2` | Alias for bz2 |
+| `"tar.xz"` | `.xz` | Alias for xz |
 
 ---
 

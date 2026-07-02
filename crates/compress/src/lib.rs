@@ -62,8 +62,6 @@ pub enum CompressionCodec {
     Xz,
     /// Zstandard compression.
     Zstd,
-    /// Tar archive without compression.
-    Tar,
 }
 
 impl std::fmt::Display for CompressionCodec {
@@ -75,7 +73,6 @@ impl std::fmt::Display for CompressionCodec {
             Self::Bz2 => write!(f, "bz2"),
             Self::Xz => write!(f, "xz"),
             Self::Zstd => write!(f, "zstd"),
-            Self::Tar => write!(f, "tar"),
         }
     }
 }
@@ -117,7 +114,6 @@ pub fn compress_file(path: &Path, codec: &CompressionCodec) -> LoglyResult<std::
         CompressionCodec::Bz2 => compress_bz2(path),
         CompressionCodec::Xz => compress_xz(path),
         CompressionCodec::Zstd => compress_zstd(path),
-        CompressionCodec::Tar => compress_tar(path),
     }
 }
 
@@ -333,30 +329,6 @@ fn compress_zstd(path: &Path) -> LoglyResult<std::path::PathBuf> {
     encoder
         .finish()
         .map_err(|e| LoglyError::Compression(format!("failed to finish zstd compression: {e}")))?;
-
-    Ok(output)
-}
-
-fn compress_tar(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.tar",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
-    let file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-    let mut archive = tar::Builder::new(file);
-
-    archive
-        .append_path_with_name(path, path.file_name().unwrap_or_default())
-        .map_err(|e| {
-            LoglyError::Compression(format!("failed to add {} to tar: {e}", path.display()))
-        })?;
-
-    archive
-        .finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish tar archive: {e}")))?;
 
     Ok(output)
 }

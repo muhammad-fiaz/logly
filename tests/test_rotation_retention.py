@@ -102,7 +102,7 @@ class TestCompressionParsing:
 
     def test_tar_alias(self) -> None:
         result = parse_compression_str("tar")
-        assert result == "tar"
+        assert result == "gzip"
 
     def test_tar_gz_alias(self) -> None:
         result = parse_compression_str("tar.gz")

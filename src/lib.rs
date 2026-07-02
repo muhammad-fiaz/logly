@@ -543,7 +543,6 @@ fn resolve_compression_codec_py(
         config::CompressionCodec::Bz2 => Ok(compress::CompressionCodec::Bz2),
         config::CompressionCodec::Xz => Ok(compress::CompressionCodec::Xz),
         config::CompressionCodec::Zstd => Ok(compress::CompressionCodec::Zstd),
-        config::CompressionCodec::Tar => Ok(compress::CompressionCodec::Tar),
     }
 }
 

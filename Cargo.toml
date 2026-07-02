@@ -58,7 +58,6 @@ flate2 = "1"
 xz2 = "0.1"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 zstd = { version = "0.13", default-features = false, features = ["zstdmt"] }
-tar = "0.4"
 
 [package]
 name = "logly"

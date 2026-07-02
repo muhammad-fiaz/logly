@@ -294,16 +294,6 @@ logger.add("app.log", rotation="daily", compression="zstd")
 
 Output files: `app.log.zst`
 
-### tar
-
-```python
-from logly import logger
-
-logger.add("app.log", rotation="daily", compression="tar")
-```
-
-Output files: `app.log.tar` (uncompressed tar archive)
-
 ### No Compression
 
 ```python
@@ -317,12 +307,11 @@ logger.add("app.log", rotation="daily", compression=None)
 | Codec | String | Aliases | Extension |
 |-------|--------|---------|-----------|
 | None | `"none"` | `None` | N/A |
-| gzip | `"gzip"` | `"gz"`, `"tar.gz"`, `"tgz"` | `.gz` |
+| gzip | `"gzip"` | `"gz"`, `"tar"`, `"tar.gz"`, `"tgz"` | `.gz` |
 | zip | `"zip"` | N/A | `.zip` |
 | bz2 | `"bz2"` | `"tar.bz2"` | `.bz2` |
 | xz | `"xz"` | `"lzma"`, `"tar.xz"` | `.xz` |
 | zstd | `"zstd"` | N/A | `.zst` |
-| tar | `"tar"` | N/A | `.tar` |
 
 ## Complete Examples
 
@@ -479,10 +468,9 @@ logger.add(
 
 | Codec | Strings |
 |-------|---------|
-| gzip | `"gzip"`, `"gz"`, `"tar.gz"`, `"tgz"` |
+| gzip | `"gzip"`, `"gz"`, `"tar"`, `"tar.gz"`, `"tgz"` |
 | zip | `"zip"` |
 | bz2 | `"bz2"`, `"tar.bz2"` |
 | xz/lzma | `"xz"`, `"lzma"`, `"tar.xz"` |
 | zstd | `"zstd"` |
-| tar | `"tar"` |
 | none | `None`, `"none"` |
