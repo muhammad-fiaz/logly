@@ -35,7 +35,7 @@ jobs:
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-x86_64-py${{ matrix.python-version }}
           path: dist
@@ -66,7 +66,7 @@ jobs:
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-x86-py${{ matrix.python-version }}
           path: dist
@@ -96,7 +96,7 @@ jobs:
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-aarch64-py${{ matrix.python-version }}
           path: dist
@@ -129,7 +129,7 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -160,7 +160,7 @@ jobs:
           args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -185,7 +185,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
@@ -199,7 +199,7 @@ jobs:
       name: pypi
       url: https://pypi.org/project/logly/
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: wheels-*
           merge-multiple: true
@@ -217,7 +217,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: wheels-*
           merge-multiple: true
@@ -238,7 +238,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Download all wheel artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: wheels-*
           merge-multiple: true
