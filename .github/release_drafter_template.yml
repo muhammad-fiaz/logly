@@ -85,10 +85,6 @@ template: |-
   uv run maturin develop
   ```
 
-  ## What's Changed
-
-  $CHANGES
-
   ## Quick Start
 
   ```python
@@ -111,6 +107,10 @@ template: |-
   - [GitHub](https://github.com/muhammad-fiaz/logly)
   - [Changelog](https://github.com/muhammad-fiaz/logly/releases)
   - [Issue Tracker](https://github.com/muhammad-fiaz/logly/issues)
+
+  ## What's Changed
+
+  $CHANGES
 
   ## Contributors
 
