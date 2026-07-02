@@ -193,7 +193,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           REPO="${{ github.repository }}"
-          DOWNLOAD_BASE="https://github.com/${REPO}/releases/download/v${VERSION}"
+          DOWNLOAD_BASE="https://github.com/${REPO}/releases/download/${VERSION}"
 
           TABLE="## Wheel Downloads\n\n"
           TABLE+="| Platform | Architecture | Python | Download |\n"
