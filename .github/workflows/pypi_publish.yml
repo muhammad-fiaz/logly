@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 25
     strategy:
       matrix:
-        target: [x64, x86]
+        target: [x64, x86, arm64]
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     steps:
@@ -228,6 +228,8 @@ jobs:
                 OS="Windows"; ARCH="x64" ;;
               *win32*)
                 OS="Windows"; ARCH="x86" ;;
+              *win_arm64*)
+                OS="Windows"; ARCH="arm64" ;;
               *macosx*x86_64*)
                 OS="macOS"; ARCH="x86_64 (Intel)" ;;
               *macosx*arm64*)

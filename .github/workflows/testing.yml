@@ -150,6 +150,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x86
+      - name: Install Rust x86 target
+        run: rustup target add i686-pc-windows-msvc
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
@@ -157,7 +159,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv sync --group dev
-          uv run --group dev maturin develop --release
+          uv run --group dev maturin develop --release --target i686-pc-windows-msvc
       - name: Test with pytest
         run: uv run --group dev pytest -q
 
@@ -180,9 +182,8 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist
+          args: --release --out dist --find-interpreter --compatibility off
           sccache: "true"
           manylinux: auto
-          rust-toolchain: stable
       - name: Verify wheel exists
         run: ls -la dist/
