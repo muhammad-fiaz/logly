@@ -11,18 +11,26 @@ permissions:
 
 jobs:
   linux-x86_64:
-    name: Linux (x86_64, Python ${{ matrix.python-version }})
+    name: Linux (x86_64, Python ${{ matrix.python.version }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+        python:
+          - version: "3.10"
+            flat: "cp310-cp310"
+          - version: "3.11"
+            flat: "cp311-cp311"
+          - version: "3.12"
+            flat: "cp312-cp312"
+          - version: "3.13"
+            flat: "cp313-cp313"
+          - version: "3.14"
+            flat: "cp314-cp314"
+          - version: "3.15.0-beta.3"
+            flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -31,28 +39,36 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-linux-x86_64-py${{ matrix.python-version }}
+          name: wheels-linux-x86_64-py${{ matrix.python.version }}
           path: dist
 
   linux-x86:
-    name: Linux (x86, Python ${{ matrix.python-version }})
+    name: Linux (x86, Python ${{ matrix.python.version }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+        python:
+          - version: "3.10"
+            flat: "cp310-cp310"
+          - version: "3.11"
+            flat: "cp311-cp311"
+          - version: "3.12"
+            flat: "cp312-cp312"
+          - version: "3.13"
+            flat: "cp313-cp313"
+          - version: "3.14"
+            flat: "cp314-cp314"
+          - version: "3.15.0-beta.3"
+            flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -62,28 +78,36 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-linux-x86-py${{ matrix.python-version }}
+          name: wheels-linux-x86-py${{ matrix.python.version }}
           path: dist
 
   linux-aarch64:
-    name: Linux (aarch64, Python ${{ matrix.python-version }})
+    name: Linux (aarch64, Python ${{ matrix.python.version }})
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
+        python:
+          - version: "3.10"
+            flat: "cp310-cp310"
+          - version: "3.11"
+            flat: "cp311-cp311"
+          - version: "3.12"
+            flat: "cp312-cp312"
+          - version: "3.13"
+            flat: "cp313-cp313"
+          - version: "3.14"
+            flat: "cp314-cp314"
+          - version: "3.15.0-beta.3"
+            flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -92,13 +116,13 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-linux-aarch64-py${{ matrix.python-version }}
+          name: wheels-linux-aarch64-py${{ matrix.python.version }}
           path: dist
 
   windows:
@@ -126,7 +150,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i python --compatibility off
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
@@ -158,7 +182,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i python --compatibility off
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
@@ -187,7 +211,7 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist --find-interpreter --compatibility off
+          args: --release --out dist -i python --compatibility off
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
