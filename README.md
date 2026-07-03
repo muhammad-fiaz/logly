@@ -19,7 +19,7 @@
 <a href="https://github.com/muhammad-fiaz/logly/releases/latest"><img src="https://img.shields.io/github/v/release/muhammad-fiaz/logly?label=Latest%20Release&style=flat-square" alt="Latest Release"></a>
 <a href="https://github.com/sponsors/muhammad-fiaz"><img src="https://img.shields.io/badge/Sponsor-&#x1F496;-pink?style=social&logo=github" alt="GitHub Sponsors"></a>
 
-<p><em>A Rust-powered, high-performance logging library for Python.</em></p>
+<p><em>Modern Python logging, accelerated by Rust.</em></p>
 
 <b><a href="https://muhammad-fiaz.github.io/logly/">Documentation</a> |
 <a href="https://muhammad-fiaz.github.io/logly/api-reference/logger/">API Reference</a> |

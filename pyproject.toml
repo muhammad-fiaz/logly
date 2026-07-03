@@ -1,10 +1,10 @@
 [build-system]
-requires = ["maturin>=1.7,<2.0"]
+requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "logly"
-description = "A Rust-powered, high-performance logging library for Python with structured sinks, custom levels, rotation, compression, and telemetry integrations."
+description = "Modern Python logging, accelerated by Rust."
 authors = [
   { name = "muhammad-fiaz", email = "contact@muhammadfiaz.com" },
 ]
