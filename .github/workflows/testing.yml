@@ -16,7 +16,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install Rust
@@ -33,7 +33,7 @@ jobs:
   rust-tests:
     name: Rust Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install Rust
@@ -61,7 +61,7 @@ jobs:
   python-linting:
     name: Python Linting
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
@@ -98,7 +98,7 @@ jobs:
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
@@ -136,7 +136,7 @@ jobs:
       matrix:
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
@@ -172,7 +172,7 @@ jobs:
       matrix:
         python-version:
           ["3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
@@ -208,7 +208,7 @@ jobs:
       matrix:
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -232,7 +232,7 @@ jobs:
       matrix:
         python-version:
           ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.3"]
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv

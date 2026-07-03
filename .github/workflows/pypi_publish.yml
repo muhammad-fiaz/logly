@@ -13,7 +13,7 @@ jobs:
   linux-x86_64:
     name: Linux (x86_64, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -43,7 +43,7 @@ jobs:
   linux-x86:
     name: Linux (x86, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -74,7 +74,7 @@ jobs:
   linux-aarch64:
     name: Linux (aarch64, Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -104,7 +104,7 @@ jobs:
   windows:
     name: Windows (${{ matrix.target }}, Python ${{ matrix.python-version }})
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         target: [x64, x86]
@@ -137,7 +137,7 @@ jobs:
   windows-arm64:
     name: Windows (arm64, Python ${{ matrix.python-version }})
     runs-on: windows-11-arm
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -169,7 +169,7 @@ jobs:
   macos:
     name: macOS (${{ matrix.python-version }})
     runs-on: macos-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -258,5 +258,3 @@ jobs:
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-
-
