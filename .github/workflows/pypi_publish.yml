@@ -39,7 +39,7 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
@@ -78,7 +78,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86
-          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
@@ -116,7 +116,7 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python --compatibility off
+          args: --release --out dist -i /opt/python/${{ matrix.python.flat }}/bin/python
           sccache: "true"
           manylinux: auto
       - name: Upload wheel
@@ -150,7 +150,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -i python --compatibility off
+          args: --release --out dist -i python
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
@@ -182,7 +182,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64
-          args: --release --out dist -i python --compatibility off
+          args: --release --out dist -i python
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
@@ -211,7 +211,7 @@ jobs:
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist -i python --compatibility off
+          args: --release --out dist -i python
           sccache: "true"
       - name: Upload wheel
         uses: actions/upload-artifact@v7
