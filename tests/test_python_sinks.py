@@ -55,4 +55,4 @@ def test_rotation_retention_and_gzip(tmp_path) -> None:
     archives = list(tmp_path.glob("app.log.*.gz"))
     assert len(archives) == 1
     with gzip.open(archives[0], "rt", encoding="utf-8") as handle:
-        assert "a" * 25 in handle.read()
+        assert "b" * 25 in handle.read()

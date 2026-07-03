@@ -286,11 +286,16 @@ impl Sink for FileSink {
             *guard = Some(f);
         }
 
-        // Check rotation
+        // Write the line first so rotation archives contain the triggering data
+        if let Some(ref mut f) = *guard {
+            writeln!(f, "{line}")?;
+            let _ = f.flush();
+        }
+
+        // Check rotation after writing
         let action = rotate::check_rotation(&self.path, &self.rotation, line_bytes)?;
         if let rotate::RotationAction::RotateTo(rotated_path) = action {
-            if let Some(mut f) = guard.take() {
-                let _ = f.flush();
+            if let Some(f) = guard.take() {
                 drop(f);
             }
             rotate::perform_rotation(&self.path, rotate::OverwriteMode::Append)?;
@@ -318,9 +323,6 @@ impl Sink for FileSink {
             }
         }
 
-        if let Some(ref mut f) = *guard {
-            writeln!(f, "{line}")?;
-        }
         Ok(())
     }
 
