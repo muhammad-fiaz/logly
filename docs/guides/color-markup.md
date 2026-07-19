@@ -1,172 +1,70 @@
 ---
-title: Color Markup
-description: ANSI color markup for styled log output
+title: Color markup
+description: ANSI colors, styles, backgrounds, and escaping in Logly
 ---
 
-# Color Markup
+# Color markup
 
-Logly supports inline ANSI color markup in format strings. Wrap tags in angle brackets to style log output.
+Logly accepts markup in messages and format strings. A sink emits ANSI
+sequences only when `colorize=True`; otherwise markup is removed.
 
-## Basic Usage
+## Colors and styles
+
+Named colors are available as full names and short aliases:
 
 ```python
-from logly import logger
-
-logger.add(
-    "stderr",
-    format="<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <level>{message}</level>",
-    colorize=True,
-)
-logger.info("Colored output")
+logger.info("<red>Error</red>")
+logger.info("<g>Success</g>")
+logger.info("<bold><u>Important</u></bold>")
 ```
 
-## Color Tags
+Supported styles include `bold`, `dim`, `normal`, `italic`, `underline`,
+`strike`, `reverse`, `blink`, and `hide` (aliases: `b`, `d`, `n`, `i`, `u`,
+`s`, `v`, `l`, and `h`).
 
-| Tag | Color |
-|-----|-------|
-| `<red>` | Red |
-| `<green>` | Green |
-| `<blue>` | Blue |
-| `<yellow>` | Yellow |
-| `<cyan>` | Cyan |
-| `<magenta>` | Magenta |
-| `<white>` | White |
-| `<black>` | Black |
+## 256-color and RGB values
 
-## Style Tags
+Use `fg` and `bg` prefixes for explicit colors:
 
-| Tag | Effect |
-|-----|--------|
-| `<bold>` | Bold text |
-| `<dim>` | Dim text |
-| `<underline>` | Underlined text |
-| `<italic>` | Italic text |
-| `<blink>` | Blinking text |
-| `<strike>` | Strikethrough text |
-| `<reverse>` | Reverse video |
+```python
+logger.info("<fg 196>Bright red</fg 196>")
+logger.info("<fg #ff8800>Orange</fg #ff8800>")
+logger.info("<bg 24><white>Highlighted</white></bg 24>")
+logger.info("<bg #202020><fg #00ff00>Green on dark</fg #00ff00></bg #202020>")
+```
 
-## Combining Tags
+Palette indexes range from 0 to 255. Hex colors use six-digit `#RRGGBB`
+values. Background names such as `<bg red>` and `<bg blue>` are supported.
 
-Stack multiple tags for complex styling:
+## Level-aware formatting
+
+Use `<level>` (or `<lvl>`) around a format token to apply the configured
+color for the record's level:
 
 ```python
 logger.add(
     "stderr",
-    format="<green><bold>{time:HH:mm:ss}</bold></green> | <red><bold>{level:<8}</bold></red> | {message}",
+    format="<green>{time}</green> | <level>{level}</level> | {message}",
     colorize=True,
 )
 ```
 
-## Level Tags
+Custom levels can provide their own color specification, including compound,
+256-color, and RGB values.
 
-Use `<level>` to apply the level's configured color:
+When using the optional Rich integration, `RichSink` can be configured as a
+sink for Rich console rendering while the same markup remains valid for the
+standard console sink.
 
-```python
-from logly import logger
+## Nesting and escaping
 
-logger.add(
-    "stderr",
-    format="{time:HH:mm:ss} | <level>{level:<8}</level> | {message}",
-    colorize=True,
-)
-```
-
-The `<level>` tag automatically applies the color registered for each log level (e.g., green for INFO, red for ERROR).
-
-### Custom Level Colors
+Tags can be nested. A short closing tag (`</>`) closes the current style.
+Prefix a tag with a backslash to print it literally:
 
 ```python
-from logly import logger
-
-logger.level("SECURITY", no=45, color="<red><bold>")
-
-logger.add(
-    "stderr",
-    format="{time:HH:mm:ss} | <level>{level:<8}</level> | {message}",
-    colorize=True,
-)
-
-logger.log("SECURITY", "Unauthorized access")
-# SECURITY appears in bold red
+logger.info("<bold><red>Error:</red></bold> connection failed")
+logger.info(r"\<red> is printed literally")
 ```
 
-## Background Colors
-
-```python
-logger.add(
-    "stderr",
-    format="<bg_red><white>{level:<8}</white></bg_red> | {message}",
-    colorize=True,
-)
-```
-
-| Tag | Background Color |
-|-----|-----------------|
-| `<bg_red>` | Red background |
-| `<bg_green>` | Green background |
-| `<bg_blue>` | Blue background |
-| `<bg_yellow>` | Yellow background |
-| `<bg_cyan>` | Cyan background |
-| `<bg_magenta>` | Magenta background |
-| `<bg_white>` | White background |
-| `<bg_black>` | Black background |
-
-## Escape Codes
-
-Logly uses standard ANSI escape codes. The `colorize=True` parameter enables color rendering:
-
-```python
-from logly import logger
-
-# Colors enabled (auto-detected for stderr)
-logger.add("stderr", colorize=True)
-
-# Colors forced on
-logger.add("app.log", colorize=True)
-
-# Colors forced off
-logger.add("app.log", colorize=False)
-```
-
-## Rich Integration
-
-If [Rich](https://github.com/Textualize/rich) is installed, Logly uses Rich's color engine for enhanced rendering:
-
-```python
-from logly import logger
-from logly.integrations.rich import LoglyRichSink
-
-logger.add(LoglyRichSink(), colorize=True)
-```
-
-## Common Patterns
-
-### Compact Console Output
-
-```python
-logger.add(
-    "stderr",
-    format="<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-    colorize=True,
-)
-```
-
-### Error Highlighting
-
-```python
-logger.add(
-    "stderr",
-    format="<green>{time:HH:mm:ss}</green> | <level><bold>{level:<8}</bold></level> | {message}",
-    colorize=True,
-)
-```
-
-### Minimal
-
-```python
-logger.add(
-    "stderr",
-    format="<level>{level:<8}</level> | {message}",
-    colorize=True,
-)
-```
+The `strip_rich_tags()` helper removes markup and decodes common HTML entities
+when preparing plain-text output.

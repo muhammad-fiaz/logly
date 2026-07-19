@@ -124,14 +124,14 @@ pub fn paint(level: &LogLevel, text: &str, colorize: bool) -> String {
 pub fn color_code(name: &str) -> &'static str {
     match name {
         // Standard colors
-        "black" => "30",
-        "red" => "31",
-        "green" => "32",
-        "yellow" => "33",
-        "blue" => "34",
-        "magenta" => "35",
-        "cyan" => "36",
-        "white" => "37",
+        "black" | "k" => "30",
+        "red" | "r" => "31",
+        "green" | "g" => "32",
+        "yellow" | "y" => "33",
+        "blue" | "e" => "34",
+        "magenta" | "m" => "35",
+        "cyan" | "c" => "36",
+        "white" | "w" => "37",
         // Bright/high-intensity colors
         "bright_black" => "90",
         "bright_red" => "91",
@@ -142,13 +142,15 @@ pub fn color_code(name: &str) -> &'static str {
         "bright_cyan" => "96",
         "bright_white" => "97",
         // Text styles
-        "dim" => "2",
-        "bold" => "1",
-        "italic" => "3",
-        "underline" => "4",
-        "blink" => "5",
-        "reverse" => "7",
-        "strike" => "9",
+        "dim" | "d" => "2",
+        "bold" | "b" => "1",
+        "italic" | "i" => "3",
+        "underline" | "u" => "4",
+        "blink" | "l" => "5",
+        "reverse" | "v" => "7",
+        "strike" | "s" => "9",
+        "normal" | "n" => "22",
+        "hide" | "h" => "8",
         // Compound shortcuts (underscore-separated)
         "bold_red" => "1;31",
         "bold_green" => "1;32",
@@ -254,6 +256,26 @@ pub fn resolve_color_code(spec: &str) -> String {
     let trimmed = spec.trim();
     if trimmed.is_empty() {
         return String::new();
+    }
+    // Public markup accepts explicit foreground/background prefixes.
+    if let Some(inner) = trimmed.strip_prefix("bg ") {
+        if let Ok(value) = inner.trim().parse::<u8>() {
+            return format!("48;5;{value}");
+        }
+        return fg_to_bg(inner).map_or_else(
+            || {
+                resolve_color_code(inner)
+                    .strip_prefix("38;")
+                    .map_or_else(String::new, |code| format!("48;{code}"))
+            },
+            str::to_owned,
+        );
+    }
+    if let Some(inner) = trimmed.strip_prefix("fg ") {
+        if let Ok(value) = inner.trim().parse::<u8>() {
+            return format!("38;5;{value}");
+        }
+        return resolve_color_code(inner);
     }
     // Raw SGR: all digits and semicolons
     if trimmed.chars().all(|ch| ch.is_ascii_digit() || ch == ';') {
@@ -476,7 +498,10 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     let mut chars = text.chars().peekable();
 
     while let Some(ch) = chars.next() {
-        if ch == '<' {
+        if ch == '\\' && chars.peek() == Some(&'<') {
+            chars.next();
+            result.push('<');
+        } else if ch == '<' {
             // Check for closing tag or opening tag
             let mut tag = String::new();
             let mut is_closing = false;
@@ -498,7 +523,7 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
                 if is_closing {
                     let lower = tag.to_lowercase();
                     let code = resolve_color_code(&lower);
-                    if !code.is_empty() {
+                    if tag.is_empty() || !code.is_empty() {
                         result.push_str("\x1b[0m");
                     }
                 }
@@ -570,7 +595,10 @@ pub fn strip_rich_tags(text: &str) -> String {
     let mut chars = text.chars().peekable();
 
     while let Some(ch) = chars.next() {
-        if ch == '<' {
+        if ch == '\\' && chars.peek() == Some(&'<') {
+            chars.next();
+            result.push('<');
+        } else if ch == '<' {
             // Skip until closing >
             for c in chars.by_ref() {
                 if c == '>' {
@@ -819,6 +847,9 @@ mod tests {
         assert_eq!(color_code("bold_green"), "1;32");
         assert_eq!(color_code("dim_cyan"), "2;36");
         assert_eq!(color_code("unknown"), "");
+        assert_eq!(color_code("r"), "31");
+        assert_eq!(color_code("u"), "4");
+        assert_eq!(color_code("normal"), "22");
     }
 
     #[test]
@@ -1057,6 +1088,22 @@ mod tests {
     fn parse_rich_markup_on_bg() {
         let result = parse_rich_markup("<bold red on white>text</bold red on white>", true);
         assert_eq!(result, "\x1b[1;31;47mtext\x1b[0m");
+    }
+
+    #[test]
+    fn markup_supports_explicit_palette_and_rgb_prefixes() {
+        assert_eq!(resolve_color_code("fg 196"), "38;5;196");
+        assert_eq!(resolve_color_code("bg 46"), "48;5;46");
+        assert_eq!(resolve_color_code("fg #ff8800"), "38;2;255;136;0");
+        assert_eq!(resolve_color_code("bg #202020"), "48;2;32;32;32");
+    }
+
+    #[test]
+    fn markup_supports_short_tags_and_escaped_tags() {
+        let rendered = parse_rich_markup(r"\<r>literal</> <u>underlined</u>", true);
+        assert!(rendered.starts_with("<r>literal"));
+        assert!(rendered.contains("\x1b[4munderlined"));
+        assert_eq!(strip_rich_tags(r"\<red>literal</red>"), "<red>literal");
     }
 
     #[test]

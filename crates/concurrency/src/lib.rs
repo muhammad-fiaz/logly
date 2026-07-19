@@ -39,7 +39,7 @@
 
 use error::{LoglyError, LoglyResult};
 use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 
 /// Controls how the message queue behaves when it reaches capacity.
@@ -101,6 +101,7 @@ pub struct BackgroundWorker<T: Send + 'static> {
     sender: Option<ChannelSender<T>>,
     handle: Option<JoinHandle<()>>,
     pending: Arc<Mutex<usize>>,
+    pending_changed: Arc<Condvar>,
 }
 
 impl<T: Send + 'static> BackgroundWorker<T> {
@@ -124,7 +125,9 @@ impl<T: Send + 'static> BackgroundWorker<T> {
         F: Fn(T) + Send + 'static,
     {
         let pending = Arc::new(Mutex::new(0usize));
+        let pending_changed = Arc::new(Condvar::new());
         let pending_clone = Arc::clone(&pending);
+        let pending_changed_clone = Arc::clone(&pending_changed);
 
         let (channel_sender, receiver) = match backpressure {
             Backpressure::Block => {
@@ -142,13 +145,14 @@ impl<T: Send + 'static> BackgroundWorker<T> {
         };
 
         let handle = thread::spawn(move || {
-            Self::worker_loop(receiver, callback, pending_clone);
+            Self::worker_loop(receiver, callback, pending_clone, pending_changed_clone);
         });
 
         Self {
             sender: Some(channel_sender),
             handle: Some(handle),
             pending,
+            pending_changed,
         }
     }
 
@@ -170,12 +174,18 @@ impl<T: Send + 'static> BackgroundWorker<T> {
     /// (`DropNewest` policy) or the worker has shut down.
     pub fn send(&self, message: T) -> LoglyResult<()> {
         if let Some(sender) = &self.sender {
+            // Reserve the work item before sending it. The worker may receive
+            // and finish it immediately on another thread.
+            if let Ok(mut count) = self.pending.lock() {
+                *count += 1;
+            }
             if sender.try_send(message) {
-                if let Ok(mut count) = self.pending.lock() {
-                    *count += 1;
-                }
                 Ok(())
             } else {
+                if let Ok(mut count) = self.pending.lock() {
+                    *count = count.saturating_sub(1);
+                    self.pending_changed.notify_all();
+                }
                 Err(LoglyError::Concurrency(
                     "background worker queue is full (message dropped)".to_owned(),
                 ))
@@ -194,6 +204,19 @@ impl<T: Send + 'static> BackgroundWorker<T> {
     #[must_use]
     pub fn pending_count(&self) -> usize {
         self.pending.lock().map_or(0, |c| *c)
+    }
+
+    /// Waits until all accepted messages have been processed.
+    pub fn wait_empty(&self) {
+        let Ok(mut pending) = self.pending.lock() else {
+            return;
+        };
+        while *pending != 0 {
+            pending = match self.pending_changed.wait(pending) {
+                Ok(guard) => guard,
+                Err(_) => return,
+            };
+        }
     }
 
     /// Drains all pending messages and stops the worker thread.
@@ -217,14 +240,21 @@ impl<T: Send + 'static> BackgroundWorker<T> {
     // `Receiver` is moved into the spawned thread; `Arc` is cloned inside the loop.
     // Clippy cannot see across the thread boundary, so this is a justified suppression.
     #[allow(clippy::needless_pass_by_value)]
-    fn worker_loop<F>(receiver: Receiver<T>, callback: F, pending: Arc<Mutex<usize>>)
-    where
+    fn worker_loop<F>(
+        receiver: Receiver<T>,
+        callback: F,
+        pending: Arc<Mutex<usize>>,
+        pending_changed: Arc<Condvar>,
+    ) where
         F: Fn(T),
     {
         while let Ok(message) = receiver.recv() {
             callback(message);
             if let Ok(mut count) = pending.lock() {
                 *count = count.saturating_sub(1);
+                if *count == 0 {
+                    pending_changed.notify_all();
+                }
             }
         }
     }
@@ -393,6 +423,21 @@ mod tests {
         assert!(count < 100);
 
         let _ = worker.shutdown();
+    }
+
+    #[test]
+    fn wait_empty_returns_after_processing() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let counter_clone = Arc::clone(&counter);
+        let worker = BackgroundWorker::new(16, Backpressure::Block, move |_msg: String| {
+            counter_clone.fetch_add(1, Ordering::SeqCst);
+        });
+        for i in 0..8 {
+            worker.send(format!("msg {i}")).unwrap();
+        }
+        worker.wait_empty();
+        assert_eq!(counter.load(Ordering::SeqCst), 8);
+        worker.shutdown().unwrap();
     }
 
     #[test]

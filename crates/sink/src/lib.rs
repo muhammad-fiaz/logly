@@ -378,9 +378,7 @@ impl Sink for EnqueueSink {
     }
 
     fn flush(&self) -> LoglyResult<()> {
-        while self.worker.pending_count() > 0 {
-            std::thread::yield_now();
-        }
+        self.worker.wait_empty();
         self.inner.flush()
     }
 
