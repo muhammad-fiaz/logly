@@ -21,7 +21,7 @@ export default defineConfig({
   description: SITE_DESCRIPTION,
   base: "/logly/",
   lastUpdated: true,
-  cleanUrls: true,
+  cleanUrls: false,
 
   sitemap: {
     hostname: SITE_URL,
@@ -153,7 +153,7 @@ gtag('config', '${GA_ID}');`,
   transformPageData(pageData) {
     const pageTitle = pageData.title || SITE_NAME;
     const pageDescription = pageData.description || SITE_DESCRIPTION;
-    const canonicalUrl = `${SITE_URL}/${pageData.relativePath.replace(/((^|\/)index)?\.md$/, "$2").replace(/\.md$/, "")}`;
+    const canonicalUrl = `${SITE_URL}/${pageData.relativePath.replace(/\.md$/, ".html")}`;
 
     pageData.frontmatter.head ??= [];
     pageData.frontmatter.head.push(
@@ -517,6 +517,7 @@ gtag('config', '${GA_ID}');`,
           text: "Examples",
           items: [
             { text: "Basic Logging", link: "/examples/basic-logging" },
+            { text: "Color Markup", link: "/examples/color-markup" },
             { text: "File Logging", link: "/examples/file-logging" },
             { text: "Multiple Sinks", link: "/examples/multiple-sinks" },
             { text: "JSON Logging", link: "/examples/json-logging" },

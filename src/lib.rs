@@ -827,12 +827,15 @@ impl PyLogger {
         Ok(())
     }
 
-    fn log(&self, level: &str, message: &str) -> PyResult<()> {
-        self.engine
-            .lock()
-            .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
-            .log(&self.name, level, message)
-            .map_err(to_py_error)
+    #[pyo3(name = "log")]
+    fn log_message(&self, py: Python<'_>, level: &str, message: &str) -> PyResult<()> {
+        py.detach(|| {
+            self.engine
+                .lock()
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
+                .log(&self.name, level, message)
+                .map_err(to_py_error)
+        })
     }
 
     #[pyo3(signature = (
@@ -853,6 +856,7 @@ impl PyLogger {
     #[allow(clippy::too_many_arguments)]
     fn log_structured(
         &self,
+        py: Python<'_>,
         level: &str,
         message: &str,
         name: Option<String>,
@@ -898,51 +902,53 @@ impl PyLogger {
             record.exception = Some(exc);
         }
 
-        self.engine
-            .lock()
-            .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
-            .dispatch(&record)
-            .map_err(to_py_error)
+        py.detach(|| {
+            self.engine
+                .lock()
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
+                .dispatch(&record)
+                .map_err(to_py_error)
+        })
     }
 
-    fn trace(&self, message: &str) -> PyResult<()> {
-        self.log("TRACE", message)
+    fn trace(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "TRACE", message)
     }
 
-    fn debug(&self, message: &str) -> PyResult<()> {
-        self.log("DEBUG", message)
+    fn debug(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "DEBUG", message)
     }
 
-    fn info(&self, message: &str) -> PyResult<()> {
-        self.log("INFO", message)
+    fn info(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "INFO", message)
     }
 
-    fn notice(&self, message: &str) -> PyResult<()> {
-        self.log("NOTICE", message)
+    fn notice(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "NOTICE", message)
     }
 
-    fn success(&self, message: &str) -> PyResult<()> {
-        self.log("SUCCESS", message)
+    fn success(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "SUCCESS", message)
     }
 
-    fn warning(&self, message: &str) -> PyResult<()> {
-        self.log("WARNING", message)
+    fn warning(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "WARNING", message)
     }
 
-    fn error(&self, message: &str) -> PyResult<()> {
-        self.log("ERROR", message)
+    fn error(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "ERROR", message)
     }
 
-    fn fail(&self, message: &str) -> PyResult<()> {
-        self.log("FAIL", message)
+    fn fail(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "FAIL", message)
     }
 
-    fn critical(&self, message: &str) -> PyResult<()> {
-        self.log("CRITICAL", message)
+    fn critical(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "CRITICAL", message)
     }
 
-    fn fatal(&self, message: &str) -> PyResult<()> {
-        self.log("FATAL", message)
+    fn fatal(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "FATAL", message)
     }
 }
 

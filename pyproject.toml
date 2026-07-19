@@ -175,6 +175,19 @@ check_untyped_defs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
 
+[tool.basedpyright]
+include = ["logly", "tests"]
+typeCheckingMode = "basic"
+# Integration modules use optional dependencies. Their availability is checked
+# at runtime and covered by the integration test suite, so the base install
+# must not require every optional package to be present for static analysis.
+reportMissingImports = false
+reportMissingModuleSource = false
+# Optional integrations expose dynamic vendor APIs and tests intentionally use
+# mock-only attributes. These are validated at runtime rather than modeled by
+# their third-party stubs.
+reportAttributeAccessIssue = false
+
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false

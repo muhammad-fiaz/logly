@@ -4,7 +4,7 @@ from logly import Logger, __version__
 
 
 def test_version_tracks_rewrite() -> None:
-    assert __version__ == "0.2.0"
+    assert __version__ == "0.2.1"
 
 
 def test_file_sink_writes_messages(tmp_path) -> None:
