@@ -149,7 +149,7 @@ impl Sink for ConsoleSink {
             return Ok(());
         }
         let line = self.formatter.format(record)?;
-        let line = color::paint(&record.level, &line, self.colorize);
+        let line = color::parse_log_markup(&record.level, &line, self.colorize);
         match self.stream {
             Stream::Stdout => writeln!(stdout(), "{line}")?,
             Stream::Stderr => writeln!(stderr(), "{line}")?,
@@ -258,7 +258,7 @@ impl Sink for FileSink {
         if !self.filter.accept(record) {
             return Ok(());
         }
-        let line = self.formatter.format(record)?;
+        let line = color::parse_log_markup(&record.level, &self.formatter.format(record)?, false);
         let line_bytes = line.len() + 1; // plus newline
 
         let mut guard = self

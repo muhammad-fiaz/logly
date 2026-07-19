@@ -227,7 +227,7 @@ impl sink::Sink for PyObjectSink {
             return Ok(());
         }
         let formatted = self.formatter.format(record)?;
-        let line = color::paint(&record.level, &formatted, self.colorize);
+        let line = color::parse_log_markup(&record.level, &formatted, self.colorize);
         let line = if line.ends_with('\n') {
             line
         } else {
@@ -546,38 +546,6 @@ fn resolve_compression_codec_py(
     }
 }
 
-/// Strips all HTML-like `<tag>` and `</tag>` markup from a string without
-/// converting to ANSI escape codes. Used when `colorize=False`.
-fn strip_all_tags(text: &str) -> String {
-    let mut result = text.to_owned();
-    let mut offset = 0;
-    while offset < result.len() {
-        let bytes = result.as_bytes();
-        let Some(start) = bytes[offset..].iter().position(|&b| b == b'<') else {
-            break;
-        };
-        let abs = offset + start;
-        let next = abs + 1;
-        let is_tag = if next < result.len() {
-            let ch = bytes[next];
-            ch.is_ascii_alphabetic() || ch == b'/'
-        } else {
-            false
-        };
-        if is_tag {
-            if let Some(end) = result[abs..].find('>') {
-                result.replace_range(abs..=abs + end, "");
-                offset = abs;
-            } else {
-                break;
-            }
-        } else {
-            offset = next;
-        }
-    }
-    result
-}
-
 /// Python-facing logger wrapper around the Rust engine.
 #[pyclass(name = "_Logger")]
 struct PyLogger {
@@ -699,13 +667,7 @@ impl PyLogger {
             });
             let fmt_bound = fmt_obj.bind(py);
             if let Ok(fmt_str) = fmt_bound.extract::<String>() {
-                let use_color = colorize.unwrap_or(false);
-                let processed = if use_color {
-                    config::strip_ansi_markup(&fmt_str)
-                } else {
-                    strip_all_tags(&fmt_str)
-                };
-                Box::new(TemplateFormatter::new(processed))
+                Box::new(TemplateFormatter::new(fmt_str))
             } else if fmt_bound.is_callable() {
                 Box::new(PyObjectFormatter { callable: fmt_obj })
             } else {
