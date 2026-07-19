@@ -27,7 +27,10 @@ def risky_function() -> None:
 risky_function()
 
 # With reraise
-with logger.catch(reraise=True):
-    raise TimeoutError("Request timed out")
+try:
+    with logger.catch(reraise=True):
+        raise TimeoutError("Request timed out")
+except TimeoutError:
+    logger.info("Timeout was re-raised and handled by the caller")
 
 logger.complete()

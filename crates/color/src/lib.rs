@@ -570,6 +570,36 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     result
 }
 
+/// Renders markup in a log line with level-aware tags resolved.
+///
+/// The `<level>` and `<lvl>` tags use the configured color of `level`.
+/// All other tags are handled by [`parse_rich_markup`].
+#[must_use]
+pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String {
+    let level_style = level.color().unwrap_or_else(|| {
+        let colors = default_color_map();
+        colors.get(level.name()).copied().unwrap_or("")
+    });
+    let opening = if level_style.is_empty() {
+        String::new()
+    } else if level_style.starts_with('<') {
+        level_style.to_owned()
+    } else {
+        format!("<{level_style}>")
+    };
+    let marked = text
+        .replace("<level>", &opening)
+        .replace("<lvl>", &opening)
+        .replace("</level>", "</>")
+        .replace("</lvl>", "</>");
+    let rendered = parse_rich_markup(&marked, colorize);
+    if colorize && !text.contains('<') {
+        paint(level, &rendered, true)
+    } else {
+        rendered
+    }
+}
+
 /// Strips Rich-style markup tags from text, returning plain text.
 ///
 /// Removes all `<tag>` and `</tag>` constructs. HTML entities are decoded.
@@ -1104,6 +1134,15 @@ mod tests {
         assert!(rendered.starts_with("<r>literal"));
         assert!(rendered.contains("\x1b[4munderlined"));
         assert_eq!(strip_rich_tags(r"\<red>literal</red>"), "<red>literal");
+    }
+
+    #[test]
+    fn log_markup_resolves_level_tags() {
+        let level = LogLevel::new("ERROR", 50, Some("red".to_owned()));
+        let rendered = parse_log_markup(&level, "<level>ERROR</level> <u>details</u>", true);
+        assert!(rendered.contains("\x1b[31mERROR"));
+        assert!(rendered.contains("\x1b[4mdetails"));
+        assert_eq!(parse_log_markup(&level, "<lvl>ERROR</lvl>", false), "ERROR");
     }
 
     #[test]

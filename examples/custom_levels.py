@@ -7,15 +7,15 @@ from logly import logger
 from logly._logly import list_levels
 
 # Register custom levels with priority ordering
-logger.level("SECURITY", no=45, color="<red><bold>")
-logger.level("METRIC", no=28, color="<blue>")
+logger.level("SECURITY", no=45, color="bold red")
+logger.level("METRIC", no=28, color="blue")
 
 # Use custom levels via log()
 logger.log("SECURITY", "Unauthorized access attempt")
 logger.log("METRIC", "Response time: 235ms")
 
-# Use the built-in AUDIT level (priority 35, between SUCCESS and WARNING)
-logger.bind(user_id="12345").audit("Login successful")
+# Bound context works with custom levels as well.
+logger.bind(user_id="12345").log("SECURITY", "Login successful")
 
 # List all registered levels
 logger.info("All registered levels: {}", list_levels())
