@@ -37,6 +37,7 @@
 use chrono::{DateTime, Local};
 use error::LoglyResult;
 use record::LogRecord;
+use source::{LinkFormat, SourceLocation, clickable_link};
 use std::collections::BTreeMap;
 
 /// Renders a record into sink-ready text.
@@ -255,6 +256,14 @@ fn resolve_token<'a>(
                 Some(l) => Some(format!("{file}:{l}")),
                 None => Some(file.to_owned()),
             }
+        }
+        "source_link" => {
+            let file = record.file.as_deref()?;
+            let mut location = SourceLocation::new().with_file(file);
+            if let Some(line) = record.line {
+                location = location.with_line(line);
+            }
+            clickable_link(&location, LinkFormat::Hyperlink)
         }
         "filename" => {
             let file = record.file.as_deref()?;

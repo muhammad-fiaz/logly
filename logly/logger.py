@@ -908,7 +908,18 @@ class Logger:
             frame = _inspect.currentframe()
             if frame is not None:
                 cap_frame: types.FrameType | None = frame.f_back
-                if cap_frame is not None:
+                if cap_frame is not None and cap_frame.f_code.co_name in {
+                    "trace",
+                    "debug",
+                    "info",
+                    "notice",
+                    "success",
+                    "warning",
+                    "error",
+                    "fail",
+                    "critical",
+                    "fatal",
+                }:
                     cap_frame = cap_frame.f_back
                 for _ in range(self._options.depth):
                     if cap_frame is not None:

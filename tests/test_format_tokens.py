@@ -66,3 +66,29 @@ class TestExtraToken:
         logger.info("region test")
         logger.remove(sink_id)
         assert "us-east-1" in messages[0]
+
+
+class TestSourceTokens:
+    def test_source_link_is_terminal_hyperlink(self) -> None:
+        messages: list[str] = []
+        sink_id = logger.add(
+            messages.append,
+            level="TRACE",
+            format="{source_link} | {message}",
+        )
+        logger.info("linked")
+        logger.remove(sink_id)
+        assert "\x1b]8;;file:///" in messages[0]
+        assert "linked" in messages[0]
+
+    def test_direct_log_captures_calling_source(self) -> None:
+        records: list[dict[str, object]] = []
+        sink_id = logger.add(
+            lambda message: records.append({"message": message}),
+            level="TRACE",
+            format="{file}:{line} | {message}",
+        )
+        logger.log("INFO", "direct")
+        logger.remove(sink_id)
+        assert records[0]["message"]
+        assert "logger.py" not in str(records[0]["message"])

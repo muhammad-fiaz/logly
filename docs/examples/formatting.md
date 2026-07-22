@@ -200,3 +200,37 @@ logger.info("Full format with all tokens")
 logger.complete()
 logger.remove(sink_id)
 ```
+# Formatting and source links
+
+Use format templates for human-readable console and file output. Source fields
+are captured from the caller, not from the logging wrapper:
+
+```python
+logger.add(
+    "app.log",
+    format="{time} | {level: <8} | {file}:{line} | {message}",
+)
+```
+
+For terminals that support OSC-8 hyperlinks, use `{source_link}`. Clicking the
+rendered `file:line` text opens the source location in the terminal's configured
+editor or IDE:
+
+```python
+logger.add("stderr", format="{source_link} | {message}")
+```
+
+`{source_link}` is intentionally explicit. Plain text and JSON sinks remain
+portable and do not contain terminal escape sequences.
+
+## JSON output
+
+Use `serialize=True` for compact JSON Lines output, or pass
+`pretty_json=True` (or `PrettyJsonConfig`) for indented JSON. The same options
+apply to console, `.log`, `.txt`, and `.json` file sinks:
+
+```python
+logger.add("events.json", serialize=True, pretty_json=True)
+```
+
+Each record is valid JSON, while compact output is one JSON object per line.
