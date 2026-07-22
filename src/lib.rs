@@ -227,7 +227,11 @@ impl sink::Sink for PyObjectSink {
             return Ok(());
         }
         let formatted = self.formatter.format(record)?;
-        let line = color::parse_log_markup(&record.level, &formatted, self.colorize);
+        let line = if self.colorize {
+            color::parse_log_markup(&record.level, &formatted, true)
+        } else {
+            formatted
+        };
         let line = if line.ends_with('\n') {
             line
         } else {
@@ -546,6 +550,30 @@ fn resolve_compression_codec_py(
     }
 }
 
+/// Removes markup from a formatter while preserving format specifications such
+/// as `{level: <8}`.
+fn strip_formatter_tags(text: &str) -> String {
+    let mut result = text.to_owned();
+    let mut offset = 0;
+    while offset < result.len() {
+        let bytes = result.as_bytes();
+        let Some(start) = bytes[offset..].iter().position(|&byte| byte == b'<') else {
+            break;
+        };
+        let absolute = offset + start;
+        let next = absolute + 1;
+        let is_tag = next < result.len()
+            && (result.as_bytes()[next].is_ascii_alphabetic() || result.as_bytes()[next] == b'/');
+        if is_tag && let Some(end) = result[absolute..].find('>') {
+            result.replace_range(absolute..=absolute + end, "");
+            offset = absolute;
+            continue;
+        }
+        offset = next;
+    }
+    result
+}
+
 /// Python-facing logger wrapper around the Rust engine.
 #[pyclass(name = "_Logger")]
 struct PyLogger {
@@ -667,7 +695,12 @@ impl PyLogger {
             });
             let fmt_bound = fmt_obj.bind(py);
             if let Ok(fmt_str) = fmt_bound.extract::<String>() {
-                Box::new(TemplateFormatter::new(fmt_str))
+                let processed = if colorize.unwrap_or(false) {
+                    fmt_str
+                } else {
+                    strip_formatter_tags(&fmt_str)
+                };
+                Box::new(TemplateFormatter::new(processed))
             } else if fmt_bound.is_callable() {
                 Box::new(PyObjectFormatter { callable: fmt_obj })
             } else {

@@ -587,11 +587,12 @@ pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String 
     } else {
         format!("<{level_style}>")
     };
-    let marked = text
-        .replace("<level>", &opening)
-        .replace("<lvl>", &opening)
-        .replace("</level>", "</>")
-        .replace("</lvl>", "</>");
+    let marked = text.replace("<level>", &opening).replace("<lvl>", &opening);
+    let marked = if opening.is_empty() {
+        marked
+    } else {
+        marked.replace("</level>", "</>").replace("</lvl>", "</>")
+    };
     let rendered = parse_rich_markup(&marked, colorize);
     if colorize && !text.contains('<') {
         paint(level, &rendered, true)
