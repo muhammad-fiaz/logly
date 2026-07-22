@@ -39,7 +39,7 @@ class TqdmSink:
     """Send log output through tqdm progress bars.
 
     Wraps ``tqdm.write()`` so log messages don't interfere with
-    active progress bars. Works exactly like Loguru's tqdm integration.
+    active progress bars without corrupting progress display.
 
     Usage::
 

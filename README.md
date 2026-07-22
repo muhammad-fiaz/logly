@@ -475,7 +475,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgements
 
-Logly's Python API syntax and ergonomics are inspired by [Loguru](https://github.com/Delgan/loguru). The underlying engine is an independent, from-scratch Rust implementation.
+Logly's Python API is inspired by Loguru and backed by an independent, from-scratch Rust implementation.
 
 ---
 

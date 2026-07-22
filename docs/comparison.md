@@ -1,6 +1,6 @@
 ---
 title: Comparison
-description: Feature comparison between Logly, Loguru, structlog, and stdlib logging
+description: Feature comparison between Logly, structlog, and stdlib logging
 ---
 
 # Comparison
@@ -11,8 +11,8 @@ compression, structured output, and framework integrations.
 
 ## Feature Matrix
 
-| Capability | Logly | Loguru | structlog | stdlib logging |
-|------------|-------|--------|-----------|----------------|
+| Capability | Logly | Other Python API | structlog | stdlib logging |
+|------------|-------|------------------|--------|-----------|
 | **Engine** | Rust (PyO3) | Pure Python | Pure Python | Pure Python |
 | **10 built-in levels** | Yes | Partial | No | No |
 | **Custom levels** | Yes | Yes | No | Manual |
@@ -49,7 +49,7 @@ compression, structured output, and framework integrations.
 Start by configuring sinks explicitly at startup, then pass `logger` or
 independent `Logger()` instances into the components that need logging.
 
-## Migrating From Loguru
+## Migrating From Other Logging Libraries
 
 Most day-to-day calls are intentionally familiar:
 

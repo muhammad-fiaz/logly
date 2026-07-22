@@ -17,7 +17,7 @@ instances to components that need logging.
 4. Use `logger.contextualize(...)` for request-scoped fields.
 5. Call `logger.complete()` before process shutdown when using queued sinks.
 
-## From Loguru
+## From Feature-Rich Python Logging Libraries
 
 Replace the import and keep the same application-level sink setup shape:
 
