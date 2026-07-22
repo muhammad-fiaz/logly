@@ -333,9 +333,9 @@ class Logger:
             level: Minimum log level. Records below this level are discarded.
                 Accepts level names (``"INFO"``) or numeric values (``20``).
             format: Format template or callable. When omitted, the default
-                includes timestamp, level, source file, function, line, and
-                message. Use tokens such as ``{file}``, ``{function}``, and
-                ``{line}`` for explicit source formatting.
+                includes timestamp, level, source filename, function, line,
+                and message. Use ``{filename}`` for a compact path or
+                ``{file}`` when the full source path is required.
             rotation: File rotation policy. Examples:
                 - ``"10 MB"``: Rotate when file exceeds 10 megabytes
                 - ``"daily"``: Rotate at midnight each day
