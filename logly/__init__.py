@@ -2,7 +2,8 @@
 
 Logly provides a clean, intuitive API with 10 built-in log levels,
 multiple sink types, context binding, structured logging,
-and integrations for FastAPI, Django, stdlib logging, and Rich.
+    source-aware formatting, JSON output, compression, and integrations for
+    FastAPI, Django, stdlib logging, and Rich.
 
 Usage::
 

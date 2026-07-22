@@ -256,7 +256,7 @@ class Logger:
             format = (
                 "<green>{time:%Y-%m-%d %H:%M:%S}</green> | "
                 "<level>{level: <8}</level> | "
-                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+                "<cyan>{file}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
                 "<level>{message}</level>"
             )
 

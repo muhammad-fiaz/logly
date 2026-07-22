@@ -332,8 +332,10 @@ class Logger:
                 - ``logging.Handler``: Python logging handler
             level: Minimum log level. Records below this level are discarded.
                 Accepts level names (``"INFO"``) or numeric values (``20``).
-            format: Format template (``"{level} | {message}"``) or callable
-                that receives a record dict and returns a formatted string.
+            format: Format template or callable. When omitted, the default
+                includes timestamp, level, source file, function, line, and
+                message. Use tokens such as ``{file}``, ``{function}``, and
+                ``{line}`` for explicit source formatting.
             rotation: File rotation policy. Examples:
                 - ``"10 MB"``: Rotate when file exceeds 10 megabytes
                 - ``"daily"``: Rotate at midnight each day
@@ -343,7 +345,8 @@ class Logger:
                 - ``7``: Keep last 7 rotated files
                 - ``"30 days"``: Keep files from last 30 days
             compression: Compression codec for rotated files.
-                Supported: ``"gzip"``, ``"zip"``, ``"bz2"``, ``"xz"``, ``"zstd"``
+                Supported: ``"gzip"``, ``"zip"``, ``"bz2"``, ``"xz"``,
+                ``"lzma"``, and ``"zstd"``.
             enqueue: Use background queue for non-blocking writes.
             colorize: Force colorized output. ``None`` auto-detects TTY.
             backtrace: Include backtrace in exception formatting.
