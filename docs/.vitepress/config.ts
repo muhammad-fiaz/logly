@@ -513,9 +513,10 @@ gtag('config', '${GA_ID}');`,
         },
       ],
       "/examples/": [
-        {
-          text: "Examples",
-          items: [
+      {
+        text: "Examples",
+        items: [
+          { text: "Integration catalog", link: "/examples/integration-catalog" },
             { text: "Basic Logging", link: "/examples/basic-logging" },
             { text: "Color Markup", link: "/examples/color-markup" },
             { text: "File Logging", link: "/examples/file-logging" },
