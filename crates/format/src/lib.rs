@@ -342,8 +342,13 @@ fn format_template(template: &str, record: &LogRecord, timestamp_format: &str) -
             }
 
             // Resolve token value
-            let value = resolve_token(&token, record, timestamp_format)
-                .unwrap_or_else(|| format!("{{{token}}}"));
+            let ts_fmt = if token == "time" && !spec.is_empty() {
+                &spec
+            } else {
+                timestamp_format
+            };
+            let value =
+                resolve_token(&token, record, ts_fmt).unwrap_or_else(|| format!("{{{token}}}"));
 
             // Apply format spec
             if spec.is_empty() {
@@ -394,9 +399,9 @@ impl Formatter for TemplateFormatter {
 /// | `hh` | `%I` | Hour 12h (01-12) |
 /// | `mm` | `%M` | Minute (00-59) |
 /// | `ss` | `%S` | Second (00-59) |
-/// | `SSS` | `%.3f` | Milliseconds |
-/// | `SS` | `%.2f` | Centiseconds |
-/// | `S` | `%.f` | Sub-second |
+/// | `SSS` | `%3f` | Milliseconds |
+/// | `SS` | `%2f` | Centiseconds |
+/// | `S` | `%f` | Sub-second |
 /// | `A` | `%p` | AM/PM |
 /// | `dddd` | `%A` | Full weekday name |
 /// | `ddd` | `%a` | Short weekday name |
@@ -450,10 +455,10 @@ pub fn convert_time_tokens(format: &str) -> String {
             result.push_str("%b");
             3
         } else if collected.starts_with("SSS") {
-            result.push_str("%.3f");
+            result.push_str("%3f");
             3
         } else if collected.starts_with("SS") {
-            result.push_str("%.2f");
+            result.push_str("%2f");
             2
         } else if collected.starts_with("YY") {
             result.push_str("%y");
@@ -480,7 +485,7 @@ pub fn convert_time_tokens(format: &str) -> String {
             result.push_str("%p");
             1
         } else if c == 'S' {
-            result.push_str("%.f");
+            result.push_str("%f");
             1
         } else {
             result.push(c);
@@ -1278,7 +1283,7 @@ mod tests {
     #[test]
     fn convert_time_tokens_with_millis() {
         let result = convert_time_tokens("YYYY-MM-DD HH:mm:ss.SSS");
-        assert_eq!(result, "%Y-%m-%d %H:%M:%S.%.3f");
+        assert_eq!(result, "%Y-%m-%d %H:%M:%S.%3f");
     }
 
     #[test]
