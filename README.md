@@ -78,14 +78,17 @@ A Rust-powered, high-performance logging library for Python with structured sink
 | **Multiple sinks** | Console, file, callable, and network outputs simultaneously | [Docs](https://muhammad-fiaz.github.io/logly/guides/sinks/) |
 | **File rotation** | Size-based, time-based, clock-based, and weekday rotation | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
 | **Compression** | gzip, zip, bz2, xz, zstd with tar-compatible aliases | [Docs](https://muhammad-fiaz.github.io/logly/guides/rotation-retention-compression/) |
-| **JSON logging** | Structured JSON output for storage and analysis | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
+| **JSON logging** | Structured JSON output with file, line, function, module fields | [Docs](https://muhammad-fiaz.github.io/logly/guides/formatting/) |
 | **Context binding** | Attach persistent key-value pairs to logs | [Docs](https://muhammad-fiaz.github.io/logly/guides/context-binding/) |
 | **Exception catching** | `catch()` decorator and context manager | [Docs](https://muhammad-fiaz.github.io/logly/guides/exception-handling/) |
 | **Background workers** | Non-blocking writes with `enqueue=True` | [Docs](https://muhammad-fiaz.github.io/logly/guides/queue-async/) |
+| **Async sinks** | Async functions, class-based async callables, functools.partial | [Docs](https://muhammad-fiaz.github.io/logly/guides/async-sinks/) |
+| **Rich markup** | Parse `<tag>` and `[tag]` syntax into ANSI escape codes | [Docs](https://muhammad-fiaz.github.io/logly/guides/color-markup/) |
+| **Batch HTTP sink** | Rust-native batched HTTP JSON for high-throughput logging | [Docs](https://muhammad-fiaz.github.io/logly/guides/async-sinks/) |
+| **Network sinks** | HTTP, TCP, UDP, Syslog (RFC 3164/5424) | [Docs](https://muhammad-fiaz.github.io/logly/guides/network-logging/) |
+| **Source location** | Automatic capture of file, line, function, module | [Docs](https://muhammad-fiaz.github.io/logly/guides/source-location/) |
 | **40+ integrations** | FastAPI, Django, Flask, Rich, Redis, Kafka, and more | [Docs](https://muhammad-fiaz.github.io/logly/integrations/) |
 | **Thread-safe** | Safe concurrent logging from multiple threads | [Docs](https://muhammad-fiaz.github.io/logly/guides/concurrency/) |
-| **Source location** | Optional clickable `file:line` output | [Docs](https://muhammad-fiaz.github.io/logly/guides/source-location/) |
-| **Network logging** | HTTP, TCP, UDP, Syslog sinks | [Docs](https://muhammad-fiaz.github.io/logly/guides/network-logging/) |
 | **Color themes** | Custom ANSI color themes per level | [Docs](https://muhammad-fiaz.github.io/logly/guides/custom-colors/) |
 | **Independent loggers** | Separate sink sets per logger instance | [Docs](https://muhammad-fiaz.github.io/logly/guides/independent-loggers/) |
 
@@ -384,6 +387,68 @@ worker_logger.debug("job claimed")
 from logly import logger
 
 logger.opt(lazy=True).debug("Result: {}", lambda: expensive_computation())
+```
+
+### Async Sinks
+
+```python
+import asyncio
+from logly import logger
+
+# Async function sink
+async def cloud_sink(message: str) -> None:
+    await send_to_cloud(message)
+
+# Async class-based sink
+class AsyncDBSink:
+    def __init__(self, db_url: str):
+        self.db_url = db_url
+
+    async def __call__(self, message: str) -> None:
+        await insert_into_db(self.db_url, message)
+
+async def main():
+    logger.add(cloud_sink, level="WARNING")
+    logger.add(AsyncDBSink("postgresql://localhost/logs"), level="ERROR")
+    logger.warning("Sent to cloud")
+    logger.error("Sent to both cloud and database")
+    logger.complete()
+
+asyncio.run(main())
+```
+
+### Rich Markup
+
+```python
+from logly import logger, parse_rich_markup
+
+# Loguru-style angle bracket syntax
+logger.info("<bold>Important</bold> message")
+logger.error("<red>Error:</red> something went wrong")
+logger.info("<bold, cyan>Combined styles</bold, cyan>")
+
+# Rich-style bracket syntax
+logger.info("[red]Error[/red] occurred")
+logger.info("[bold green on white]Success[/bold green on white]")
+
+# Parse markup manually
+text = parse_rich_markup("<bold>hello</bold>", colorize=True)
+```
+
+### Batch HTTP Sink
+
+```python
+from logly import BatchHttpJsonSink, logger
+
+sink = BatchHttpJsonSink(
+    url="https://logs.example.com/ingest",
+    batch_size=100,
+    flush_interval=5.0,
+    headers={"Authorization": "Bearer token"},
+)
+
+logger.add(sink, level="INFO")
+logger.info("This will be batched and sent efficiently")
 ```
 
 For more examples, see the [documentation](https://muhammad-fiaz.github.io/logly/).
