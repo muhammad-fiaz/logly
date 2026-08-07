@@ -126,19 +126,20 @@ with logger.contextualize(request_id="abc"):
 ```python
 from logly import logger
 
+
 # As decorator
 @logger.catch
-def risky_operation():
-    ...
+def risky_operation(): ...
+
 
 # As context manager
 with logger.catch():
     risky_operation()
 
+
 # With exclude
 @logger.catch(exclude=ValueError)
-def another_operation():
-    ...
+def another_operation(): ...
 ```
 
 ### How do I use lazy evaluation?
@@ -164,10 +165,7 @@ logger.add("app.json", serialize=True)
 from logly import logger
 
 # Parse with pattern
-entries = logger.parse(
-    "app.log",
-    pattern="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
-)
+entries = logger.parse("app.log", pattern="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}")
 ```
 
 ## Integrations

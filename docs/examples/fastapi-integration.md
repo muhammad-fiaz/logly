@@ -10,7 +10,7 @@ Use Logly's FastAPI middleware to automatically log every request with method, p
 ## Example
 
 ```python
---8<-- "examples/fastapi_integration.py"
+--8 < --"examples/fastapi_integration.py"
 ```
 
 ## How It Works

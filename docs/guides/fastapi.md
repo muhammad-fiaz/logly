@@ -16,6 +16,7 @@ from logly.integrations.fastapi import LoglyMiddleware
 app = FastAPI()
 app.add_middleware(LoglyMiddleware)
 
+
 @app.get("/")
 async def root():
     logger.info("Root endpoint called")
@@ -44,11 +45,13 @@ from logly.integrations.fastapi import LoglyMiddleware
 app = FastAPI()
 app.add_middleware(LoglyMiddleware)
 
+
 @app.get("/users/{user_id}")
 async def get_user(user_id: int):
     logger.info("Fetching user {}", user_id)
     # Output: INFO | Fetching user 123 | request_id=... method=GET path=/users/123
     return {"user_id": user_id}
+
 
 @app.post("/users")
 async def create_user():
@@ -75,6 +78,7 @@ logger.add(
     colorize=True,
 )
 
+
 @app.get("/")
 async def root():
     logger.info("Request received")
@@ -90,6 +94,7 @@ from logly.integrations.fastapi import LoglyMiddleware
 
 app = FastAPI()
 app.add_middleware(LoglyMiddleware)
+
 
 @app.get("/items/{item_id}")
 async def get_item(item_id: int):

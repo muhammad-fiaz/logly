@@ -65,13 +65,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: lint
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Cache Rust build
@@ -96,19 +96,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-26]
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: test-${{ matrix.os }}-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache Rust build
@@ -135,18 +135,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: test-windows-x86-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x86
@@ -171,18 +171,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          ["3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: test-windows-arm64-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           architecture: arm64
@@ -207,7 +207,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -231,18 +231,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
           cache-suffix: test-linux-aarch64-${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache Rust build

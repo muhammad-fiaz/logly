@@ -35,6 +35,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install logly"
 )  # pragma: no cover
 
+__all__ = ["LogstashSink"]
+
 
 class LogstashSink:
     """Send log entries as JSON to a Logstash instance.

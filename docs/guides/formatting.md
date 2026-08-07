@@ -99,7 +99,43 @@ JSON output format:
 {"elapsed":1.234,"exception":null,"extra":{"user_id":"12345"},"file":"","function":"main","level":"INFO","line":0,"message":"User logged in","module":"","name":"logly","process":12345,"thread":"MainThread","time":"2026-06-21T14:30:45.123000+00:00"}
 ```
 
-## Pretty JSON
+## JSON Serialization
+
+Enable JSON output with `serialize=True`:
+
+```python
+from logly import logger
+
+logger.add("app.json", serialize=True)
+logger.info("Structured log")
+```
+
+Each line becomes a JSON object:
+
+```json
+{"file": {"name": "main.py", "path": "/home/user/project/main.py"}, "function": "main", "level": "INFO", "line": 42, "message": "Structured log", "module": "main", "name": "logly", "process": "12345", "thread": "MainThread", "time": "2026-08-07T12:45:10.000+0000"}
+```
+
+### JSON Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `level` | `string` | Log level name |
+| `message` | `string` | Log message |
+| `name` | `string` | Logger name |
+| `time` | `string` | ISO 8601 timestamp |
+| `process` | `string` | Process ID |
+| `thread` | `string` | Thread name |
+| `file` | `object` | Source file with `name` and `path` properties |
+| `file.name` | `string` | Filename only (e.g., `main.py`) |
+| `file.path` | `string` | Full file path |
+| `line` | `int` | Line number |
+| `function` | `string` | Function name |
+| `module` | `string` | Module name without extension |
+| `extra` | `object` | Bound context key-value pairs |
+| `exception` | `string` | Exception text (if any) |
+
+### Pretty JSON
 
 Use `PrettyJsonConfig` to control the formatting of serialized JSON output:
 
@@ -165,17 +201,21 @@ logger.add(
 # With timestamp
 from datetime import datetime
 
+
 def my_formatter(record: dict) -> str:
     ts = record["time"].strftime("%H:%M:%S")
     return f"{ts} [{record['level']}] {record['message']}"
 
+
 logger.add("app.log", format=my_formatter)
+
 
 # With extra fields
 def rich_formatter(record: dict) -> str:
     extra = record.get("extra", {})
     ctx = " ".join(f"{k}={v}" for k, v in extra.items())
     return f"[{record['level']}] {record['message']} {ctx}".strip()
+
 
 logger.add("app.log", format=rich_formatter)
 ```
@@ -235,7 +275,10 @@ logger.add(
 )
 
 # JSON-like
-logger.add("app.log", format='{"time":"{time:YYYY-MM-DD HH:mm:ss}","level":"{level}","message":"{message}"}')
+logger.add(
+    "app.log",
+    format='{"time":"{time:YYYY-MM-DD HH:mm:ss}","level":"{level}","message":"{message}"}',
+)
 
 # With context
 logger.add(

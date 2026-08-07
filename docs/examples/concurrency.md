@@ -26,9 +26,11 @@ from logly import logger
 
 logger.add("threaded.log", enqueue=True)
 
+
 def worker(name):
     for i in range(100):
         logger.info("Worker {} iteration {}", name, i)
+
 
 threads = [threading.Thread(target=worker, args=(f"W{i}",)) for i in range(4)]
 for t in threads:
@@ -47,10 +49,12 @@ from logly import logger
 
 sink_id = logger.add("async.log", enqueue=True)
 
+
 async def process():
     logger.info("Async task started")
     await asyncio.sleep(0.1)
     logger.info("Async task finished")
+
 
 asyncio.run(process())
 logger.complete()

@@ -12,6 +12,8 @@ import json
 import urllib.request
 from typing import Any
 
+__all__ = ["SlackHandler"]
+
 
 class SlackHandler:
     """Send log entries to a Slack webhook.

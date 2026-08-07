@@ -246,6 +246,237 @@ impl HttpJsonSink {
     }
 }
 
+/// Configuration for the [`BatchHttpJsonSink`].
+///
+/// Controls the HTTP endpoint, batch size, and flush interval.
+#[derive(Clone, Debug)]
+pub struct BatchHttpJsonConfig {
+    /// The HTTP endpoint URL.
+    pub url: String,
+    /// HTTP method to use (POST or PUT).
+    pub method: HttpMethod,
+    /// Optional custom headers.
+    pub headers: Vec<(String, String)>,
+    /// Request timeout in seconds.
+    pub timeout_secs: u64,
+    /// Maximum number of log records per batch.
+    pub batch_size: usize,
+    /// Maximum time in seconds between flushes.
+    pub flush_interval_secs: u64,
+}
+
+impl Default for BatchHttpJsonConfig {
+    fn default() -> Self {
+        Self {
+            url: "http://localhost:8080/logs".to_owned(),
+            method: HttpMethod::Post,
+            headers: vec![],
+            timeout_secs: 30,
+            batch_size: 100,
+            flush_interval_secs: 5,
+        }
+    }
+}
+
+/// HTTP sink that batches log records before sending.
+///
+/// Collects log records and sends them as a JSON array to reduce HTTP
+/// requests. This is more efficient for high-throughput logging scenarios
+/// like cloud logging.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use network::{BatchHttpJsonSink, BatchHttpJsonConfig, HttpMethod};
+///
+/// let config = BatchHttpJsonConfig {
+///     url: "http://localhost:8080/logs".to_owned(),
+///     method: HttpMethod::Post,
+///     headers: vec![],
+///     timeout_secs: 30,
+///     batch_size: 50,
+///     flush_interval_secs: 10,
+/// };
+/// let sink = BatchHttpJsonSink::new(config);
+/// ```
+pub struct BatchHttpJsonSink {
+    config: RwLock<BatchHttpJsonConfig>,
+    agent: ureq::Agent,
+    buffer: Mutex<Vec<JsonLogRecord>>,
+}
+
+impl BatchHttpJsonSink {
+    /// Creates a new batch HTTP JSON sink with the given configuration.
+    #[must_use]
+    pub fn new(config: BatchHttpJsonConfig) -> Self {
+        let timeout = config.timeout_secs;
+        let agent_config = ureq::Agent::config_builder()
+            .timeout_global(Some(Duration::from_secs(timeout)))
+            .build();
+        let agent = ureq::Agent::new_with_config(agent_config);
+        Self {
+            config: RwLock::new(config),
+            agent,
+            buffer: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// Adds a log record to the batch buffer.
+    ///
+    /// If the buffer reaches the configured batch size, it is automatically
+    /// flushed.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`LoglyError::Sink`] if flushing fails.
+    pub fn send(&self, record: &LogRecord) -> LoglyResult<()> {
+        let json_record = JsonLogRecord::from(record);
+
+        let mut buffer = self
+            .buffer
+            .lock()
+            .map_err(|_| LoglyError::Sink("buffer lock is unavailable".to_owned()))?;
+
+        buffer.push(json_record);
+
+        let batch_size = {
+            let config = self
+                .config
+                .read()
+                .map_err(|_| LoglyError::Sink("config lock is unavailable".to_owned()))?;
+            config.batch_size
+        };
+
+        if buffer.len() >= batch_size {
+            let batch: Vec<JsonLogRecord> = buffer.drain(..).collect();
+            drop(buffer);
+            self.flush_batch(&batch)?;
+        }
+
+        Ok(())
+    }
+
+    /// Flushes all buffered log records to the HTTP endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`LoglyError::Sink`] if the HTTP request fails.
+    pub fn flush(&self) -> LoglyResult<()> {
+        let batch = {
+            let mut buffer = self
+                .buffer
+                .lock()
+                .map_err(|_| LoglyError::Sink("buffer lock is unavailable".to_owned()))?;
+            if buffer.is_empty() {
+                return Ok(());
+            }
+            buffer.drain(..).collect::<Vec<_>>()
+        };
+
+        self.flush_batch(&batch)
+    }
+
+    /// Sends a batch of log records to the HTTP endpoint.
+    fn flush_batch(&self, batch: &[JsonLogRecord]) -> LoglyResult<()> {
+        let config = self
+            .config
+            .read()
+            .map_err(|_| LoglyError::Sink("config lock is unavailable".to_owned()))?;
+
+        let mut request = match config.method {
+            HttpMethod::Post => self.agent.post(&config.url),
+            HttpMethod::Put => self.agent.put(&config.url),
+        };
+
+        for (key, value) in &config.headers {
+            request = request.header(key, value);
+        }
+
+        request
+            .send_json(batch)
+            .map_err(|e| LoglyError::Sink(format!("HTTP batch request failed: {e}")))?;
+
+        Ok(())
+    }
+
+    /// Updates the sink configuration at runtime.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`LoglyError::Sink`] if the config lock is poisoned.
+    pub fn update_config(&self, config: BatchHttpJsonConfig) -> LoglyResult<()> {
+        let mut guard = self
+            .config
+            .write()
+            .map_err(|_| LoglyError::Sink("config lock is unavailable".to_owned()))?;
+        *guard = config;
+        Ok(())
+    }
+
+    /// Returns the current number of buffered records.
+    #[must_use]
+    pub fn buffer_len(&self) -> usize {
+        self.buffer.lock().map_or(0, |b| b.len())
+    }
+
+    /// Writes a pre-formatted log line to the batch buffer.
+    ///
+    /// The line is wrapped in a JSON object with `message` and `timestamp`
+    /// fields and added to the batch buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`LoglyError::Sink`] if the buffer lock is poisoned or
+    /// if flushing the batch fails.
+    pub fn write(&self, line: &str) -> LoglyResult<()> {
+        let config = self
+            .config
+            .read()
+            .map_err(|_| LoglyError::Sink("config lock is unavailable".to_owned()))?;
+
+        let body = serde_json::json!({
+            "message": line,
+            "timestamp": SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs()),
+        });
+
+        // Convert to JsonLogRecord-like structure for batching
+        let json_record = JsonLogRecord {
+            timestamp: body["timestamp"].as_str().unwrap_or("0").to_owned(),
+            level: String::new(),
+            level_priority: 0,
+            message: line.to_owned(),
+            name: String::new(),
+            file: None,
+            line: None,
+            function: None,
+            thread_name: None,
+            process_id: 0,
+            extra: std::collections::BTreeMap::new(),
+            exception: None,
+        };
+
+        let batch_size = config.batch_size;
+        drop(config);
+
+        let mut buffer = self
+            .buffer
+            .lock()
+            .map_err(|_| LoglyError::Sink("buffer lock is unavailable".to_owned()))?;
+
+        buffer.push(json_record);
+
+        if buffer.len() >= batch_size {
+            let batch: Vec<JsonLogRecord> = buffer.drain(..).collect();
+            drop(buffer);
+            self.flush_batch(&batch)?;
+        }
+
+        Ok(())
+    }
+}
+
 /// Configuration for the [`TcpSink`].
 ///
 /// Controls the target host, port, and message delimiter.

@@ -47,7 +47,7 @@ original = logger.bind(env="production")
 child = original.bind(request_id="123")
 
 original.info("Parent log")  # Only has env
-child.info("Child log")      # Has both env and request_id
+child.info("Child log")  # Has both env and request_id
 ```
 
 ## contextualize() - Scoped Context
@@ -85,11 +85,13 @@ with logger.contextualize(service="api"):
 import asyncio
 from logly import logger
 
+
 async def handle_request(request_id: str):
     with logger.contextualize(request_id=request_id):
         logger.info("Starting request")
         await process()
         logger.info("Request complete")
+
 
 # Each concurrent request gets its own context
 asyncio.gather(
@@ -105,20 +107,25 @@ asyncio.gather(
 ```python
 from logly import logger
 
+
 # Add a field to all records
 def add_version(record: dict) -> None:
     record.setdefault("extra", {})["version"] = "1.0.0"
+
 
 patched_logger = logger.patch(add_version)
 patched_logger.info("With version")
 # Output includes: version=1.0.0
 
+
 # Multiple patchers
 def add_env(record: dict) -> None:
     record.setdefault("extra", {})["env"] = "production"
 
+
 def add_region(record: dict) -> None:
     record.setdefault("extra", {})["region"] = "us-east-1"
+
 
 patched = logger.patch(add_env).patch(add_region)
 patched.info("With env and region")
@@ -129,11 +136,13 @@ patched.info("With env and region")
 ```python
 from logly import logger
 
+
 def enrich_record(record: dict) -> None:
     extra = record.setdefault("extra", {})
     extra["env"] = "production"
     extra["region"] = "us-east-1"
     extra["version"] = "2.0"
+
 
 logger.add("enriched.log", patch=enrich_record)
 logger.info("Enriched log entry")
@@ -144,14 +153,16 @@ logger.info("Enriched log entry")
 ```python
 from logly import logger
 
+
 def add_field(record: dict) -> None:
     record.setdefault("extra", {})["patched"] = "yes"
+
 
 original = logger.bind(env="prod")
 patched = original.patch(add_field)
 
 original.info("Original")  # No "patched" field
-patched.info("Patched")    # Has "patched" field
+patched.info("Patched")  # Has "patched" field
 ```
 
 ## Combining Context Features
@@ -162,9 +173,11 @@ from logly import logger
 # Bind for persistent fields
 base_logger = logger.bind(service="api", version="1.0")
 
+
 # Patch for record enrichment
 def add_timestamp(record: dict) -> None:
     record.setdefault("extra", {})["logged_at"] = "2026-06-21"
+
 
 enriched = base_logger.patch(add_timestamp)
 

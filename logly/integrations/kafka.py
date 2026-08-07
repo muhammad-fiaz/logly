@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install confluent-kafka"
 )  # pragma: no cover
 
+__all__ = ["KafkaHandler"]
+
 
 class KafkaHandler:
     """Publish log entries to a Kafka topic.

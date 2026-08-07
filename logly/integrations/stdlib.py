@@ -12,6 +12,8 @@ import sys
 
 from logly import logger
 
+__all__ = ["InterceptHandler"]
+
 
 def _resolve_level(record: logging.LogRecord) -> str:
     """Resolve a Python logging record to a Logly level name.

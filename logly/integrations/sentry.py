@@ -35,6 +35,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install sentry-sdk"
 )  # pragma: no cover
 
+__all__ = ["SentrySink"]
+
 _LoglyLevel = Literal[
     "TRACE",
     "DEBUG",

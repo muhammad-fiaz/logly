@@ -12,6 +12,8 @@ import json
 import urllib.request
 from typing import Any
 
+__all__ = ["DiscordHandler"]
+
 
 class DiscordHandler:
     """Send log entries to a Discord webhook.

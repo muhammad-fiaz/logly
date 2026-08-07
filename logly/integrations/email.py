@@ -12,6 +12,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+__all__ = ["EmailHandler"]
+
 
 class EmailHandler:
     """Send log entries as emails via SMTP.

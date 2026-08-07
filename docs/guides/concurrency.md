@@ -17,9 +17,11 @@ from logly import logger
 
 logger.add("app.log", level="INFO")
 
+
 def worker():
     for i in range(100):
         logger.info("Thread {} message {}", threading.current_thread().name, i)
+
 
 threads = [threading.Thread(target=worker) for _ in range(4)]
 for t in threads:
@@ -81,6 +83,7 @@ logger.complete()
 import threading
 from logly import logger
 
+
 def worker(worker_id: int):
     with logger.contextualize(worker_id=worker_id):
         logger.info("Worker started")
@@ -88,6 +91,7 @@ def worker(worker_id: int):
         for i in range(10):
             logger.info("Processing item {}", i)
         logger.info("Worker finished")
+
 
 threads = [threading.Thread(target=worker, args=(i,)) for i in range(4)]
 for t in threads:
@@ -104,11 +108,13 @@ logger.complete()
 import asyncio
 from logly import logger
 
+
 async def handle_request(request_id: str):
     with logger.contextualize(request_id=request_id):
         logger.info("Starting request")
         await asyncio.sleep(0.1)
         logger.info("Request complete")
+
 
 async def main():
     await asyncio.gather(
@@ -116,6 +122,7 @@ async def main():
         handle_request("req-2"),
         handle_request("req-3"),
     )
+
 
 asyncio.run(main())
 ```

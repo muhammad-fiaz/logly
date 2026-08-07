@@ -43,9 +43,11 @@ Use the `opener` parameter to customize how files are opened (e.g., for custom p
 ```python
 import os
 
+
 def custom_opener(path, mode):
     fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
     return os.fdopen(fd, mode)
+
 
 logger.add("app.log", opener=custom_opener)
 ```

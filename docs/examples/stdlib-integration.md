@@ -10,7 +10,7 @@ Use Logly's `InterceptHandler` to redirect all standard library `logging` calls 
 ## Example
 
 ```python
---8<-- "examples/stdlib_integration.py"
+--8 < --"examples/stdlib_integration.py"
 ```
 
 ## How It Works

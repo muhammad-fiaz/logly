@@ -1107,6 +1107,61 @@ impl PyHttpJsonSink {
     }
 }
 
+/// Python-facing batch HTTP JSON sink wrapper.
+///
+/// Collects log records and sends them in batches to reduce HTTP requests.
+#[pyclass(name = "BatchHttpJsonSink")]
+struct PyBatchHttpJsonSink {
+    inner: network::BatchHttpJsonSink,
+}
+
+#[pymethods]
+impl PyBatchHttpJsonSink {
+    #[new]
+    #[pyo3(signature = (url, *, method = "POST", headers = None, timeout = 30, batch_size = 100, flush_interval = 5))]
+    fn new(
+        url: &str,
+        method: &str,
+        headers: Option<Vec<(String, String)>>,
+        timeout: u64,
+        batch_size: usize,
+        flush_interval: u64,
+    ) -> PyResult<Self> {
+        let http_method = match method.to_uppercase().as_str() {
+            "POST" => HttpMethod::Post,
+            "PUT" => HttpMethod::Put,
+            _ => return Err(PyValueError::new_err("method must be POST or PUT")),
+        };
+        let config = network::BatchHttpJsonConfig {
+            url: url.to_owned(),
+            method: http_method,
+            headers: headers.unwrap_or_default(),
+            timeout_secs: timeout,
+            batch_size,
+            flush_interval_secs: flush_interval,
+        };
+        Ok(Self {
+            inner: network::BatchHttpJsonSink::new(config),
+        })
+    }
+
+    fn write(&self, line: &str) -> PyResult<()> {
+        self.inner
+            .write(line)
+            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    }
+
+    fn flush(&self) -> PyResult<()> {
+        self.inner
+            .flush()
+            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    }
+
+    fn buffer_len(&self) -> usize {
+        self.inner.buffer_len()
+    }
+}
+
 /// Python-facing TCP sink wrapper.
 #[pyclass(name = "TcpSink")]
 struct PyTcpSink {
@@ -1411,10 +1466,45 @@ fn colorize(text: &str, color: &str, colorize: bool) -> String {
     color::colorize(text, color, colorize)
 }
 
+/// Parse Rich-style markup tags and return ANSI-escaped text.
+///
+/// Supports both `<tag>` (loguru-style) and `[tag]` (Rich-style) syntax.
+/// For `<tag>` syntax, also supports comma-separated tokens like `<bold, cyan, white>`.
+/// For `[tag]` syntax, supports Rich conventions like `[red]`, `[on red]`, `[bold red on white]`.
+///
+/// # Arguments
+///
+/// * `text` - Text containing markup tags.
+/// * `colorize` - Whether to convert tags to ANSI escape codes. If `False`, tags are stripped.
+///
+/// # Returns
+///
+/// The text with markup tags converted to ANSI escape sequences, or plain text if `colorize=False`.
+///
+/// # Examples
+///
+/// ```python
+/// from logly import parse_rich_markup
+///
+/// parse_rich_markup("<bold>hello</bold>", True)
+/// # Returns: "\033[1mhello\033[0m"
+///
+/// parse_rich_markup("[red]error[/red]", True)
+/// # Returns: "\033[31merror\033[0m"
+///
+/// parse_rich_markup("<bold, cyan>text</>", True)
+/// # Returns: "\033[1;36mtext\033[0m"
+/// ```
+#[pyfunction]
+fn parse_rich_markup(text: &str, colorize: bool) -> String {
+    color::parse_rich_markup(text, colorize)
+}
+
 #[pymodule]
 fn _logly(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyLogger>()?;
     module.add_class::<PyHttpJsonSink>()?;
+    module.add_class::<PyBatchHttpJsonSink>()?;
     module.add_class::<PyTcpSink>()?;
     module.add_class::<PyUdpSink>()?;
     module.add_class::<PySyslogSink>()?;
@@ -1429,6 +1519,7 @@ fn _logly(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(format_exception_text, module)?)?;
     module.add_function(wrap_pyfunction!(render_message, module)?)?;
     module.add_function(wrap_pyfunction!(strip_rich_tags, module)?)?;
+    module.add_function(wrap_pyfunction!(parse_rich_markup, module)?)?;
     module.add_function(wrap_pyfunction!(paint_themed, module)?)?;
     module.add_function(wrap_pyfunction!(colorize, module)?)?;
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;

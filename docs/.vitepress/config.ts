@@ -25,6 +25,16 @@ export default defineConfig({
 
   sitemap: {
     hostname: SITE_URL,
+    lastmodDateOnly: false,
+    transformItems(items) {
+      return items.map((item) => {
+        // Ensure all items have proper lastmod
+        if (!item.lastmod) {
+          item.lastmod = new Date().toISOString();
+        }
+        return item;
+      });
+    },
   },
 
   head: [
@@ -67,9 +77,6 @@ export default defineConfig({
     ["meta", { name: "twitter:description", content: SITE_DESCRIPTION }],
     ["meta", { name: "twitter:image", content: `${SITE_URL}/cover.png` }],
     ["meta", { name: "twitter:creator", content: "@muhammadfiaz_" }],
-
-    // Canonical
-    ["link", { rel: "canonical", href: SITE_URL }],
 
     // Favicons
     ["link", { rel: "icon", href: "/logly/favicon.ico", sizes: "48x48" }],
@@ -148,7 +155,7 @@ gtag('config', '${GA_ID}');`,
     ],
   ],
 
-  ignoreDeadLinks: [/.*\.zig$/, /.*\.py$/],
+  ignoreDeadLinks: false,
 
   transformPageData(pageData) {
     const pageTitle = pageData.title || SITE_NAME;
@@ -158,11 +165,10 @@ gtag('config', '${GA_ID}');`,
     pageData.frontmatter.head ??= [];
     pageData.frontmatter.head.push(
       ["link", { rel: "canonical", href: canonicalUrl }],
-      [
-        "meta",
-        { property: "og:title", content: `${pageTitle} | ${SITE_NAME}` },
-      ],
+      ["meta", { property: "og:title", content: `${pageTitle} | ${SITE_NAME}` }],
       ["meta", { property: "og:url", content: canonicalUrl }],
+      ["meta", { name: "twitter:title", content: `${pageTitle} | ${SITE_NAME}` }],
+      ["meta", { name: "twitter:url", content: canonicalUrl }],
     );
 
     if (pageData.frontmatter.description) {
@@ -177,6 +183,13 @@ gtag('config', '${GA_ID}');`,
         [
           "meta",
           { name: "description", content: pageData.frontmatter.description },
+        ],
+        [
+          "meta",
+          {
+            name: "twitter:description",
+            content: pageData.frontmatter.description,
+          },
         ],
       );
     }

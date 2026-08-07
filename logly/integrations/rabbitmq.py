@@ -35,6 +35,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install pika"
 )  # pragma: no cover
 
+__all__ = ["RabbitMQHandler"]
+
 
 class RabbitMQHandler:
     """Publish log entries to a RabbitMQ queue.

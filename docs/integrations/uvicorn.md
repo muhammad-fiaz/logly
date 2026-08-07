@@ -67,9 +67,11 @@ from logly.integrations.uvicorn import setup_uvicorn_logging
 
 app = FastAPI()
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
 
 if __name__ == "__main__":
     setup_uvicorn_logging(level="INFO")

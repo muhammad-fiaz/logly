@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install pymongo"
 )  # pragma: no cover
 
+__all__ = ["MongoHandler"]
+
 
 class MongoHandler:
     """Insert log entries into a MongoDB collection.

@@ -180,6 +180,29 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 
 **Returns:** `str` - sink ID for use with `remove()`
 
+**Built-in Sink Objects:**
+
+| Sink | Description |
+|------|-------------|
+| `HttpJsonSink` | HTTP JSON log shipping |
+| `BatchHttpJsonSink` | Batched HTTP JSON log shipping |
+| `TcpSink` | TCP socket logging |
+| `UdpSink` | UDP socket logging |
+| `SyslogSink` | System syslog logging |
+
+**Example with BatchHttpJsonSink:**
+
+```python
+from logly import BatchHttpJsonSink, logger
+
+sink = BatchHttpJsonSink(
+    url="https://logs.example.com/ingest",
+    batch_size=100,
+    flush_interval=5.0,
+)
+logger.add(sink, level="INFO")
+```
+
 ---
 
 ### remove(sink_id)
@@ -222,10 +245,10 @@ Get or create a custom log level.
 ```python
 # Get existing level
 level_obj = logger.level("INFO")
-print(level_obj.name)    # "INFO"
-print(level_obj.no)      # 20
-print(level_obj.color)   # None
-print(level_obj.icon)    # None
+print(level_obj.name)  # "INFO"
+print(level_obj.no)  # 20
+print(level_obj.color)  # None
+print(level_obj.icon)  # None
 
 # Create custom level
 logger.level("AUDIT", no=35, color="<green><bold>", icon="🔒")

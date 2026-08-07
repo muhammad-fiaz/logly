@@ -16,6 +16,7 @@ from logly.integrations.fastapi import LoglyMiddleware
 app = FastAPI()
 app.add_middleware(LoglyMiddleware)
 
+
 @app.get("/")
 def root():
     return {"status": "ok"}

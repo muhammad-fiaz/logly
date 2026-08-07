@@ -28,18 +28,30 @@ use levels::LogLevel;
 use std::collections::HashMap;
 
 /// Default color mapping for built-in levels.
+///
+/// Colors match logly's default color scheme:
+/// - TRACE: bold cyan
+/// - DEBUG: bold blue
+/// - INFO: bold (no specific color)
+/// - NOTICE: bold cyan (extra level)
+/// - SUCCESS: bold green
+/// - WARNING: bold yellow
+/// - ERROR: bold red
+/// - FAIL: bold magenta (extra level)
+/// - CRITICAL: bold white on red background (highlighted)
+/// - FATAL: bold white on red background (extra level)
 fn default_color_map() -> HashMap<&'static str, &'static str> {
     HashMap::from([
-        ("TRACE", "dim"),
-        ("DEBUG", "blue"),
-        ("INFO", ""),
-        ("NOTICE", "cyan"),
-        ("SUCCESS", "green"),
-        ("WARNING", "yellow"),
-        ("ERROR", "red"),
-        ("FAIL", "magenta"),
-        ("CRITICAL", "bold_red"),
-        ("FATAL", "bold_red"),
+        ("TRACE", "bold_cyan"),
+        ("DEBUG", "bold_blue"),
+        ("INFO", "bold"),
+        ("NOTICE", "bold_cyan"),
+        ("SUCCESS", "bold_green"),
+        ("WARNING", "bold_yellow"),
+        ("ERROR", "bold_red"),
+        ("FAIL", "bold_magenta"),
+        ("CRITICAL", "bold_red_bg"),
+        ("FATAL", "bold_red_bg"),
         // Bright variants available for custom use
         ("bright_black", "bright_black"),
         ("bright_red", "bright_red"),
@@ -103,8 +115,10 @@ pub fn paint(level: &LogLevel, text: &str, colorize: bool) -> String {
 /// # Supported Names
 ///
 /// - Standard colors: `"black"`, `"red"`, `"green"`, `"yellow"`, `"blue"`, `"magenta"`, `"cyan"`, `"white"`
-/// - Bright colors: `"bright_black"` through `"bright_white"`
-/// - Text styles: `"dim"`, `"bold"`, `"italic"`, `"underline"`, `"blink"`, `"reverse"`, `"strike"`
+/// - Bright/light colors: `"bright_black"` / `"light_black"` through `"bright_white"` / `"light_white"`
+/// - Default color: `"default"`
+/// - Text styles: `"dim"`, `"bold"`, `"italic"`, `"underline"`, `"blink"`, `"reverse"`, `"strike"`, `"hidden"`
+/// - Short aliases: `"k"`, `"r"`, `"g"`, `"y"`, `"e"`, `"m"`, `"c"`, `"w"`, `"lk"`, `"lr"`, `"lg"`, `"ly"`, `"le"`, `"lm"`, `"lc"`, `"lw"`
 /// - Compound: `"bold_red"`, `"dim_cyan"`, `"italic_green"`, etc.
 ///
 /// Returns `""` for unrecognized names.
@@ -118,6 +132,7 @@ pub fn paint(level: &LogLevel, text: &str, colorize: bool) -> String {
 /// assert_eq!(color_code("bold_red"), "1;31");
 /// assert_eq!(color_code("bright_cyan"), "96");
 /// assert_eq!(color_code("dim"), "2");
+/// assert_eq!(color_code("default"), "39");
 /// assert_eq!(color_code("unknown"), "");
 /// ```
 #[must_use]
@@ -132,15 +147,17 @@ pub fn color_code(name: &str) -> &'static str {
         "magenta" | "m" => "35",
         "cyan" | "c" => "36",
         "white" | "w" => "37",
-        // Bright/high-intensity colors
-        "bright_black" => "90",
-        "bright_red" => "91",
-        "bright_green" => "92",
-        "bright_yellow" => "93",
-        "bright_blue" => "94",
-        "bright_magenta" => "95",
-        "bright_cyan" => "96",
-        "bright_white" => "97",
+        // Default foreground
+        "default" => "39",
+        // Bright/high-intensity colors (logly uses "light-" prefix)
+        "bright_black" | "light_black" | "lk" => "90",
+        "bright_red" | "light_red" | "lr" => "91",
+        "bright_green" | "light_green" | "lg" => "92",
+        "bright_yellow" | "light_yellow" | "ly" => "93",
+        "bright_blue" | "light_blue" | "le" => "94",
+        "bright_magenta" | "light_magenta" | "lm" => "95",
+        "bright_cyan" | "light_cyan" | "lc" => "96",
+        "bright_white" | "light_white" | "lw" => "97",
         // Text styles
         "dim" | "d" => "2",
         "bold" | "b" => "1",
@@ -149,8 +166,9 @@ pub fn color_code(name: &str) -> &'static str {
         "blink" | "l" => "5",
         "reverse" | "v" => "7",
         "strike" | "s" => "9",
+        "hidden" | "h" => "8",
         "normal" | "n" => "22",
-        "hide" | "h" => "8",
+        "reset" => "0",
         // Compound shortcuts (underscore-separated)
         "bold_red" => "1;31",
         "bold_green" => "1;32",
@@ -159,6 +177,7 @@ pub fn color_code(name: &str) -> &'static str {
         "bold_magenta" => "1;35",
         "bold_cyan" => "1;36",
         "bold_white" => "1;37",
+        "bold_black" => "1;30",
         "dim_red" => "2;31",
         "dim_green" => "2;32",
         "dim_yellow" => "2;33",
@@ -171,19 +190,39 @@ pub fn color_code(name: &str) -> &'static str {
         "italic_blue" => "3;34",
         "italic_magenta" => "3;35",
         "italic_cyan" => "3;36",
+        "underline_red" => "4;31",
+        "underline_green" => "4;32",
+        "underline_yellow" => "4;33",
+        "underline_blue" => "4;34",
+        "underline_magenta" => "4;35",
+        "underline_cyan" => "4;36",
+        "strike_red" => "9;31",
+        "strike_green" => "9;32",
+        "strike_yellow" => "9;33",
+        "strike_blue" => "9;34",
+        "strike_magenta" => "9;35",
+        "strike_cyan" => "9;36",
+        // Background compound styles (for critical/highlighted levels)
+        "bold_red_bg" | "bold_red_bg_white" => "1;97;41",
         _ => "",
     }
 }
 
 /// Returns ANSI escape code for a background color name.
 ///
-/// Supports both `bg_` and `on_` prefixes (e.g., `"bg_red"` and `"on_red"`).
+/// Supports multiple prefix styles:
+/// - `bg_` prefix: `"bg_red"`, `"bg_bright_cyan"`
+/// - `on_` prefix: `"on_red"`, `"on_bright_cyan"`
+/// - Uppercase (logly markup): `"RED"`, `"BRIGHT_CYAN"`
+/// - Loguru light syntax: `"LIGHT-RED"`, `"LIGHT-CYAN"`
+///
 /// Returns `""` for unrecognized names.
 ///
 /// # Supported Names
 ///
-/// - `"bg_black"` / `"on_black"` through `"bg_white"` / `"on_white"`
-/// - `"bg_bright_black"` / `"on_bright_black"` through `"bg_bright_white"` / `"on_bright_white"`
+/// - `"bg_black"` / `"on_black"` / `"BLACK"` through `"bg_white"` / `"on_white"` / `"WHITE"`
+/// - `"bg_bright_black"` / `"on_bright_black"` / `"BRIGHT_BLACK"` / `"LIGHT-BLACK"` through `"bg_bright_white"` / etc.
+/// - `"bg_default"` / `"DEFAULT"` (reset background)
 ///
 /// # Examples
 ///
@@ -192,30 +231,182 @@ pub fn color_code(name: &str) -> &'static str {
 ///
 /// assert_eq!(bg_color_code("bg_red"), "41");
 /// assert_eq!(bg_color_code("on_blue"), "44");
+/// assert_eq!(bg_color_code("RED"), "41");
+/// assert_eq!(bg_color_code("BRIGHT_CYAN"), "106");
 /// assert_eq!(bg_color_code("bg_bright_cyan"), "106");
+/// assert_eq!(bg_color_code("bg_default"), "49");
 /// assert_eq!(bg_color_code("unknown"), "");
 /// ```
 #[must_use]
 pub fn bg_color_code(name: &str) -> &'static str {
     match name {
-        "bg_black" | "on_black" => "40",
-        "bg_red" | "on_red" => "41",
-        "bg_green" | "on_green" => "42",
-        "bg_yellow" | "on_yellow" => "43",
-        "bg_blue" | "on_blue" => "44",
-        "bg_magenta" | "on_magenta" => "45",
-        "bg_cyan" | "on_cyan" => "46",
-        "bg_white" | "on_white" => "47",
-        "bg_bright_black" | "on_bright_black" => "100",
-        "bg_bright_red" | "on_bright_red" => "101",
-        "bg_bright_green" | "on_bright_green" => "102",
-        "bg_bright_yellow" | "on_bright_yellow" => "103",
-        "bg_bright_blue" | "on_bright_blue" => "104",
-        "bg_bright_magenta" | "on_bright_magenta" => "105",
-        "bg_bright_cyan" | "on_bright_cyan" => "106",
-        "bg_bright_white" | "on_bright_white" => "107",
+        // Standard background colors (bg_, on_, and UPPERCASE)
+        "bg_black" | "on_black" | "BLACK" => "40",
+        "bg_red" | "on_red" | "RED" => "41",
+        "bg_green" | "on_green" | "GREEN" => "42",
+        "bg_yellow" | "on_yellow" | "YELLOW" => "43",
+        "bg_blue" | "on_blue" | "BLUE" => "44",
+        "bg_magenta" | "on_magenta" | "MAGENTA" => "45",
+        "bg_cyan" | "on_cyan" | "CYAN" => "46",
+        "bg_white" | "on_white" | "WHITE" => "47",
+        // Default background
+        "bg_default" | "on_default" | "DEFAULT" => "49",
+        // Bright/light background colors
+        "bg_bright_black" | "on_bright_black" | "BRIGHT_BLACK" | "LIGHT-BLACK" | "LK" => "100",
+        "bg_bright_red" | "on_bright_red" | "BRIGHT_RED" | "LIGHT-RED" | "LR" => "101",
+        "bg_bright_green" | "on_bright_green" | "BRIGHT_GREEN" | "LIGHT-GREEN" | "LG" => "102",
+        "bg_bright_yellow" | "on_bright_yellow" | "BRIGHT_YELLOW" | "LIGHT-YELLOW" | "LY" => "103",
+        "bg_bright_blue" | "on_bright_blue" | "BRIGHT_BLUE" | "LIGHT-BLUE" | "LE" => "104",
+        "bg_bright_magenta" | "on_bright_magenta" | "BRIGHT_MAGENTA" | "LIGHT-MAGENTA" | "LM" => {
+            "105"
+        }
+        "bg_bright_cyan" | "on_bright_cyan" | "BRIGHT_CYAN" | "LIGHT-CYAN" | "LC" => "106",
+        "bg_bright_white" | "on_bright_white" | "BRIGHT_WHITE" | "LIGHT-WHITE" | "LW" => "107",
         _ => "",
     }
+}
+
+/// Resolves a background color specification to an ANSI code.
+///
+/// Handles `bg N` (256-color), `bg r,g,b` (RGB), `bg #rrggbb` (hex),
+/// and `bg_<name>` / `on_<name>` / `<NAME>` (named colors).
+fn resolve_bg_color(spec: &str) -> Option<String> {
+    let trimmed = spec.trim();
+
+    // "bg N" = background 256-color
+    if let Some(inner) = trimmed.strip_prefix("bg ") {
+        if let Ok(value) = inner.trim().parse::<u8>() {
+            return Some(format!("48;5;{value}"));
+        }
+        // Handle <bg r,g,b> syntax
+        if let Some((r, g, b)) = parse_rgb_tuple(inner) {
+            return Some(format!("48;2;{r};{g};{b}"));
+        }
+        // Handle <bg #rrggbb> syntax
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("48;2;{r};{g};{b}"));
+        }
+        return Some(fg_to_bg(inner).map_or_else(
+            || {
+                resolve_color_code(inner)
+                    .strip_prefix("38;")
+                    .map_or_else(String::new, |code| format!("48;{code}"))
+            },
+            str::to_owned,
+        ));
+    }
+
+    // "on N" = background 256-color (Rich-style: on 208)
+    if let Some(inner) = trimmed.strip_prefix("on ") {
+        if let Ok(value) = inner.trim().parse::<u8>() {
+            return Some(format!("48;5;{value}"));
+        }
+        // Handle <on r,g,b> syntax
+        if let Some((r, g, b)) = parse_rgb_tuple(inner) {
+            return Some(format!("48;2;{r};{g};{b}"));
+        }
+        // Handle <on #rrggbb> syntax
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("48;2;{r};{g};{b}"));
+        }
+        return Some(fg_to_bg(inner).map_or_else(
+            || {
+                resolve_color_code(inner)
+                    .strip_prefix("38;")
+                    .map_or_else(String::new, |code| format!("48;{code}"))
+            },
+            str::to_owned,
+        ));
+    }
+
+    // Background 256-color: bg_color(208) or bgcolor(208) or bg(208)
+    if let Some(inner) = trimmed
+        .strip_prefix("bg_color(")
+        .or_else(|| trimmed.strip_prefix("bgcolor("))
+        .or_else(|| trimmed.strip_prefix("bg("))
+        .and_then(|value| value.strip_suffix(')'))
+        && let Ok(value) = inner.trim().parse::<u8>()
+    {
+        return Some(format!("48;5;{value}"));
+    }
+
+    // Background RGB: bg_rgb(r,g,b) or bg(r,g,b)
+    if let Some(inner) = trimmed
+        .strip_prefix("bg_rgb(")
+        .or_else(|| trimmed.strip_prefix("bg("))
+        .and_then(|value| value.strip_suffix(')'))
+        && let Some((r, g, b)) = parse_rgb_tuple(inner)
+    {
+        return Some(format!("48;2;{r};{g};{b}"));
+    }
+
+    // Background hex: bg#rrggbb
+    if let Some(hex) = trimmed.strip_prefix("bg#")
+        && let Some((r, g, b)) = parse_hex(hex)
+    {
+        return Some(format!("48;2;{r};{g};{b}"));
+    }
+
+    // Background color prefix: bg_red, on_red, bg_bright_red, etc.
+    if !trimmed.starts_with("bg_rgb(")
+        && !trimmed.starts_with("bg(")
+        && !trimmed.starts_with("bg#")
+        && !trimmed.starts_with("bgcolor(")
+    {
+        let bg = bg_color_code(trimmed);
+        if !bg.is_empty() {
+            return Some(bg.to_owned());
+        }
+    }
+
+    None
+}
+
+/// Resolves a foreground color specification to an ANSI code.
+///
+/// Handles `fg N` (256-color), `fg r,g,b` (RGB), `fg #rrggbb` (hex),
+/// and foreground color names.
+fn resolve_fg_color(spec: &str) -> Option<String> {
+    let trimmed = spec.trim();
+
+    // "fg N" = foreground 256-color
+    if let Some(inner) = trimmed.strip_prefix("fg ") {
+        if let Ok(value) = inner.trim().parse::<u8>() {
+            return Some(format!("38;5;{value}"));
+        }
+        // Handle <fg r,g,b> syntax
+        if let Some((r, g, b)) = parse_rgb_tuple(inner) {
+            return Some(format!("38;2;{r};{g};{b}"));
+        }
+        // Handle <fg #rrggbb> syntax
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("38;2;{r};{g};{b}"));
+        }
+        return resolve_color_code(inner).into();
+    }
+
+    // 256-color: color(208) or fg(208)
+    if let Some(inner) = trimmed
+        .strip_prefix("color(")
+        .or_else(|| trimmed.strip_prefix("fg("))
+        .and_then(|value| value.strip_suffix(')'))
+        && let Ok(value) = inner.trim().parse::<u8>()
+    {
+        return Some(format!("38;5;{value}"));
+    }
+
+    // Foreground RGB: rgb(r,g,b)
+    if let Some((red, green, blue)) = parse_rgb(trimmed) {
+        return Some(format!("38;2;{red};{green};{blue}"));
+    }
+
+    None
 }
 
 /// Resolves a color/style specification into an ANSI SGR code.
@@ -232,9 +423,22 @@ pub fn bg_color_code(name: &str) -> &'static str {
 /// 5. **Background RGB** (`bg_rgb(r,g,b)` / `bg(r,g,b)`): returns `48;2;r;g;b`
 /// 6. **Background hex** (`bg#rrggbb`): returns `48;2;r;g;b`
 /// 7. **Foreground RGB** (`rgb(r,g,b)` / `#rrggbb`): returns `38;2;r;g;b`
-/// 8. **Background color name** (`bg_red`, `on_blue`): returns background code
+/// 8. **Background color name** (`bg_red`, `on_blue`, uppercase `RED`): returns background code
 /// 9. **Compound style** (`"bold red"`, `"italic cyan on white"`): returns combined code
 /// 10. **Foreground color name** (`"red"`, `"bold"`): returns foreground code
+///
+/// # Loguru Markup Support
+///
+/// - `<red>` / `<r>` = foreground red
+/// - `<RED>` / `<R>` = background red
+/// - `<light-red>` / `<lr>` = bright foreground red
+/// - `<LIGHT-RED>` / `<LR>` = bright background red
+/// - `<fg #ff0000>` = foreground hex
+/// - `<bg #ff0000>` = background hex
+/// - `<fg 208>` = foreground 256-color
+/// - `<bg 208>` = background 256-color
+/// - `<fg 255,0,0>` = foreground RGB
+/// - `<bg 255,0,0>` = background RGB
 ///
 /// # Examples
 ///
@@ -250,6 +454,9 @@ pub fn bg_color_code(name: &str) -> &'static str {
 /// assert_eq!(resolve_color_code("bg#ff0000"), "48;2;255;0;0");
 /// assert_eq!(resolve_color_code("bold red"), "1;31");
 /// assert_eq!(resolve_color_code("bold red on white"), "1;31;47");
+/// assert_eq!(resolve_color_code("RED"), "41");
+/// assert_eq!(resolve_color_code("default"), "39");
+/// assert_eq!(resolve_color_code("bg_default"), "49");
 /// ```
 #[must_use]
 pub fn resolve_color_code(spec: &str) -> String {
@@ -257,81 +464,27 @@ pub fn resolve_color_code(spec: &str) -> String {
     if trimmed.is_empty() {
         return String::new();
     }
-    // Public markup accepts explicit foreground/background prefixes.
-    if let Some(inner) = trimmed.strip_prefix("bg ") {
-        if let Ok(value) = inner.trim().parse::<u8>() {
-            return format!("48;5;{value}");
-        }
-        return fg_to_bg(inner).map_or_else(
-            || {
-                resolve_color_code(inner)
-                    .strip_prefix("38;")
-                    .map_or_else(String::new, |code| format!("48;{code}"))
-            },
-            str::to_owned,
-        );
+
+    // Try background color resolution first
+    if let Some(code) = resolve_bg_color(trimmed) {
+        return code;
     }
-    if let Some(inner) = trimmed.strip_prefix("fg ") {
-        if let Ok(value) = inner.trim().parse::<u8>() {
-            return format!("38;5;{value}");
-        }
-        return resolve_color_code(inner);
+
+    // Try foreground color resolution
+    if let Some(code) = resolve_fg_color(trimmed) {
+        return code;
     }
+
     // Raw SGR: all digits and semicolons
     if trimmed.chars().all(|ch| ch.is_ascii_digit() || ch == ';') {
         return trimmed.to_owned();
     }
-    // 256-color: color(208)
-    if let Some(inner) = trimmed
-        .strip_prefix("color(")
-        .and_then(|value| value.strip_suffix(')'))
-        && let Ok(value) = inner.trim().parse::<u8>()
-    {
-        return format!("38;5;{value}");
-    }
-    // Background 256-color: bg_color(208) or bgcolor(208)
-    if let Some(inner) = trimmed
-        .strip_prefix("bg_color(")
-        .or_else(|| trimmed.strip_prefix("bgcolor("))
-        .and_then(|value| value.strip_suffix(')'))
-        && let Ok(value) = inner.trim().parse::<u8>()
-    {
-        return format!("48;5;{value}");
-    }
-    // Background RGB: bg_rgb(r,g,b) or bg(r,g,b)
-    if let Some(inner) = trimmed
-        .strip_prefix("bg_rgb(")
-        .or_else(|| trimmed.strip_prefix("bg("))
-        .and_then(|value| value.strip_suffix(')'))
-        && let Some((r, g, b)) = parse_rgb_tuple(inner)
-    {
-        return format!("48;2;{r};{g};{b}");
-    }
-    // Background hex: bg#rrggbb
-    if let Some(hex) = trimmed.strip_prefix("bg#")
-        && let Some((r, g, b)) = parse_hex(hex)
-    {
-        return format!("48;2;{r};{g};{b}");
-    }
-    // Foreground RGB: rgb(r,g,b)
-    if let Some((red, green, blue)) = parse_rgb(trimmed) {
-        return format!("38;2;{red};{green};{blue}");
-    }
-    // Background color prefix: bg_red, on_red, bg_bright_red, etc.
-    if !trimmed.starts_with("bg_rgb(")
-        && !trimmed.starts_with("bg(")
-        && !trimmed.starts_with("bg#")
-        && !trimmed.starts_with("bgcolor(")
-    {
-        let bg = bg_color_code(trimmed);
-        if !bg.is_empty() {
-            return bg.to_owned();
-        }
-    }
+
     // Compound styles: "bold red", "italic cyan on white", "bold red on bright_blue"
     if let Some(code) = parse_compound_style(trimmed) {
         return code;
     }
+
     color_code(trimmed).to_owned()
 }
 
@@ -348,7 +501,7 @@ pub fn resolve_color_code(spec: &str) -> String {
 /// let mut theme = Theme::defaults();
 /// theme.set("ERROR", "magenta");
 /// assert_eq!(theme.get("ERROR"), Some("magenta"));
-/// assert_eq!(theme.get("INFO"), Some(""));
+/// assert_eq!(theme.get("INFO"), Some("bold"));
 /// ```
 #[derive(Clone, Debug, Default)]
 pub struct Theme {
@@ -498,11 +651,19 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     let mut chars = text.chars().peekable();
 
     while let Some(ch) = chars.next() {
-        if ch == '\\' && chars.peek() == Some(&'<') {
-            chars.next();
-            result.push('<');
+        if ch == '\\' {
+            if let Some(&next) = chars.peek() {
+                if next == '<' || next == '[' {
+                    chars.next();
+                    result.push(next);
+                } else {
+                    result.push(ch);
+                }
+            } else {
+                result.push(ch);
+            }
         } else if ch == '<' {
-            // Check for closing tag or opening tag
+            // Handle <tag> syntax (loguru-style)
             let mut tag = String::new();
             let mut is_closing = false;
 
@@ -518,49 +679,83 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
                 tag.push(c);
             }
 
-            if is_closing || tag.is_empty() {
-                // Closing tag: only emit reset if it's a known style/color
-                if is_closing {
-                    let lower = tag.to_lowercase();
-                    let code = resolve_color_code(&lower);
-                    if tag.is_empty() || !code.is_empty() {
-                        result.push_str("\x1b[0m");
-                    }
-                }
-            } else {
-                // Opening tag: resolve color code
+            if is_closing {
+                // Closing tag: emit reset only for known tags or generic </>
                 let lower = tag.to_lowercase();
                 let code = resolve_color_code(&lower);
-                if code.is_empty() {
-                    // Unknown tag: strip it entirely (no reset emitted)
+                if tag.is_empty() || !code.is_empty() {
+                    result.push_str("\x1b[0m");
+                }
+            } else if tag.is_empty() {
+                // Empty tag: no-op
+            } else {
+                // Opening tag: try loguru comma syntax first, then standard
+                let code = if tag.contains(',') {
+                    resolve_loguru_tag(&tag)
                 } else {
+                    // Check for uppercase (background) or lowercase (foreground)
+                    let is_uppercase = tag.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
+                    if is_uppercase && tag.len() > 1 {
+                        resolve_color_code(&tag).into()
+                    } else {
+                        let lower = tag.to_lowercase();
+                        resolve_color_code(&lower).into()
+                    }
+                };
+
+                if let Some(code) = code
+                    && !code.is_empty()
+                {
                     use std::fmt::Write;
                     let _ = write!(result, "\x1b[{code}m");
                 }
+                // Unknown tag: strip it entirely
+            }
+        } else if ch == '[' {
+            // Handle [tag] syntax (Rich-style)
+            let mut tag = String::new();
+            let mut is_closing = false;
+
+            if chars.peek() == Some(&'/') {
+                is_closing = true;
+                chars.next();
+            }
+
+            for c in chars.by_ref() {
+                if c == ']' {
+                    break;
+                }
+                tag.push(c);
+            }
+
+            if is_closing {
+                // Closing tag: emit reset only for known tags or generic </]>
+                if tag.is_empty() {
+                    result.push_str("\x1b[0m");
+                } else if let Some(code) = resolve_rich_tag(&tag) {
+                    // Only emit reset if the tag was valid when opened
+                    // Since we can't track state, emit reset for any known tag
+                    let _ = code; // tag was resolved
+                    result.push_str("\x1b[0m");
+                }
+            } else if tag.is_empty() {
+                // Empty tag: no-op
+            } else {
+                // Opening tag: resolve Rich tag
+                if let Some(code) = resolve_rich_tag(&tag) {
+                    use std::fmt::Write;
+                    let _ = write!(result, "\x1b[{code}m");
+                }
+                // Unknown tag: strip it entirely
             }
         } else if ch == '&' {
             // HTML entity check: &lt; &gt; &amp;
-            let mut entity = String::from("&");
-            let mut found_semicolon = false;
-            for c in chars.by_ref() {
-                entity.push(c);
-                if c == ';' {
-                    found_semicolon = true;
-                    break;
+            if let Some(entity) = parse_html_entity(&mut chars) {
+                if let Some(decoded) = decode_html_entity(&entity) {
+                    result.push(decoded);
+                } else {
+                    result.push_str(&entity);
                 }
-                if entity.len() > 6 {
-                    break;
-                }
-            }
-            if found_semicolon {
-                match entity.as_str() {
-                    "&lt;" => result.push('<'),
-                    "&gt;" => result.push('>'),
-                    "&amp;" => result.push('&'),
-                    _ => result.push_str(&entity),
-                }
-            } else {
-                result.push_str(&entity);
             }
         } else {
             result.push(ch);
@@ -626,9 +821,17 @@ pub fn strip_rich_tags(text: &str) -> String {
     let mut chars = text.chars().peekable();
 
     while let Some(ch) = chars.next() {
-        if ch == '\\' && chars.peek() == Some(&'<') {
-            chars.next();
-            result.push('<');
+        if ch == '\\' {
+            if let Some(&next) = chars.peek() {
+                if next == '<' || next == '[' {
+                    chars.next();
+                    result.push(next);
+                } else {
+                    result.push(ch);
+                }
+            } else {
+                result.push(ch);
+            }
         } else if ch == '<' {
             // Skip until closing >
             for c in chars.by_ref() {
@@ -636,28 +839,20 @@ pub fn strip_rich_tags(text: &str) -> String {
                     break;
                 }
             }
-        } else if ch == '&' {
-            let mut entity = String::from("&");
-            let mut found_semicolon = false;
+        } else if ch == '[' {
+            // Skip until closing ]
             for c in chars.by_ref() {
-                entity.push(c);
-                if c == ';' {
-                    found_semicolon = true;
-                    break;
-                }
-                if entity.len() > 6 {
+                if c == ']' {
                     break;
                 }
             }
-            if found_semicolon {
-                match entity.as_str() {
-                    "&lt;" => result.push('<'),
-                    "&gt;" => result.push('>'),
-                    "&amp;" => result.push('&'),
-                    _ => result.push_str(&entity),
+        } else if ch == '&' {
+            if let Some(entity) = parse_html_entity(&mut chars) {
+                if let Some(decoded) = decode_html_entity(&entity) {
+                    result.push(decoded);
+                } else {
+                    result.push_str(&entity);
                 }
-            } else {
-                result.push_str(&entity);
             }
         } else {
             result.push(ch);
@@ -809,22 +1004,23 @@ fn resolve_color_code_single(spec: &str) -> String {
 /// Maps a foreground color name to its background equivalent.
 fn fg_to_bg(name: &str) -> Option<&'static str> {
     match name {
-        "black" => Some("40"),
-        "red" => Some("41"),
-        "green" => Some("42"),
-        "yellow" => Some("43"),
-        "blue" => Some("44"),
-        "magenta" => Some("45"),
-        "cyan" => Some("46"),
-        "white" => Some("47"),
-        "bright_black" => Some("100"),
-        "bright_red" => Some("101"),
-        "bright_green" => Some("102"),
-        "bright_yellow" => Some("103"),
-        "bright_blue" => Some("104"),
-        "bright_magenta" => Some("105"),
-        "bright_cyan" => Some("106"),
-        "bright_white" => Some("107"),
+        "black" | "k" => Some("40"),
+        "red" | "r" => Some("41"),
+        "green" | "g" => Some("42"),
+        "yellow" | "y" => Some("43"),
+        "blue" | "e" => Some("44"),
+        "magenta" | "m" => Some("45"),
+        "cyan" | "c" => Some("46"),
+        "white" | "w" => Some("47"),
+        "default" => Some("49"),
+        "bright_black" | "light_black" | "lk" => Some("100"),
+        "bright_red" | "light_red" | "lr" => Some("101"),
+        "bright_green" | "light_green" | "lg" => Some("102"),
+        "bright_yellow" | "light_yellow" | "ly" => Some("103"),
+        "bright_blue" | "light_blue" | "le" => Some("104"),
+        "bright_magenta" | "light_magenta" | "lm" => Some("105"),
+        "bright_cyan" | "light_cyan" | "lc" => Some("106"),
+        "bright_white" | "light_white" | "lw" => Some("107"),
         _ => None,
     }
 }
@@ -840,6 +1036,7 @@ fn fg_to_bg_code(code: &str) -> Option<String> {
         "35" => Some("45".to_owned()),
         "36" => Some("46".to_owned()),
         "37" => Some("47".to_owned()),
+        "39" => Some("49".to_owned()), // default
         "90" => Some("100".to_owned()),
         "91" => Some("101".to_owned()),
         "92" => Some("102".to_owned()),
@@ -849,6 +1046,179 @@ fn fg_to_bg_code(code: &str) -> Option<String> {
         "96" => Some("106".to_owned()),
         "97" => Some("107".to_owned()),
         _ => None,
+    }
+}
+
+/// Decodes HTML entities in text.
+///
+/// Converts `&lt;`, `&gt;`, and `&amp;` to their respective characters.
+/// Returns the decoded character or the original entity if not recognized.
+fn decode_html_entity(entity: &str) -> Option<char> {
+    match entity {
+        "&lt;" => Some('<'),
+        "&gt;" => Some('>'),
+        "&amp;" => Some('&'),
+        _ => None,
+    }
+}
+
+/// Parses an HTML entity from the character iterator.
+///
+/// Returns the entity string if a semicolon was found, or `None` if not a valid entity.
+fn parse_html_entity(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Option<String> {
+    let mut entity = String::from("&");
+    for c in chars.by_ref() {
+        entity.push(c);
+        if c == ';' {
+            return Some(entity);
+        }
+        if entity.len() > 6 {
+            break;
+        }
+    }
+    None
+}
+
+/// Resolves a Rich-style `[tag]` to an ANSI escape code.
+///
+/// Supports:
+/// - `[red]`, `[bold]`, `[italic]` - simple color/style tags
+/// - `[on red]`, `[bg red]` - background colors
+/// - `[bold red on white]` - compound styles with foreground/background
+/// - `[#ff0000]`, `[on #00ff00]` - hex colors
+/// - `[rgb(255,0,0)]`, `[on rgb(0,255,0)]` - RGB colors
+/// - `[color(196)]`, `[on color(200)]` - 256-color palette
+/// - `[not bold]` - negation (strips the style)
+///
+/// Returns `Some(code)` if the tag is valid, `None` if unknown.
+#[must_use]
+fn resolve_rich_tag(tag: &str) -> Option<String> {
+    let tag = tag.trim();
+    if tag.is_empty() {
+        return None;
+    }
+
+    // Handle negation: [not bold] -> reset
+    if let Some(inner) = tag.strip_prefix("not ") {
+        let inner = inner.trim();
+        let code = resolve_color_code_single(inner);
+        if !code.is_empty() {
+            return Some("\x1b[0m".to_owned());
+        }
+        return None;
+    }
+
+    // Handle compound styles: "bold red on white", "italic cyan bg blue"
+    if tag.contains(" on ") || tag.contains(" bg ") || tag.split_whitespace().count() > 1 {
+        return parse_compound_style(tag);
+    }
+
+    // Handle on_color / bg_color as single tokens
+    let lower = tag.to_lowercase();
+    if lower.starts_with("on_") || lower.starts_with("bg_") {
+        let resolved = resolve_color_code_single(&lower);
+        if resolved.starts_with("48;2;") || resolved.starts_with("48;5;") {
+            return Some(resolved);
+        }
+        let bg = bg_color_code(&lower);
+        if !bg.is_empty() {
+            return Some(bg.to_string());
+        }
+        return None;
+    }
+
+    // Simple color/style tag
+    let resolved = resolve_color_code_single(&lower);
+    if resolved.is_empty() {
+        None
+    } else {
+        Some(resolved)
+    }
+}
+
+/// Resolves a loguru-style tag with comma-separated tokens.
+///
+/// Supports:
+/// - `<bold, cyan, white>` - multiple styles/colors
+/// - `<b,c,>` - shorthand aliases
+/// - `<b,,w>` - empty tokens skipped
+/// - `<RED>` - uppercase for background
+/// - `<LIGHT-RED>` - bright background
+///
+/// Returns `Some(code)` if the tag is valid, `None` if unknown.
+#[must_use]
+fn resolve_loguru_tag(tag: &str) -> Option<String> {
+    let tag = tag.trim();
+    if tag.is_empty() {
+        return None;
+    }
+
+    // Check if tag contains commas (loguru comma syntax)
+    if tag.contains(',') {
+        let tokens: Vec<&str> = tag.split(',').map(str::trim).collect();
+        let mut codes: Vec<String> = Vec::new();
+        let mut fg_code = String::new();
+        let mut bg_code = String::new();
+
+        for token in &tokens {
+            if token.is_empty() {
+                continue; // Skip empty tokens
+            }
+            let lower = token.to_lowercase();
+
+            // Check if it's a background color (uppercase = background in loguru)
+            let is_uppercase = token
+                .chars()
+                .all(|c| c.is_uppercase() || !c.is_alphabetic());
+
+            if is_uppercase && token.len() > 1 {
+                // Uppercase -> background color
+                let resolved = resolve_color_code_single(&lower);
+                if resolved.starts_with("48;2;") || resolved.starts_with("48;5;") {
+                    bg_code = resolved;
+                } else if let Some(bg) = fg_to_bg(&lower) {
+                    bg_code = bg.to_string();
+                } else if let Some(code_num) = fg_to_bg_code(&resolved) {
+                    bg_code = code_num;
+                }
+            } else {
+                // Lowercase -> style or foreground
+                let resolved = resolve_color_code_single(&lower);
+                if !resolved.is_empty() {
+                    if resolved.len() <= 2 && resolved.chars().all(|c| c.is_ascii_digit()) {
+                        codes.push(resolved);
+                    } else {
+                        fg_code = resolved;
+                    }
+                }
+            }
+        }
+
+        if fg_code.is_empty() && bg_code.is_empty() && codes.is_empty() {
+            return None;
+        }
+
+        let mut result: Vec<String> = codes;
+        if !fg_code.is_empty() {
+            result.push(fg_code);
+        }
+        if !bg_code.is_empty() {
+            result.push(bg_code);
+        }
+
+        Some(result.join(";"))
+    } else {
+        // No commas - use standard resolution
+        let lower = tag.to_lowercase();
+        let is_uppercase = tag.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
+
+        if is_uppercase && tag.len() > 1 {
+            // Uppercase tag -> background color
+            Some(resolve_color_code(tag))
+        } else {
+            // Lowercase/mixed tag -> foreground or style
+            Some(resolve_color_code(&lower))
+        }
     }
 }
 
@@ -977,7 +1347,7 @@ mod tests {
         let mut theme = Theme::defaults();
         theme.set("ERROR", "magenta");
         assert_eq!(theme.get("ERROR"), Some("magenta"));
-        assert_eq!(theme.get("INFO"), Some(""));
+        assert_eq!(theme.get("INFO"), Some("bold"));
     }
 
     #[test]

@@ -10,7 +10,7 @@ Logly provides a Django handler and middleware to capture request context and ro
 ## Example
 
 ```python
---8<-- "examples/django_integration.py"
+--8 < --"examples/django_integration.py"
 ```
 
 ## How It Works

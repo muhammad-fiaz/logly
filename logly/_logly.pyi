@@ -936,6 +936,57 @@ class HttpJsonSink:
         """Flush any pending writes."""
         ...
 
+class BatchHttpJsonSink:
+    """Batch HTTP JSON sink for sending logs to HTTP endpoints in batches.
+
+    Collects log records and sends them as a JSON array to reduce HTTP
+    requests. More efficient for high-throughput logging scenarios.
+
+    Usage::
+
+        from logly import BatchHttpJsonSink, logger
+
+        sink = BatchHttpJsonSink(
+            url="https://logs.example.com/ingest",
+            batch_size=100,
+            flush_interval=5.0,
+            headers={"Authorization": "Bearer token"},
+        )
+        logger.add(sink, level="INFO")
+
+    Args:
+        url: HTTP endpoint URL to post logs to.
+        method: HTTP method (default ``"POST"``).
+        headers: Dict of HTTP headers.
+        timeout: Request timeout in seconds (default ``30``).
+        batch_size: Maximum records per batch (default ``100``).
+        flush_interval: Maximum seconds between flushes (default ``5``).
+    """
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        method: str = "POST",
+        headers: dict[str, str] | None = None,
+        timeout: int = 30,
+        batch_size: int = 100,
+        flush_interval: float = 5.0,
+    ) -> None: ...
+    def write(self, line: str) -> None:
+        """Write a formatted log line to the batch buffer.
+
+        Args:
+            line: The formatted log line to add to the batch.
+        """
+        ...
+    def flush(self) -> None:
+        """Flush all buffered records to the HTTP endpoint."""
+        ...
+    def buffer_len(self) -> int:
+        """Return the number of buffered records."""
+        ...
+
 class TcpSink:
     """TCP sink for sending logs over TCP connections.
 
@@ -1269,6 +1320,34 @@ def colorize(text: str, color: str, colorize: bool = True) -> str:
 
         colorize("Error!", "red", colorize=True)
         # Returns: "\\033[31mError!\\033[0m"
+    """
+    ...
+
+def parse_rich_markup(text: str, colorize: bool = True) -> str:
+    """Parse Rich-style markup tags and return ANSI-escaped text.
+
+    Supports both ``<tag>`` (loguru-style) and ``[tag]`` (Rich-style) syntax.
+    For ``<tag>`` syntax, also supports comma-separated tokens like ``<bold, cyan, white>``.
+    For ``[tag]`` syntax, supports Rich conventions like ``[red]``, ``[on red]``,
+    ``[bold red on white]``.
+
+    Args:
+        text: Text containing markup tags.
+        colorize: Whether to convert tags to ANSI escape codes. If ``False``, tags are stripped.
+
+    Returns:
+        The text with markup tags converted to ANSI escape sequences, or plain text if ``colorize=False``.
+
+    Example::
+
+        parse_rich_markup("<bold>hello</bold>", True)
+        # Returns: "\\033[1mhello\\033[0m"
+
+        parse_rich_markup("[red]error[/red]", True)
+        # Returns: "\\033[31merror\\033[0m"
+
+        parse_rich_markup("<bold, cyan>text</>", True)
+        # Returns: "\\033[1;36mtext\\033[0m"
     """
     ...
 

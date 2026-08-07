@@ -39,6 +39,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install google-cloud-logging"
 )  # pragma: no cover
 
+__all__ = ["GoogleCloudLoggingSink"]
+
 
 class GoogleCloudLoggingSink:
     """Send log entries to Google Cloud Logging.

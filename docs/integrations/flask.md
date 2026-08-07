@@ -69,15 +69,18 @@ from logly import logger
 app = Flask(__name__)
 init_app(app)
 
+
 @app.route("/")
 def index():
     logger.info("Index page accessed")
     return jsonify({"message": "Hello World"})
 
+
 @app.route("/items/<int:item_id>")
 def get_item(item_id):
     logger.debug("Fetching item {}", item_id)
     return jsonify({"item_id": item_id})
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -275,6 +275,23 @@ fn resolve_token<'a>(
                     .to_owned(),
             )
         }
+        _ if name.starts_with("file.") => {
+            let subfield = &name[5..];
+            match subfield {
+                "name" => {
+                    let file = record.file.as_deref()?;
+                    Some(
+                        std::path::Path::new(file)
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or(file)
+                            .to_owned(),
+                    )
+                }
+                "path" => Some(record.file.as_deref().unwrap_or("").to_owned()),
+                _ => None,
+            }
+        }
         "function_location" => {
             let func = record.function.as_deref().unwrap_or("");
             let file = record.file.as_deref().unwrap_or("");
@@ -643,14 +660,25 @@ impl Formatter for JsonFormatter {
         let timestamp = format_timestamp(record, "%Y-%m-%dT%H:%M:%S%.3f%z");
         fields.insert("time".to_owned(), escape_json(&timestamp));
 
-        if let Some(ref file) = record.file {
-            fields.insert("file".to_owned(), escape_json(file));
+        if let Some(ref file_path) = record.file {
+            let file_name = std::path::Path::new(file_path)
+                .file_name()
+                .map_or_else(|| file_path.clone(), |n| n.to_string_lossy().into_owned());
+            let file_obj = format!(
+                "{{\"name\":{},\"path\":{}}}",
+                escape_json(&file_name),
+                escape_json(file_path)
+            );
+            fields.insert("file".to_owned(), file_obj);
         }
         if let Some(line) = record.line {
             fields.insert("line".to_owned(), line.to_string());
         }
         if let Some(ref function) = record.function {
             fields.insert("function".to_owned(), escape_json(function));
+        }
+        if let Some(ref module) = record.module {
+            fields.insert("module".to_owned(), escape_json(module));
         }
         if let Some(ref thread) = record.thread_name {
             fields.insert("thread".to_owned(), escape_json(thread));

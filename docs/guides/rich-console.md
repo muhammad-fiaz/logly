@@ -38,6 +38,7 @@ logger.add(LoglyRichSink(), colorize=True)
 
 # Custom file output
 import sys
+
 sink = LoglyRichSink(file=sys.stdout)
 logger.add(sink, level="DEBUG")
 ```

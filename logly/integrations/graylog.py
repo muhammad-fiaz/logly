@@ -39,6 +39,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install logly"
 )  # pragma: no cover
 
+__all__ = ["GraylogSink"]
+
 _GELF_LEVEL_MAP: dict[str, int] = {
     "TRACE": 7,
     "DEBUG": 7,

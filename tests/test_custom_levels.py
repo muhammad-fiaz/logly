@@ -23,14 +23,14 @@ class TestLevelClass:
         info = logger.level("INFO")
         assert info.name == "INFO"
         assert info.no == 20
-        assert info.color is None
+        assert info.color == "bold"
         assert info.icon is None
 
     def test_level_with_color(self) -> None:
         warning = logger.level("WARNING")
         assert warning.name == "WARNING"
         assert warning.no == 40
-        assert warning.color == "yellow"
+        assert warning.color == "bold_yellow"
 
     def test_level_with_icon(self) -> None:
         logger.level("SUCCESS_PLUS", no=35, color="green", icon=">>")

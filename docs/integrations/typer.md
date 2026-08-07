@@ -49,6 +49,7 @@ typer.echo = typer_echo
 
 app = typer.Typer()
 
+
 @app.command()
 def cli():
     typer.echo("This goes through Logly")
@@ -83,10 +84,12 @@ typer.echo = typer_echo
 app = typer.Typer()
 logger.add("cli.log", level="INFO")
 
+
 @app.command()
 def greet(name: str):
     typer.echo(f"Hello, {name}!")
     typer.echo("Something went wrong", err=True)
+
 
 if __name__ == "__main__":
     app()

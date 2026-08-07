@@ -54,10 +54,10 @@ for record in logger.parse(
 
 ```python
 Logger.parse(
-    path,          # str | Path - Path to the log file
+    path,  # str | Path - Path to the log file
     pattern=None,  # str | re.Pattern - Regex with named groups
-    cast=None,     # dict[str, Callable] - Type casting functions
-    chunk=65536,   # int - Read chunk size in bytes
+    cast=None,  # dict[str, Callable] - Type casting functions
+    chunk=65536,  # int - Read chunk size in bytes
     encoding="utf-8",  # str - File encoding
 )
 ```
@@ -76,10 +76,10 @@ Each iteration yields a dictionary:
 
 ```python
 {
-    "message": "full line text",    # Always present
+    "message": "full line text",  # Always present
     "time": "2026-06-21 14:30:45",  # From named group
-    "level": "INFO",                # From named group
-    "message": "Hello world",       # From named group
+    "level": "INFO",  # From named group
+    "message": "Hello world",  # From named group
 }
 ```
 

@@ -35,6 +35,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install redis"
 )  # pragma: no cover
 
+__all__ = ["RedisHandler"]
+
 
 class RedisHandler:
     """Push log entries to Redis lists or streams.

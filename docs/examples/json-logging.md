@@ -47,6 +47,7 @@ logger.remove(sink_id)
 from logly import logger
 import json
 
+
 def custom_json(record):
     entry = {
         "ts": record["time"].isoformat(),
@@ -55,6 +56,7 @@ def custom_json(record):
         "extra": record["extra"],
     }
     return json.dumps(entry) + "\n"
+
 
 sink_id = logger.add("custom.json", format=custom_json)
 logger.info("Custom JSON format")

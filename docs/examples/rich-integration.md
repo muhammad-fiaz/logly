@@ -10,7 +10,7 @@ Logly can emit logs through Rich for beautifully styled and colorized console ou
 ## Example
 
 ```python
---8<-- "examples/rich_integration.py"
+--8 < --"examples/rich_integration.py"
 ```
 
 ## How It Works

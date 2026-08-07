@@ -66,16 +66,20 @@ For decorators or wrappers, use `depth` to skip stack frames:
 ```python
 from logly import logger
 
+
 def log_wrapper(func):
     def wrapper(*args, **kwargs):
         # depth=1 skips the wrapper, points to the caller
         logger.opt(depth=1).info(f"Calling {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 @log_wrapper
 def my_function():
     pass
+
 
 my_function()
 # Source points to my_function, not log_wrapper

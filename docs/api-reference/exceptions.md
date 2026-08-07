@@ -212,8 +212,10 @@ except CompressionError:
 from logly import logger
 from logly.exceptions import LoglyError
 
+
 def log_error(e: LoglyError):
     print(f"Logging system error: {e}")
+
 
 logger.add("app.log", catch=True)  # Default: catches silently
 ```

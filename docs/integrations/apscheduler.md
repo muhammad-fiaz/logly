@@ -79,9 +79,11 @@ setup_apscheduler_logging(level="INFO")
 
 scheduler = BackgroundScheduler()
 
+
 @scheduler.scheduled_job("interval", hours=1)
 def cleanup():
     logger.info("Running cleanup job")
+
 
 scheduler.start()
 ```

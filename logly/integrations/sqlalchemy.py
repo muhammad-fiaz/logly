@@ -36,6 +36,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install sqlalchemy"
 )  # pragma: no cover
 
+__all__ = ["patch_engine", "setup_sqlalchemy_logging"]
+
 
 def _resolve_level(record: logging.LogRecord) -> str:
     """Resolve a Python logging record to a Logly level name.

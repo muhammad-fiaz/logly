@@ -36,6 +36,7 @@ For per-task logging:
 @app.task
 def my_task():
     from logly.integrations.celery import patch_task_logger
+
     patch_task_logger(my_task.get_logger())
     # Task logs now go through Logly
 ```

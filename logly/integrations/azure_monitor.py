@@ -39,6 +39,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install opentelemetry-api opentelemetry-sdk azure-monitor-opentelemetry"
 )  # pragma: no cover
 
+__all__ = ["AzureMonitorSink"]
+
 
 class AzureMonitorSink:
     """Send log entries to Azure Monitor via OpenTelemetry.

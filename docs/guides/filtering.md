@@ -46,24 +46,31 @@ Custom filter function that receives the record dict:
 ```python
 from logly import logger
 
+
 # Filter by message content
 def important_only(record: dict) -> bool:
     return "important" in record.get("message", "").lower()
 
+
 logger.add("important.log", filter=important_only)
+
 
 # Filter by level
 def errors_and_critical(record: dict) -> bool:
     return record.get("level") in {"ERROR", "CRITICAL", "FAIL"}
 
+
 logger.add("errors.log", filter=errors_and_critical)
+
 
 # Filter by extra fields
 def production_only(record: dict) -> bool:
     extra = record.get("extra", {})
     return extra.get("env") == "production"
 
+
 logger.add("prod.log", filter=production_only)
+
 
 # Combine conditions
 def combined_filter(record: dict) -> bool:
@@ -119,7 +126,9 @@ logger.add(
 logger.add("all.log", level="DEBUG")
 logger.add("errors.log", level="ERROR")
 logger.add("api.log", filter={"service": "api"})
-logger.add("important.log", level="WARNING", filter=lambda r: "critical" in r.get("message", "").lower())
+logger.add(
+    "important.log", level="WARNING", filter=lambda r: "critical" in r.get("message", "").lower()
+)
 ```
 
 ## Filter Examples
@@ -141,6 +150,7 @@ logger.add("debug.log", level="TRACE")
 logger.add("requests.log", filter={"type": "request"})
 logger.add("background.log", filter={"type": "background"})
 
+
 # Example 4: Complex filter
 def complex_filter(record: dict) -> bool:
     level = record.get("level", "")
@@ -160,6 +170,7 @@ def complex_filter(record: dict) -> bool:
         return True
 
     return False
+
 
 logger.add("filtered.log", filter=complex_filter)
 ```

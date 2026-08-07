@@ -15,9 +15,11 @@ Forward rendered messages to any telemetry callback:
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 def send_to_collector(event: dict[str, object]) -> None:
     # Send to your telemetry backend
     print(f"Telemetry event: {event}")
+
 
 logger.add(
     TelemetrySink(emit=send_to_collector, service_name="billing"),
@@ -64,6 +66,7 @@ logger.error("Error occurred")
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 # OpenTelemetry-style integration
 def otel_exporter(event: dict[str, object]) -> None:
     span = {
@@ -77,6 +80,7 @@ def otel_exporter(event: dict[str, object]) -> None:
     # Send to OTel collector
     send_to_otel(span)
 
+
 logger.add(TelemetrySink(otel_exporter, service_name="my-service"))
 ```
 
@@ -86,10 +90,12 @@ logger.add(TelemetrySink(otel_exporter, service_name="my-service"))
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 def statsd_exporter(event: dict[str, object]) -> None:
     level = event.get("level", "").lower()
     # Increment counter for each log level
     statsd.increment(f"logly.{level}.count")
+
 
 logger.add(TelemetrySink(statsd_exporter))
 ```
@@ -102,9 +108,11 @@ from logly.integrations.telemetry import TelemetrySink
 
 log_counter = Counter("logly_logs_total", "Total log messages", ["level"])
 
+
 def prometheus_exporter(event: dict[str, object]) -> None:
     level = str(event.get("level", "unknown")).lower()
     log_counter.labels(level=level).inc()
+
 
 logger.add(TelemetrySink(prometheus_exporter))
 ```

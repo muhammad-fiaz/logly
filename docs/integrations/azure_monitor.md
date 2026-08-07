@@ -45,9 +45,7 @@ ModuleNotFoundError: No module named 'azure.monitor'
 from logly import logger
 from logly.integrations.azure_monitor import AzureMonitorSink
 
-logger.add(
-    AzureMonitorSink(connection_string="InstrumentationKey=...")
-)
+logger.add(AzureMonitorSink(connection_string="InstrumentationKey=..."))
 ```
 
 ## Full Example

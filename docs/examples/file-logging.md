@@ -175,10 +175,13 @@ logger.remove(sink_id)
 ```python
 from logly import logger
 
+
 def my_opener(path, mode):
     import os
+
     fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
     return os.fdopen(fd, mode)
+
 
 sink_id = logger.add("secure.log", opener=my_opener)
 logger.info("Written with custom opener")

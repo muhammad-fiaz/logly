@@ -30,6 +30,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install datadog"
 )  # pragma: no cover
 
+__all__ = ["DatadogSink"]
+
 
 class DatadogSink:
     """Send log entries to Datadog via the Logs API.

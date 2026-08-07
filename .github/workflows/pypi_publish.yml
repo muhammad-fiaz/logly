@@ -27,7 +27,7 @@ jobs:
             flat: "cp313-cp313"
           - version: "3.14"
             flat: "cp314-cp314"
-          - version: "3.15.0-beta.4"
+          - version: "3.15.0-rc.1"
             flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
@@ -65,7 +65,7 @@ jobs:
             flat: "cp313-cp313"
           - version: "3.14"
             flat: "cp314-cp314"
-          - version: "3.15.0-beta.4"
+          - version: "3.15.0-rc.1"
             flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
@@ -104,7 +104,7 @@ jobs:
             flat: "cp313-cp313"
           - version: "3.14"
             flat: "cp314-cp314"
-          - version: "3.15.0-beta.4"
+          - version: "3.15.0-rc.1"
             flat: "cp315-cp315"
     steps:
       - uses: actions/checkout@v7
@@ -133,10 +133,10 @@ jobs:
       matrix:
         target: [x64, x86]
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      -         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.target }}
@@ -165,10 +165,10 @@ jobs:
     strategy:
       matrix:
         python-version:
-          ["3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      -         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           architecture: arm64
@@ -197,10 +197,10 @@ jobs:
     strategy:
       matrix:
         python-version:
-          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-beta.4"]
+          ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15.0-rc.1"]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      -         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set version from tag
@@ -225,7 +225,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      -         uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Set version from tag
@@ -253,7 +253,7 @@ jobs:
       name: pypi
       url: https://pypi.org/project/logly/
     steps:
-      - uses: actions/download-artifact@v7
+      -         uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true
@@ -271,7 +271,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/download-artifact@v7
+      -         uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true

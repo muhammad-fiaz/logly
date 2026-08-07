@@ -37,8 +37,10 @@ logger.remove(sink_id)
 ```python
 from logly import logger
 
+
 def important_only(record):
     return "important" in record["message"].lower()
+
 
 sink_id = logger.add("filtered.log", filter=important_only)
 logger.info("This is skipped")

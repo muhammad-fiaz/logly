@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install rich"
 )  # pragma: no cover
 
+__all__ = ["LoglyRichSink", "RichHandler", "RichSink"]
+
 
 class LoglyRichSink:
     """Write-style sink using Rich for formatted console output.

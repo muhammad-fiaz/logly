@@ -32,6 +32,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install prometheus-client"
 )  # pragma: no cover
 
+__all__ = ["PrometheusLogSink"]
+
 
 class PrometheusLogSink:
     """Emit log metrics to Prometheus.

@@ -16,6 +16,7 @@ import json
 import urllib.request
 from logly import logger
 
+
 def http_sink(message: str) -> None:
     payload = json.dumps({"log": message}).encode("utf-8")
     request = urllib.request.Request(
@@ -25,6 +26,7 @@ def http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=5)
+
 
 logger.add(http_sink, level="INFO", enqueue=True)
 ```
@@ -46,6 +48,30 @@ logger.add(
 logger.warning("Error sent via HTTP")
 ```
 
+### Using BatchHttpJsonSink
+
+Batch multiple log messages together before sending to reduce HTTP overhead:
+
+```python
+from logly import logger
+from logly import BatchHttpJsonSink
+
+logger.add(
+    BatchHttpJsonSink(
+        endpoint="https://logs.example.com/ingest",
+        batch_size=100,
+        flush_interval=5.0,
+        headers={"Authorization": "Bearer YOUR_TOKEN"},
+    ),
+    level="WARNING",
+    serialize=True,
+)
+
+# Messages are batched and sent automatically
+for i in range(200):
+    logger.warning("Event {}", i)
+```
+
 ## TCP Sink
 
 Send logs over a TCP socket:
@@ -54,10 +80,12 @@ Send logs over a TCP socket:
 import socket
 from logly import logger
 
+
 def tcp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("logserver.example.com", 9000))
         sock.sendall(message.encode("utf-8"))
+
 
 logger.add(tcp_sink, level="INFO")
 ```
@@ -70,12 +98,14 @@ Send logs over a UDP socket (fire-and-forget):
 import socket
 from logly import logger
 
+
 def udp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.sendto(
             message.encode("utf-8"),
             ("logserver.example.com", 514),
         )
+
 
 logger.add(udp_sink, level="WARNING")
 ```
@@ -107,8 +137,10 @@ Forward logs to a telemetry callback:
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 def send_to_collector(event: dict) -> None:
     print(f"Telemetry: {event}")
+
 
 logger.add(TelemetrySink(emit=send_to_collector, service_name="myapp"), level="INFO")
 ```

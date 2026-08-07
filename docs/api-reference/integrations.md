@@ -320,6 +320,7 @@ setup_celery_logging(level="INFO")
 ```python
 from logly.integrations.celery import patch_task_logger
 
+
 @app.task
 def my_task():
     patch_task_logger(app.task_logger, level="INFO")
@@ -377,11 +378,13 @@ patch_engine(engine, level="INFO")
 from logly import logger
 from logly.integrations.opentelemetry import OTelLogSink
 
-logger.add(OTelLogSink(
-    service_name="myapp",
-    endpoint="http://localhost:4318",
-    protocol="http",
-))
+logger.add(
+    OTelLogSink(
+        service_name="myapp",
+        endpoint="http://localhost:4318",
+        protocol="http",
+    )
+)
 ```
 
 **Parameters:**
@@ -423,10 +426,12 @@ logger.add(PrometheusLogSink(namespace="logly"))
 from logly import logger
 from logly.integrations.elasticsearch import ElasticsearchSink
 
-logger.add(ElasticsearchSink(
-    endpoint="http://localhost:9200",
-    index="logs",
-))
+logger.add(
+    ElasticsearchSink(
+        endpoint="http://localhost:9200",
+        index="logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -449,12 +454,14 @@ logger.add(ElasticsearchSink(
 from logly import logger
 from logly.integrations.sentry import SentrySink
 
-logger.add(SentrySink(
-    dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
-    environment="production",
-    release="1.0.0",
-    level="WARNING",
-))
+logger.add(
+    SentrySink(
+        dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
+        environment="production",
+        release="1.0.0",
+        level="WARNING",
+    )
+)
 ```
 
 **Parameters:**
@@ -476,11 +483,13 @@ logger.add(SentrySink(
 from logly import logger
 from logly.integrations.redis import RedisHandler
 
-logger.add(RedisHandler(
-    url="redis://localhost:6379",
-    key="logs",
-    mode="list",
-))
+logger.add(
+    RedisHandler(
+        url="redis://localhost:6379",
+        key="logs",
+        mode="list",
+    )
+)
 ```
 
 **Parameters:**
@@ -503,10 +512,12 @@ logger.add(RedisHandler(
 from logly import logger
 from logly.integrations.kafka import KafkaHandler
 
-logger.add(KafkaHandler(
-    bootstrap_servers="localhost:9092",
-    topic="logs",
-))
+logger.add(
+    KafkaHandler(
+        bootstrap_servers="localhost:9092",
+        topic="logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -529,11 +540,13 @@ logger.add(KafkaHandler(
 from logly import logger
 from logly.integrations.mongodb import MongoHandler
 
-logger.add(MongoHandler(
-    uri="mongodb://localhost:27017",
-    database="logs",
-    collection="app_logs",
-))
+logger.add(
+    MongoHandler(
+        uri="mongodb://localhost:27017",
+        database="logs",
+        collection="app_logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -555,10 +568,12 @@ logger.add(MongoHandler(
 from logly import logger
 from logly.integrations.postgresql import PostgresHandler
 
-logger.add(PostgresHandler(
-    dsn="postgresql://user:pass@localhost:5432/logs",
-    table="app_logs",
-))
+logger.add(
+    PostgresHandler(
+        dsn="postgresql://user:pass@localhost:5432/logs",
+        table="app_logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -579,10 +594,12 @@ logger.add(PostgresHandler(
 from logly import logger
 from logly.integrations.discord import DiscordHandler
 
-logger.add(DiscordHandler(
-    webhook_url="https://discord.com/api/webhooks/...",
-    username="Logly Bot",
-))
+logger.add(
+    DiscordHandler(
+        webhook_url="https://discord.com/api/webhooks/...",
+        username="Logly Bot",
+    )
+)
 ```
 
 **Parameters:**
@@ -604,10 +621,12 @@ logger.add(DiscordHandler(
 from logly import logger
 from logly.integrations.slack import SlackHandler
 
-logger.add(SlackHandler(
-    webhook_url="https://hooks.slack.com/services/...",
-    channel="#logs",
-))
+logger.add(
+    SlackHandler(
+        webhook_url="https://hooks.slack.com/services/...",
+        channel="#logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -630,15 +649,17 @@ logger.add(SlackHandler(
 from logly import logger
 from logly.integrations.email import EmailHandler
 
-logger.add(EmailHandler(
-    smtp_host="smtp.gmail.com",
-    smtp_port=587,
-    from_addr="alerts@myapp.com",
-    to_addrs=["admin@myapp.com"],
-    username="alerts@myapp.com",
-    password="app-password",
-    use_tls=True,
-))
+logger.add(
+    EmailHandler(
+        smtp_host="smtp.gmail.com",
+        smtp_port=587,
+        from_addr="alerts@myapp.com",
+        to_addrs=["admin@myapp.com"],
+        username="alerts@myapp.com",
+        password="app-password",
+        use_tls=True,
+    )
+)
 ```
 
 **Parameters:**
@@ -666,11 +687,13 @@ logger.add(EmailHandler(
 from logly import logger
 from logly.integrations.http import HttpHandler
 
-logger.add(HttpHandler(
-    url="https://api.example.com/logs",
-    method="POST",
-    headers={"Authorization": "Bearer token"},
-))
+logger.add(
+    HttpHandler(
+        url="https://api.example.com/logs",
+        method="POST",
+        headers={"Authorization": "Bearer token"},
+    )
+)
 ```
 
 **Parameters:**
@@ -693,10 +716,12 @@ logger.add(HttpHandler(
 from logly import logger
 from logly.integrations.loki import LokiSink
 
-logger.add(LokiSink(
-    endpoint="http://localhost:3100",
-    labels={"app": "myapp", "env": "production"},
-))
+logger.add(
+    LokiSink(
+        endpoint="http://localhost:3100",
+        labels={"app": "myapp", "env": "production"},
+    )
+)
 ```
 
 **Parameters:**
@@ -739,9 +764,11 @@ logging.getLogger("myapp").addHandler(PropagateHandler())
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 def send_to_collector(record):
     # Send to your telemetry backend
     pass
+
 
 logger.add(TelemetrySink(emit=send_to_collector))
 ```
@@ -760,10 +787,12 @@ logger.add(TelemetrySink(emit=send_to_collector))
 from logly import logger
 from logly.integrations.telemetry import HttpJsonSink
 
-logger.add(HttpJsonSink(
-    endpoint="https://api.example.com/telemetry",
-    headers={"Authorization": "Bearer token"},
-))
+logger.add(
+    HttpJsonSink(
+        endpoint="https://api.example.com/telemetry",
+        headers={"Authorization": "Bearer token"},
+    )
+)
 ```
 
 **Parameters:**
@@ -882,10 +911,12 @@ typer_echo("Processing...", nl=True, err=True)
 from logly import logger
 from logly.integrations.rabbitmq import RabbitMQHandler
 
-logger.add(RabbitMQHandler(
-    url="amqp://guest:guest@localhost:5672",
-    queue="logs",
-))
+logger.add(
+    RabbitMQHandler(
+        url="amqp://guest:guest@localhost:5672",
+        queue="logs",
+    )
+)
 ```
 
 **Parameters:**
@@ -962,11 +993,13 @@ for i in tqdm(range(100)):
 from logly import logger
 from logly.integrations.datadog import DatadogSink
 
-logger.add(DatadogSink(
-    api_key="your-api-key",
-    service="myapp",
-    environment="production",
-))
+logger.add(
+    DatadogSink(
+        api_key="your-api-key",
+        service="myapp",
+        environment="production",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -989,10 +1022,12 @@ logger.add(DatadogSink(
 from logly import logger
 from logly.integrations.newrelic import NewRelicSink
 
-logger.add(NewRelicSink(
-    license_key="your-license-key",
-    app_name="myapp",
-))
+logger.add(
+    NewRelicSink(
+        license_key="your-license-key",
+        app_name="myapp",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1010,10 +1045,12 @@ logger.add(NewRelicSink(
 from logly import logger
 from logly.integrations.seq import SeqSink
 
-logger.add(SeqSink(
-    server_url="http://localhost:5341",
-    api_key="your-api-key",
-))
+logger.add(
+    SeqSink(
+        server_url="http://localhost:5341",
+        api_key="your-api-key",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1033,11 +1070,13 @@ logger.add(SeqSink(
 from logly import logger
 from logly.integrations.aws_cloudwatch import CloudWatchSink
 
-logger.add(CloudWatchSink(
-    log_group="/myapp/logs",
-    log_stream="production",
-    region="us-east-1",
-))
+logger.add(
+    CloudWatchSink(
+        log_group="/myapp/logs",
+        log_stream="production",
+        region="us-east-1",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1062,10 +1101,12 @@ logger.add(CloudWatchSink(
 from logly import logger
 from logly.integrations.google_cloud_logging import GoogleCloudLoggingSink
 
-logger.add(GoogleCloudLoggingSink(
-    project_id="my-project",
-    log_name="myapp",
-))
+logger.add(
+    GoogleCloudLoggingSink(
+        project_id="my-project",
+        log_name="myapp",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1085,9 +1126,11 @@ logger.add(GoogleCloudLoggingSink(
 from logly import logger
 from logly.integrations.azure_monitor import AzureMonitorSink
 
-logger.add(AzureMonitorSink(
-    connection_string="InstrumentationKey=...",
-))
+logger.add(
+    AzureMonitorSink(
+        connection_string="InstrumentationKey=...",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1105,11 +1148,13 @@ logger.add(AzureMonitorSink(
 from logly import logger
 from logly.integrations.logstash import LogstashSink
 
-logger.add(LogstashSink(
-    host="localhost",
-    port=5959,
-    protocol="tcp",
-))
+logger.add(
+    LogstashSink(
+        host="localhost",
+        port=5959,
+        protocol="tcp",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |
@@ -1132,11 +1177,13 @@ logger.add(LogstashSink(
 from logly import logger
 from logly.integrations.graylog import GraylogSink
 
-logger.add(GraylogSink(
-    host="localhost",
-    port=12201,
-    protocol="udp",
-))
+logger.add(
+    GraylogSink(
+        host="localhost",
+        port=12201,
+        protocol="udp",
+    )
+)
 ```
 
 | Parameter | Type | Default | Description |

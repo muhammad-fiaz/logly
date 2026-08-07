@@ -30,6 +30,7 @@ from logly.integrations.flask import LoglyHandler
 
 app = Flask(__name__)
 
+
 @app.before_request
 def logly_before_request():
     g.logly_request_id = str(uuid.uuid4())
@@ -39,6 +40,7 @@ def logly_before_request():
         method=request.method,
         path=request.path,
     )
+
 
 @app.after_request
 def logly_after_request(response):
@@ -51,6 +53,7 @@ def logly_after_request(response):
         elapsed_ms,
     )
     return response
+
 
 # Route Flask logs through Logly
 app.logger.handlers = [LoglyHandler()]
