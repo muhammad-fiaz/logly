@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install newrelic"
 )  # pragma: no cover
 
+__all__ = ["NewRelicSink"]
+
 
 class NewRelicSink:
     """Send log entries to New Relic via the agent API.

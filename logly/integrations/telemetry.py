@@ -13,6 +13,8 @@ import urllib.request
 from collections.abc import Callable, Mapping
 from typing import Any
 
+__all__ = ["HttpJsonSink", "TelemetrySink"]
+
 
 class TelemetrySink:
     """Convert rendered Logly output into telemetry events.

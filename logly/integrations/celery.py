@@ -35,6 +35,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install celery"
 )  # pragma: no cover
 
+__all__ = ["patch_task_logger", "setup_celery_logging"]
+
 
 def setup_celery_logging(
     level: str = "INFO",

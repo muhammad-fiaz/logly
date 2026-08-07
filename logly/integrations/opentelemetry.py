@@ -32,6 +32,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install opentelemetry-api opentelemetry-sdk"
 )  # pragma: no cover
 
+__all__ = ["OTelLogSink"]
+
 
 class OTelLogSink:
     """Send log records to OpenTelemetry log collector.

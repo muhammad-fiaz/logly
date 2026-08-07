@@ -21,6 +21,8 @@ import time
 import urllib.request
 from typing import Any
 
+__all__ = ["LokiSink"]
+
 
 class LokiSink:
     """Send log entries to Grafana Loki.

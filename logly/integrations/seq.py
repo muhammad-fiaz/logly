@@ -36,6 +36,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install logly"
 )  # pragma: no cover
 
+__all__ = ["SeqSink"]
+
 _SEVERITY_MAP: dict[str, str] = {
     "TRACE": "Debug",
     "DEBUG": "Debug",

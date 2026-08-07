@@ -5,7 +5,7 @@ description: Use async coroutine functions as Logly sinks
 
 # Async Sinks
 
-Logly supports `async def` coroutine functions as sinks. This is useful for I/O-bound operations like sending logs to cloud services, databases, or message queues.
+Logly supports async callable sinks, including regular `async def` functions, class instances with async `__call__` methods, and `functools.partial` wrapping async callables.
 
 ## Basic Usage
 
@@ -18,6 +18,63 @@ async def async_sink(message: str) -> None:
 
 logger.add(async_sink, level="INFO")
 logger.info("Hello from async sink")
+```
+
+## Class-Based Async Sinks
+
+Logly correctly detects class instances with async `__call__` methods as async sinks:
+
+```python
+import asyncio
+from logly import logger
+
+class AsyncCloudSink:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    async def __call__(self, message: str) -> None:
+        await send_to_cloud(message, self.api_key)
+
+sink = AsyncCloudSink(api_key="your-key")
+logger.add(sink, level="INFO")
+logger.info("Sent via async class sink")
+logger.complete()  # Flush pending async tasks
+```
+
+This also works with stateful sinks that maintain context between log calls:
+
+```python
+from logly import logger
+
+class BufferedAsyncSink:
+    def __init__(self):
+        self.buffer = []
+
+    async def __call__(self, message: str) -> None:
+        self.buffer.append(message)
+        if len(self.buffer) >= 10:
+            await self.flush()
+
+    async def flush(self):
+        await send_batch(self.buffer)
+        self.buffer.clear()
+
+logger.add(BufferedAsyncSink(), level="INFO")
+```
+
+## functools.partial Wrapping
+
+```python
+import asyncio
+import functools
+from logly import logger
+
+async def cloud_sink(prefix: str, message: str) -> None:
+    await send_to_cloud(f"[{prefix}] {message}")
+
+sink = functools.partial(cloud_sink, "APP")
+logger.add(sink, level="INFO")
+logger.info("Wrapped async sink")
 ```
 
 ## Event Loop Detection
@@ -218,7 +275,7 @@ asyncio.run(main())
 
 ```python
 logger.add(
-    async_sink,          # async def callable
+    async_sink,          # async def callable, class with async __call__, or functools.partial
     level="INFO",        # Minimum log level
     format=None,         # Format string or callable
     loop=None,           # Explicit event loop (optional)
@@ -233,6 +290,16 @@ logger.add(
 | `loop` | `asyncio.AbstractEventLoop \| None` | Event loop for the async sink. If `None`, auto-detected. |
 | `catch` | `bool` | Catch sink errors (default `True`). |
 | `enqueue` | `bool` | Dispatch through background worker (default `False`). |
+
+### Supported Async Callable Types
+
+| Type | Detected as Async | Example |
+|------|-------------------|---------|
+| `async def` function | Yes | `async def sink(msg): ...` |
+| Class with `async __call__` | Yes | `class Sink: async def __call__(self, msg): ...` |
+| `functools.partial` wrapping async | Yes | `functools.partial(async_func, arg)` |
+| Regular function | No (sync) | `def sink(msg): ...` |
+| Lambda | No (sync) | `lambda msg: ...` |
 
 ## Batch HTTP Sink
 

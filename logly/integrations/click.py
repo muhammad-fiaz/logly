@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install click"
 )  # pragma: no cover
 
+__all__ = ["click_echo"]
+
 
 def click_echo(
     message: Any = None,

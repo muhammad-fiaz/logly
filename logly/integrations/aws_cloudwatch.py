@@ -36,6 +36,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install boto3"
 )  # pragma: no cover
 
+__all__ = ["CloudWatchSink"]
+
 
 class CloudWatchSink:
     """Send log entries to AWS CloudWatch Logs.

@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install psycopg2-binary"
 )  # pragma: no cover
 
+__all__ = ["PostgresHandler"]
+
 _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS {table} (
     id SERIAL PRIMARY KEY,

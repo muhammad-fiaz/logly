@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install structlog"
 )  # pragma: no cover
 
+__all__ = ["LoglyRenderer", "logly_processor"]
+
 
 def _check_structlog() -> None:
     """Verify that structlog is installed.

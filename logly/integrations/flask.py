@@ -48,6 +48,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install flask"
 )  # pragma: no cover
 
+__all__ = ["LoglyHandler", "init_app"]
+
 
 def _resolve_level(record: logging.LogRecord) -> str:
     """Resolve a Python logging record to a Logly level name.

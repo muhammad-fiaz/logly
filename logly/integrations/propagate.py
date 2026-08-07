@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import logging
 
+__all__ = ["PropagateHandler"]
+
 
 class PropagateHandler(logging.Handler):
     """A ``logging.Handler`` that routes Logly records into stdlib logging.

@@ -36,6 +36,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install uvicorn"
 )  # pragma: no cover
 
+__all__ = ["get_log_config", "setup_uvicorn_logging"]
+
 
 def setup_uvicorn_logging(
     level: str = "INFO",

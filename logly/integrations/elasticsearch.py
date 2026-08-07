@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install elasticsearch"
 )  # pragma: no cover
 
+__all__ = ["ElasticsearchSink"]
+
 
 class ElasticsearchSink:
     """Index log entries into Elasticsearch.

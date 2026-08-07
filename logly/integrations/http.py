@@ -13,6 +13,8 @@ import urllib.request
 from collections.abc import Mapping
 from typing import Literal
 
+__all__ = ["HttpHandler"]
+
 
 class HttpHandler:
     """Send log entries to an HTTP endpoint.

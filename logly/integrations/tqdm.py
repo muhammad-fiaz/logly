@@ -34,6 +34,8 @@ _IMPORT_MSG = (
     "  pip install tqdm"
 )
 
+__all__ = ["TqdmSink"]
+
 
 class TqdmSink:
     """Send log output through tqdm progress bars.

@@ -37,6 +37,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install fastapi starlette"
 )  # pragma: no cover
 
+__all__ = ["LoglyMiddleware"]
+
 
 def _check_starlette() -> None:
     """Verify starlette is available.

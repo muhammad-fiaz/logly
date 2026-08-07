@@ -34,6 +34,8 @@ _IMPORT_MSG = (  # pragma: no cover
     "  pip install typer"
 )  # pragma: no cover
 
+__all__ = ["typer_echo"]
+
 
 def typer_echo(
     message: Any = None,
