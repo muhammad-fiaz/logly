@@ -233,3 +233,49 @@ logger.add(
 | `loop` | `asyncio.AbstractEventLoop \| None` | Event loop for the async sink. If `None`, auto-detected. |
 | `catch` | `bool` | Catch sink errors (default `True`). |
 | `enqueue` | `bool` | Dispatch through background worker (default `False`). |
+
+## Batch HTTP Sink
+
+For high-performance cloud logging, use `BatchHttpJsonSink` to batch multiple log records before sending:
+
+```python
+from logly import BatchHttpJsonSink, logger
+
+# Create a batch HTTP sink
+sink = BatchHttpJsonSink(
+    url="https://logs.example.com/ingest",
+    batch_size=100,        # Send after 100 records
+    flush_interval=5.0,    # Or flush every 5 seconds
+    headers={"Authorization": "Bearer token"},
+)
+
+logger.add(sink, level="INFO")
+logger.info("This will be batched")
+```
+
+### Batch Sink Features
+
+- **Automatic batching**: Groups log records into batches
+- **Time-based flushing**: Flushes after a configurable interval
+- **Size-based flushing**: Flushes when batch reaches max size
+- **Thread-safe**: Safe to use from multiple threads
+- **Rust-native**: Implemented in Rust for maximum performance
+
+### Batch Sink API
+
+```python
+from logly import BatchHttpJsonSink
+
+sink = BatchHttpJsonSink(
+    url="https://logs.example.com/ingest",
+    batch_size=100,        # Max records per batch
+    flush_interval=5.0,    # Seconds between flushes
+    timeout=10.0,          # HTTP timeout in seconds
+    headers={},            # Custom HTTP headers
+)
+
+# Manual control
+sink.write(record)        # Add record to buffer
+sink.flush()              # Force flush all buffered records
+sink.buffer_len()         # Get current buffer size
+```

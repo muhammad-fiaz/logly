@@ -55,6 +55,54 @@ _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", def
 _logly_level_tls: threading.local = threading.local()
 
 
+def _is_async_callable(obj: object) -> bool:
+    """Check if an object is an async callable (coroutine function or async callable class).
+
+    This function detects:
+    - Regular async functions defined with `async def`
+    - Class instances with async `__call__` methods
+    - functools.partial objects wrapping async callables
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        True if the object is an async callable, False otherwise.
+
+    Example::
+
+        async def async_func(msg: str) -> None:
+            pass
+
+        class AsyncCallable:
+            async def __call__(self, msg: str) -> None:
+                pass
+
+        assert _is_async_callable(async_func)  # True
+        assert _is_async_callable(AsyncCallable())  # True
+        assert _is_async_callable(lambda msg: None)  # False
+    """
+    import functools
+
+    # Handle functools.partial
+    if isinstance(obj, functools.partial):
+        obj = obj.func
+
+    # Check if it's a coroutine function directly
+    if inspect.iscoroutinefunction(obj):
+        return True
+
+    # Check if it's a callable object with an async __call__ method
+    if callable(obj):
+        try:
+            if inspect.iscoroutinefunction(obj.__call__):
+                return True
+        except AttributeError:
+            pass
+
+    return False
+
+
 @dataclass(frozen=True, slots=True)
 class Level:
     """Represents a registered log level.
@@ -296,8 +344,8 @@ class Logger:
 
             sink = _handler_sink
 
-        # Detect coroutine function — schedule on event loop
-        if callable(sink) and inspect.iscoroutinefunction(sink):
+        # Detect coroutine function or async callable — schedule on event loop
+        if callable(sink) and _is_async_callable(sink):
             target_loop = loop
             if target_loop is None:
                 try:
@@ -323,7 +371,10 @@ class Logger:
             _loop_thread_ref = _loop_thread if _started_loop else None
 
             async def _wrapper(message: str) -> None:
-                await _original_sink(message)
+                result = _original_sink(message)
+                # If the result is awaitable, await it
+                if hasattr(result, "__await__"):
+                    await result  # type: ignore[misc]
 
             def _async_sink(message: str) -> None:
                 coro = _wrapper(message)

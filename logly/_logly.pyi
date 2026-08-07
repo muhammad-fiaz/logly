@@ -1272,6 +1272,34 @@ def colorize(text: str, color: str, colorize: bool = True) -> str:
     """
     ...
 
+def parse_rich_markup(text: str, colorize: bool = True) -> str:
+    """Parse Rich-style markup tags and return ANSI-escaped text.
+
+    Supports both ``<tag>`` (loguru-style) and ``[tag]`` (Rich-style) syntax.
+    For ``<tag>`` syntax, also supports comma-separated tokens like ``<bold, cyan, white>``.
+    For ``[tag]`` syntax, supports Rich conventions like ``[red]``, ``[on red]``,
+    ``[bold red on white]``.
+
+    Args:
+        text: Text containing markup tags.
+        colorize: Whether to convert tags to ANSI escape codes. If ``False``, tags are stripped.
+
+    Returns:
+        The text with markup tags converted to ANSI escape sequences, or plain text if ``colorize=False``.
+
+    Example::
+
+        parse_rich_markup("<bold>hello</bold>", True)
+        # Returns: "\\033[1mhello\\033[0m"
+
+        parse_rich_markup("[red]error[/red]", True)
+        # Returns: "\\033[31merror\\033[0m"
+
+        parse_rich_markup("<bold, cyan>text</>", True)
+        # Returns: "\\033[1;36mtext\\033[0m"
+    """
+    ...
+
 logger: Logger
 """Default module-level logger instance.
 

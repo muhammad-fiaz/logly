@@ -180,6 +180,29 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 
 **Returns:** `str` - sink ID for use with `remove()`
 
+**Built-in Sink Objects:**
+
+| Sink | Description |
+|------|-------------|
+| `HttpJsonSink` | HTTP JSON log shipping |
+| `BatchHttpJsonSink` | Batched HTTP JSON log shipping |
+| `TcpSink` | TCP socket logging |
+| `UdpSink` | UDP socket logging |
+| `SyslogSink` | System syslog logging |
+
+**Example with BatchHttpJsonSink:**
+
+```python
+from logly import BatchHttpJsonSink, logger
+
+sink = BatchHttpJsonSink(
+    url="https://logs.example.com/ingest",
+    batch_size=100,
+    flush_interval=5.0,
+)
+logger.add(sink, level="INFO")
+```
+
 ---
 
 ### remove(sink_id)

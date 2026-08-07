@@ -166,16 +166,16 @@ fn registry() -> &'static RwLock<HashMap<String, LogLevel>> {
 
 fn default_levels() -> HashMap<String, LogLevel> {
     [
-        ("TRACE", 5, Some("dim")),
-        ("DEBUG", 10, Some("blue")),
-        ("INFO", 20, None),
-        ("NOTICE", 25, Some("cyan")),
-        ("SUCCESS", 30, Some("green")),
-        ("WARNING", 40, Some("yellow")),
-        ("ERROR", 50, Some("red")),
-        ("FAIL", 55, Some("magenta")),
-        ("CRITICAL", 60, Some("bold_red")),
-        ("FATAL", 70, Some("bold_red")),
+        ("TRACE", 5, Some("bold_cyan")),
+        ("DEBUG", 10, Some("bold_blue")),
+        ("INFO", 20, Some("bold")),
+        ("NOTICE", 25, Some("bold_cyan")),
+        ("SUCCESS", 30, Some("bold_green")),
+        ("WARNING", 40, Some("bold_yellow")),
+        ("ERROR", 50, Some("bold_red")),
+        ("FAIL", 55, Some("bold_magenta")),
+        ("CRITICAL", 60, Some("bold_red_bg")),
+        ("FATAL", 70, Some("bold_red_bg")),
     ]
     .into_iter()
     .map(|(name, priority, color)| {

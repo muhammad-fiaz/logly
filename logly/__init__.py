@@ -22,6 +22,7 @@ Attributes:
 from __future__ import annotations
 
 from logly._logly import (
+    BatchHttpJsonSink,
     HttpJsonSink,
     SyslogSink,
     TcpSink,
@@ -35,6 +36,7 @@ from logly._logly import (
     parse_compression_str,
     parse_retention_str,
     parse_rotation_str,
+    parse_rich_markup,
     register_custom_level,
     render_message,
     resolve_level_name,
@@ -54,6 +56,7 @@ from logly.logger import Level, Logger, logger
 from logly.models import PrettyJsonConfig
 
 __all__ = [
+    "BatchHttpJsonSink",
     "CompressionError",
     "ConfigError",
     "FilterError",
@@ -78,6 +81,7 @@ __all__ = [
     "parse_compression_str",
     "parse_retention_str",
     "parse_rotation_str",
+    "parse_rich_markup",
     "register_custom_level",
     "render_message",
     "resolve_level_name",
