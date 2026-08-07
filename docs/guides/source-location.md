@@ -47,8 +47,8 @@ Use these tokens in format strings to include source information in output:
 |-------|-------------|---------|
 | `{file}` | Full source file path | `/home/user/app.py` |
 | `{filename}` | Just the filename | `app.py` |
-| `{file.name}` | Filename (Loguru-compatible) | `app.py` |
-| `{file.path}` | Full path (Loguru-compatible) | `/home/user/app.py` |
+| `{file.name}` | Filename (dot-notation) | `app.py` |
+| `{file.path}` | Full path (dot-notation) | `/home/user/app.py` |
 | `{line}` | Line number | `42` |
 | `{function}` | Function name | `main` |
 | `{module}` | Module name (no extension) | `app` |

@@ -24,7 +24,7 @@ Supported styles include `bold`, `dim`, `normal`, `italic`, `underline`,
 
 ## Rich-style bracket syntax
 
-Logly supports both `<tag>` (loguru-style) and `[tag]` (Rich-style) syntax:
+Logly supports both `<tag>` (angle-bracket) and `[tag]` (Rich-style) syntax:
 
 ```python
 # Rich-style square brackets
@@ -32,7 +32,7 @@ logger.info("[red]Error[/red]")
 logger.info("[bold]Important[/bold]")
 logger.info("[bold red on white]Highlighted[/bold red on white]")
 
-# Loguru-style angle brackets
+# Angle-bracket syntax
 logger.info("<red>Error</red>")
 logger.info("<bold>Important</bold>")
 ```
@@ -64,7 +64,7 @@ logger.info("[on color(200)]White on pink[/on color(200)]")
 logger.info("[bold][not bold]Not bold anymore[/not bold]")
 ```
 
-## Comma-separated syntax (loguru-style)
+## Comma-separated syntax
 
 For `<tag>` syntax, you can use commas to combine multiple styles:
 
