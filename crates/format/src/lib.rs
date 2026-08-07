@@ -663,8 +663,7 @@ impl Formatter for JsonFormatter {
         if let Some(ref file_path) = record.file {
             let file_name = std::path::Path::new(file_path)
                 .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_else(|| file_path.clone());
+                .map_or_else(|| file_path.clone(), |n| n.to_string_lossy().into_owned());
             let file_obj = format!(
                 "{{\"name\":{},\"path\":{}}}",
                 escape_json(&file_name),

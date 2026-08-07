@@ -393,7 +393,7 @@ impl BatchHttpJsonSink {
         }
 
         request
-            .send_json(&batch)
+            .send_json(batch)
             .map_err(|e| LoglyError::Sink(format!("HTTP batch request failed: {e}")))?;
 
         Ok(())
@@ -416,10 +416,7 @@ impl BatchHttpJsonSink {
     /// Returns the current number of buffered records.
     #[must_use]
     pub fn buffer_len(&self) -> usize {
-        self.buffer
-            .lock()
-            .map(|b| b.len())
-            .unwrap_or(0)
+        self.buffer.lock().map_or(0, |b| b.len())
     }
 
     /// Writes a pre-formatted log line to the batch buffer.

@@ -257,7 +257,9 @@ pub fn bg_color_code(name: &str) -> &'static str {
         "bg_bright_green" | "on_bright_green" | "BRIGHT_GREEN" | "LIGHT-GREEN" | "LG" => "102",
         "bg_bright_yellow" | "on_bright_yellow" | "BRIGHT_YELLOW" | "LIGHT-YELLOW" | "LY" => "103",
         "bg_bright_blue" | "on_bright_blue" | "BRIGHT_BLUE" | "LIGHT-BLUE" | "LE" => "104",
-        "bg_bright_magenta" | "on_bright_magenta" | "BRIGHT_MAGENTA" | "LIGHT-MAGENTA" | "LM" => "105",
+        "bg_bright_magenta" | "on_bright_magenta" | "BRIGHT_MAGENTA" | "LIGHT-MAGENTA" | "LM" => {
+            "105"
+        }
         "bg_bright_cyan" | "on_bright_cyan" | "BRIGHT_CYAN" | "LIGHT-CYAN" | "LC" => "106",
         "bg_bright_white" | "on_bright_white" | "BRIGHT_WHITE" | "LIGHT-WHITE" | "LW" => "107",
         _ => "",
@@ -270,7 +272,7 @@ pub fn bg_color_code(name: &str) -> &'static str {
 /// and `bg_<name>` / `on_<name>` / `<NAME>` (named colors).
 fn resolve_bg_color(spec: &str) -> Option<String> {
     let trimmed = spec.trim();
-    
+
     // "bg N" = background 256-color
     if let Some(inner) = trimmed.strip_prefix("bg ") {
         if let Ok(value) = inner.trim().parse::<u8>() {
@@ -281,10 +283,10 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
             return Some(format!("48;2;{r};{g};{b}"));
         }
         // Handle <bg #rrggbb> syntax
-        if let Some(hex) = inner.trim().strip_prefix('#') {
-            if let Some((r, g, b)) = parse_hex(hex) {
-                return Some(format!("48;2;{r};{g};{b}"));
-            }
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("48;2;{r};{g};{b}"));
         }
         return Some(fg_to_bg(inner).map_or_else(
             || {
@@ -306,10 +308,10 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
             return Some(format!("48;2;{r};{g};{b}"));
         }
         // Handle <on #rrggbb> syntax
-        if let Some(hex) = inner.trim().strip_prefix('#') {
-            if let Some((r, g, b)) = parse_hex(hex) {
-                return Some(format!("48;2;{r};{g};{b}"));
-            }
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("48;2;{r};{g};{b}"));
         }
         return Some(fg_to_bg(inner).map_or_else(
             || {
@@ -331,7 +333,7 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
     {
         return Some(format!("48;5;{value}"));
     }
-    
+
     // Background RGB: bg_rgb(r,g,b) or bg(r,g,b)
     if let Some(inner) = trimmed
         .strip_prefix("bg_rgb(")
@@ -341,14 +343,14 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
     {
         return Some(format!("48;2;{r};{g};{b}"));
     }
-    
+
     // Background hex: bg#rrggbb
     if let Some(hex) = trimmed.strip_prefix("bg#")
         && let Some((r, g, b)) = parse_hex(hex)
     {
         return Some(format!("48;2;{r};{g};{b}"));
     }
-    
+
     // Background color prefix: bg_red, on_red, bg_bright_red, etc.
     if !trimmed.starts_with("bg_rgb(")
         && !trimmed.starts_with("bg(")
@@ -360,7 +362,7 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
             return Some(bg.to_owned());
         }
     }
-    
+
     None
 }
 
@@ -370,7 +372,7 @@ fn resolve_bg_color(spec: &str) -> Option<String> {
 /// and foreground color names.
 fn resolve_fg_color(spec: &str) -> Option<String> {
     let trimmed = spec.trim();
-    
+
     // "fg N" = foreground 256-color
     if let Some(inner) = trimmed.strip_prefix("fg ") {
         if let Ok(value) = inner.trim().parse::<u8>() {
@@ -381,14 +383,14 @@ fn resolve_fg_color(spec: &str) -> Option<String> {
             return Some(format!("38;2;{r};{g};{b}"));
         }
         // Handle <fg #rrggbb> syntax
-        if let Some(hex) = inner.trim().strip_prefix('#') {
-            if let Some((r, g, b)) = parse_hex(hex) {
-                return Some(format!("38;2;{r};{g};{b}"));
-            }
+        if let Some(hex) = inner.trim().strip_prefix('#')
+            && let Some((r, g, b)) = parse_hex(hex)
+        {
+            return Some(format!("38;2;{r};{g};{b}"));
         }
         return resolve_color_code(inner).into();
     }
-    
+
     // 256-color: color(208) or fg(208)
     if let Some(inner) = trimmed
         .strip_prefix("color(")
@@ -398,12 +400,12 @@ fn resolve_fg_color(spec: &str) -> Option<String> {
     {
         return Some(format!("38;5;{value}"));
     }
-    
+
     // Foreground RGB: rgb(r,g,b)
     if let Some((red, green, blue)) = parse_rgb(trimmed) {
         return Some(format!("38;2;{red};{green};{blue}"));
     }
-    
+
     None
 }
 
@@ -462,27 +464,27 @@ pub fn resolve_color_code(spec: &str) -> String {
     if trimmed.is_empty() {
         return String::new();
     }
-    
+
     // Try background color resolution first
     if let Some(code) = resolve_bg_color(trimmed) {
         return code;
     }
-    
+
     // Try foreground color resolution
     if let Some(code) = resolve_fg_color(trimmed) {
         return code;
     }
-    
+
     // Raw SGR: all digits and semicolons
     if trimmed.chars().all(|ch| ch.is_ascii_digit() || ch == ';') {
         return trimmed.to_owned();
     }
-    
+
     // Compound styles: "bold red", "italic cyan on white", "bold red on bright_blue"
     if let Some(code) = parse_compound_style(trimmed) {
         return code;
     }
-    
+
     color_code(trimmed).to_owned()
 }
 
@@ -701,11 +703,11 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
                     }
                 };
 
-                if let Some(code) = code {
-                    if !code.is_empty() {
-                        use std::fmt::Write;
-                        let _ = write!(result, "\x1b[{code}m");
-                    }
+                if let Some(code) = code
+                    && !code.is_empty()
+                {
+                    use std::fmt::Write;
+                    let _ = write!(result, "\x1b[{code}m");
                 }
                 // Unknown tag: strip it entirely
             }
@@ -1034,7 +1036,7 @@ fn fg_to_bg_code(code: &str) -> Option<String> {
         "35" => Some("45".to_owned()),
         "36" => Some("46".to_owned()),
         "37" => Some("47".to_owned()),
-        "39" => Some("49".to_owned()),  // default
+        "39" => Some("49".to_owned()), // default
         "90" => Some("100".to_owned()),
         "91" => Some("101".to_owned()),
         "92" => Some("102".to_owned()),
@@ -1165,7 +1167,9 @@ fn resolve_loguru_tag(tag: &str) -> Option<String> {
             let lower = token.to_lowercase();
 
             // Check if it's a background color (uppercase = background in loguru)
-            let is_uppercase = token.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
+            let is_uppercase = token
+                .chars()
+                .all(|c| c.is_uppercase() || !c.is_alphabetic());
 
             if is_uppercase && token.len() > 1 {
                 // Uppercase -> background color
@@ -1182,10 +1186,7 @@ fn resolve_loguru_tag(tag: &str) -> Option<String> {
                 let resolved = resolve_color_code_single(&lower);
                 if !resolved.is_empty() {
                     if resolved.len() <= 2 && resolved.chars().all(|c| c.is_ascii_digit()) {
-                        // Style code (1-9)
                         codes.push(resolved);
-                    } else if resolved.starts_with("38;2;") || resolved.starts_with("38;5;") {
-                        fg_code = resolved;
                     } else {
                         fg_code = resolved;
                     }
@@ -1213,7 +1214,7 @@ fn resolve_loguru_tag(tag: &str) -> Option<String> {
 
         if is_uppercase && tag.len() > 1 {
             // Uppercase tag -> background color
-            Some(resolve_color_code(&tag))
+            Some(resolve_color_code(tag))
         } else {
             // Lowercase/mixed tag -> foreground or style
             Some(resolve_color_code(&lower))
