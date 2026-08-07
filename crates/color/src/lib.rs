@@ -149,7 +149,7 @@ pub fn color_code(name: &str) -> &'static str {
         "white" | "w" => "37",
         // Default foreground
         "default" => "39",
-        // Bright/high-intensity colors (logly uses "light-" prefix)
+        // Bright/high-intensity colors (shorthand: lk, lr, lg, ly, le, lm, lc, lw)
         "bright_black" | "light_black" | "lk" => "90",
         "bright_red" | "light_red" | "lr" => "91",
         "bright_green" | "light_green" | "lg" => "92",
@@ -214,7 +214,7 @@ pub fn color_code(name: &str) -> &'static str {
 /// - `bg_` prefix: `"bg_red"`, `"bg_bright_cyan"`
 /// - `on_` prefix: `"on_red"`, `"on_bright_cyan"`
 /// - Uppercase (logly markup): `"RED"`, `"BRIGHT_CYAN"`
-/// - Loguru light syntax: `"LIGHT-RED"`, `"LIGHT-CYAN"`
+/// - Light syntax: `"LIGHT-RED"`, `"LIGHT-CYAN"`
 ///
 /// Returns `""` for unrecognized names.
 ///
@@ -427,7 +427,7 @@ fn resolve_fg_color(spec: &str) -> Option<String> {
 /// 9. **Compound style** (`"bold red"`, `"italic cyan on white"`): returns combined code
 /// 10. **Foreground color name** (`"red"`, `"bold"`): returns foreground code
 ///
-/// # Loguru Markup Support
+/// # Angle-Bracket Markup Support
 ///
 /// - `<red>` / `<r>` = foreground red
 /// - `<RED>` / `<R>` = background red
@@ -663,7 +663,7 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
                 result.push(ch);
             }
         } else if ch == '<' {
-            // Handle <tag> syntax (loguru-style)
+            // Handle <tag> syntax (angle-bracket markup)
             let mut tag = String::new();
             let mut is_closing = false;
 
@@ -689,9 +689,9 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
             } else if tag.is_empty() {
                 // Empty tag: no-op
             } else {
-                // Opening tag: try loguru comma syntax first, then standard
+                // Opening tag: try comma syntax first, then standard
                 let code = if tag.contains(',') {
-                    resolve_loguru_tag(&tag)
+                    resolve_comma_tag(&tag)
                 } else {
                     // Check for uppercase (background) or lowercase (foreground)
                     let is_uppercase = tag.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
@@ -1136,7 +1136,7 @@ fn resolve_rich_tag(tag: &str) -> Option<String> {
     }
 }
 
-/// Resolves a loguru-style tag with comma-separated tokens.
+/// Resolves a comma-separated tag with multiple tokens.
 ///
 /// Supports:
 /// - `<bold, cyan, white>` - multiple styles/colors
@@ -1147,13 +1147,13 @@ fn resolve_rich_tag(tag: &str) -> Option<String> {
 ///
 /// Returns `Some(code)` if the tag is valid, `None` if unknown.
 #[must_use]
-fn resolve_loguru_tag(tag: &str) -> Option<String> {
+fn resolve_comma_tag(tag: &str) -> Option<String> {
     let tag = tag.trim();
     if tag.is_empty() {
         return None;
     }
 
-    // Check if tag contains commas (loguru comma syntax)
+    // Check if tag contains commas (comma-separated syntax)
     if tag.contains(',') {
         let tokens: Vec<&str> = tag.split(',').map(str::trim).collect();
         let mut codes: Vec<String> = Vec::new();
@@ -1166,7 +1166,7 @@ fn resolve_loguru_tag(tag: &str) -> Option<String> {
             }
             let lower = token.to_lowercase();
 
-            // Check if it's a background color (uppercase = background in loguru)
+            // Check if it's a background color (uppercase = background)
             let is_uppercase = token
                 .chars()
                 .all(|c| c.is_uppercase() || !c.is_alphabetic());

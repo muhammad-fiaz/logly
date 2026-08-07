@@ -295,60 +295,7 @@ pub struct LoggerConfig {
 /// ```
 #[must_use]
 pub fn strip_ansi_markup(text: &str) -> String {
-    let mut result = text.to_owned();
-    let tags = [
-        "red",
-        "green",
-        "yellow",
-        "blue",
-        "magenta",
-        "cyan",
-        "white",
-        "black",
-        "bold",
-        "dim",
-        "underline",
-        "blink",
-        "italic",
-        "strike",
-        "reverse",
-    ];
-    for tag in &tags {
-        let code = color::color_code(tag);
-        if !code.is_empty() {
-            let open = format!("<{tag}>");
-            let close = format!("</{tag}>");
-            result = result.replace(&open, &format!("\x1b[{code}m"));
-            result = result.replace(&close, "\x1b[0m");
-        }
-    }
-    // Strip any remaining unrecognized tags (skip < that starts a format spec like <8)
-    let mut offset = 0;
-    while offset < result.len() {
-        let bytes = result.as_bytes();
-        let Some(start) = bytes[offset..].iter().position(|&b| b == b'<') else {
-            break;
-        };
-        let abs = offset + start;
-        let next = abs + 1;
-        let is_tag = if next < result.len() {
-            let ch = bytes[next];
-            ch.is_ascii_alphabetic() || ch == b'/'
-        } else {
-            false
-        };
-        if is_tag {
-            if let Some(end) = result[abs..].find('>') {
-                result.replace_range(abs..=abs + end, "");
-                offset = abs;
-            } else {
-                break;
-            }
-        } else {
-            offset = next;
-        }
-    }
-    result
+    color::parse_rich_markup(text, true)
 }
 
 /// Parses a size string like "10 MB", "500 KB", "1 GiB" into bytes.

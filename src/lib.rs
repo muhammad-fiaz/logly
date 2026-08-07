@@ -1468,7 +1468,7 @@ fn colorize(text: &str, color: &str, colorize: bool) -> String {
 
 /// Parse Rich-style markup tags and return ANSI-escaped text.
 ///
-/// Supports both `<tag>` (loguru-style) and `[tag]` (Rich-style) syntax.
+/// Supports both `<tag>` (angle-bracket) and `[tag]` (Rich-style) syntax.
 /// For `<tag>` syntax, also supports comma-separated tokens like `<bold, cyan, white>`.
 /// For `[tag]` syntax, supports Rich conventions like `[red]`, `[on red]`, `[bold red on white]`.
 ///
