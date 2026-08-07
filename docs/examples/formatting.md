@@ -92,8 +92,10 @@ Alignment operators:
 ```python
 from logly import logger
 
+
 def custom_fmt(record):
     return f"[{record['time'].timestamp():.3f}] {record['level']}: {record['message']}"
+
 
 sink_id = logger.add("custom.log", format=custom_fmt)
 logger.info("Callable formatter active")

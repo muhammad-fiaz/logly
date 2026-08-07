@@ -38,10 +38,10 @@ Parameters:
 from logly import logger
 
 info = logger.level("INFO")
-print(info.name)    # "INFO"
-print(info.no)      # 20
-print(info.color)   # None
-print(info.icon)    # None
+print(info.name)  # "INFO"
+print(info.no)  # 20
+print(info.color)  # None
+print(info.icon)  # None
 ```
 
 Returns a `Level` object with `.name`, `.no`, `.color`, `.icon` attributes.
@@ -127,8 +127,8 @@ logger.level("INFO", no=20, color="bold_green", icon="i")
 
 # Verify the change
 info = logger.level("INFO")
-print(info.color)   # "bold_green"
-print(info.icon)    # "i"
+print(info.color)  # "bold_green"
+print(info.icon)  # "i"
 ```
 
 ## List All Registered Levels

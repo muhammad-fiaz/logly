@@ -43,6 +43,7 @@ from logly.integrations.uvicorn import setup_uvicorn_logging
 
 app = FastAPI()
 
+
 @app.on_event("startup")
 async def startup():
     setup_uvicorn_logging()

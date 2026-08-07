@@ -47,6 +47,7 @@ from logly.integrations.click import click_echo
 
 click.echo = click_echo
 
+
 @click.command()
 def cli():
     click.echo("This goes through Logly")
@@ -80,11 +81,13 @@ click.echo = click_echo
 
 logger.add("cli.log", level="INFO")
 
+
 @click.command()
 @click.option("--name", prompt="Your name", help="The person to greet.")
 def hello(name):
     click.echo(f"Hello, {name}!")
     click.echo("Done!", err=True)
+
 
 if __name__ == "__main__":
     hello()

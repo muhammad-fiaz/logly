@@ -29,27 +29,33 @@ from logly import logger
 
 # RotatingFileHandler
 from logging.handlers import RotatingFileHandler
+
 logger.add(RotatingFileHandler("app.log", maxBytes=10_000_000, backupCount=5))
 
 # SysLogHandler
 from logging.handlers import SysLogHandler
+
 logger.add(SysLogHandler(address="/dev/log"))
 
 # SocketHandler
 from logging.handlers import SocketHandler
+
 logger.add(SocketHandler("localhost", 9020))
 
 # SMTPHandler
 from logging.handlers import SMTPHandler
+
 logger.add(SMTPHandler("smtp.example.com", "from@example.com", "to@example.com", "Log Alert"))
 
 # HTTPHandler
 from logging.handlers import HTTPHandler
+
 logger.add(HTTPHandler("logs.example.com", "/ingest", method="POST"))
 
 # QueueHandler
 from logging.handlers import QueueHandler
 import queue
+
 logger.add(QueueHandler(queue.Queue()))
 ```
 
@@ -80,11 +86,13 @@ Logly automatically maps message text to detect the log level for the handler:
 import logging
 from logly import logger
 
+
 class AlertHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         msg = self.format(record)
         if record.levelno >= logging.ERROR:
             send_alert(msg)
+
 
 logger.add(AlertHandler(), level="ERROR")
 logger.error("This triggers an alert")
@@ -106,10 +114,10 @@ logger.add(logging.FileHandler("all.log"), level="DEBUG")
 
 ```python
 logger.add(
-    handler,          # logging.Handler instance
-    level="INFO",     # Minimum level for Logly filtering
-    format=None,      # Logly format (not used for handler)
-    **kwargs,         # Other add() parameters
+    handler,  # logging.Handler instance
+    level="INFO",  # Minimum level for Logly filtering
+    format=None,  # Logly format (not used for handler)
+    **kwargs,  # Other add() parameters
 )
 ```
 

@@ -13,9 +13,11 @@ Use the Logly logging hook for Gunicorn:
 # gunicorn.conf.py
 from logly import logger
 
+
 def on_starting(server):
     """Called just before the master process is initialized."""
     logger.add("gunicorn.log", level="INFO")
+
 
 def post_fork(server, worker):
     """Called just after a worker has been forked."""
@@ -28,6 +30,7 @@ def post_fork(server, worker):
 # gunicorn.conf.py
 from logly import logger
 
+
 def post_worker_init(worker):
     """Called just after a worker has been initialized."""
     logger.add(
@@ -36,6 +39,7 @@ def post_worker_init(worker):
         rotation="100 MB",
         retention="7 days",
     )
+
 
 def worker_exit(server, worker):
     """Called just after a worker has been exited."""

@@ -102,10 +102,12 @@ result = logger.catch(default={})(load_config)()
 ```python
 from logly import logger
 
+
 def alert_on_error(exc):
     """Send alert when exception occurs."""
     send_slack_alert(f"Error: {exc}")
     update_metrics("error_count")
+
 
 with logger.catch(onerror=alert_on_error):
     critical_operation()
@@ -116,9 +118,11 @@ with logger.catch(onerror=alert_on_error):
 ```python
 from logly import logger
 
+
 # All options together
 def handle_db_error(exc):
     reconnect_to_database()
+
 
 with logger.catch(
     exception=ConnectionError,
@@ -139,9 +143,11 @@ Apply exception catching to entire functions:
 ```python
 from logly import logger
 
+
 @logger.catch()
 def risky_function():
     raise ValueError("Something went wrong")
+
 
 risky_function()
 # Exception logged at ERROR level, function returns None
@@ -152,9 +158,11 @@ risky_function()
 ```python
 from logly import logger
 
+
 @logger.catch(level="ERROR")
 def run_job():
     raise RuntimeError("Job error")
+
 
 run_job()
 ```
@@ -164,9 +172,11 @@ run_job()
 ```python
 from logly import logger
 
+
 @logger.catch(ValueError)
 def parse_data():
     raise ValueError("Bad data")
+
 
 parse_data()
 ```
@@ -176,9 +186,11 @@ parse_data()
 ```python
 from logly import logger
 
+
 @logger.catch(reraise=True)
 def critical_function():
     raise TypeError("Critical error")
+
 
 try:
     critical_function()
@@ -191,14 +203,17 @@ except TypeError:
 ```python
 from logly import logger
 
+
 def cleanup(exc):
     """Clean up resources on exception."""
     remove_temp_files()
     close_connections()
 
+
 @logger.catch(onerror=cleanup)
 def task():
     raise RuntimeError("Failed")
+
 
 task()
 ```
@@ -208,9 +223,11 @@ task()
 ```python
 from logly import logger
 
+
 @logger.catch(default=0)
 def divide(a, b):
     return a / b
+
 
 result = divide(10, 0)
 print(result)  # 0 (exception logged, default returned)
@@ -221,10 +238,12 @@ print(result)  # 0 (exception logged, default returned)
 ```python
 from logly import logger
 
+
 @logger.catch(exclude=KeyboardInterrupt)
 def long_task():
     for i in range(1000):
         process(i)
+
 
 long_task()
 # KeyboardInterrupt propagates, other exceptions logged
@@ -255,6 +274,7 @@ with logger.catch(exclude=(KeyboardInterrupt, SystemExit, GeneratorExit)):
 ```python
 from logly import logger
 
+
 def process_file(filepath):
     """Process file, catching errors but letting interrupts pass."""
     with logger.catch(exclude=KeyboardInterrupt, level="ERROR"):
@@ -274,8 +294,10 @@ Execute custom logic when an exception is caught:
 ```python
 from logly import logger
 
+
 def on_error(exc):
     print(f"Caught: {exc}")
+
 
 with logger.catch(onerror=on_error):
     risky_operation()
@@ -286,13 +308,16 @@ with logger.catch(onerror=on_error):
 ```python
 from logly import logger
 
+
 def alert_team(exc):
     """Send Slack alert on error."""
     import requests
+
     requests.post(
         "https://hooks.slack.com/services/xxx",
         json={"text": f"Error in production: {exc}"},
     )
+
 
 with logger.catch(onerror=alert_team):
     production_task()
@@ -305,10 +330,12 @@ from logly import logger
 
 error_count = 0
 
+
 def track_error(exc):
     global error_count
     error_count += 1
     metrics.gauge("error_rate", error_count)
+
 
 with logger.catch(onerror=track_error):
     for _ in range(100):
@@ -320,11 +347,13 @@ with logger.catch(onerror=track_error):
 ```python
 from logly import logger
 
+
 def cleanup(exc):
     """Clean up on error."""
     remove_temp_files()
     close_database_connections()
     release_locks()
+
 
 with logger.catch(onerror=cleanup):
     complex_operation()
@@ -335,14 +364,14 @@ with logger.catch(onerror=cleanup):
 ```python
 from logly import logger
 
+
 def handle_error(exc, context):
     """Handle error with context."""
     logger.bind(**context).error("Operation failed: {}", exc)
     send_alert(context["service"], exc)
 
-with logger.catch(
-    onerror=lambda exc: handle_error(exc, {"service": "api", "endpoint": "/users"})
-):
+
+with logger.catch(onerror=lambda exc: handle_error(exc, {"service": "api", "endpoint": "/users"})):
     api_request()
 ```
 
@@ -374,11 +403,13 @@ result = logger.catch(default=False)(validate_input)()
 ```python
 from logly import logger
 
+
 def get_user(user_id):
     """Fetch user, returning None on error."""
     return logger.catch(default=None)(
         lambda: db.query("SELECT * FROM users WHERE id = ?", user_id)
     )()
+
 
 user = get_user(123)
 if user is None:
@@ -405,9 +436,11 @@ except Exception as e:
 ```python
 from logly import logger
 
+
 @logger.catch(reraise=True)
 def critical_operation():
     raise ValueError("Critical failure")
+
 
 try:
     critical_operation()
@@ -421,9 +454,11 @@ except ValueError as e:
 ```python
 from logly import logger
 
+
 def on_critical_error(exc):
     """Log critical error details."""
     logger.critical("Critical failure: {}", exc)
+
 
 try:
     with logger.catch(reraise=True, onerror=on_critical_error):
@@ -461,9 +496,11 @@ with logger.catch(level="DEBUG"):
 ```python
 from logly import logger
 
+
 @logger.catch(level="WARNING")
 def optional_task():
     raise ValueError("Non-critical error")
+
 
 @logger.catch(level="CRITICAL")
 def critical_task():
@@ -503,9 +540,7 @@ from logly import logger
 try:
     risky_operation()
 except Exception:
-    logger.opt(exception=True).lazy().error(
-        "Error: {}", lambda: expensive_computation()
-    )
+    logger.opt(exception=True).lazy().error("Error: {}", lambda: expensive_computation())
 ```
 
 ### Exception in Context
@@ -640,10 +675,12 @@ logger.add(
     format="{time} | {level} | {message}",
 )
 
+
 def process(data, threshold):
     result = compute(data)
     if result > threshold:
         raise ValueError(f"Result {result} exceeds threshold {threshold}")
+
 
 with logger.catch():
     process([1, 2, 3], 10)
@@ -712,6 +749,7 @@ logger.add(
     enqueue=True,
 )
 
+
 def process_order(order):
     """Process an order with error handling."""
     try:
@@ -732,19 +770,25 @@ def process_order(order):
 ```python
 from logly import logger
 
+
 def handle_errors(level="ERROR", reraise=False, onerror=None):
     """Decorator factory for error handling."""
+
     def decorator(func):
         @logger.catch(level=level, reraise=reraise, onerror=onerror)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 # Usage
 @handle_errors(level="CRITICAL", reraise=True)
 def critical_operation():
     raise RuntimeError("System failure")
+
 
 @handle_errors(level="WARNING")
 def optional_operation():
@@ -755,6 +799,7 @@ def optional_operation():
 
 ```python
 from logly import logger
+
 
 def api_endpoint(request):
     """Handle API request with error context."""
@@ -778,6 +823,7 @@ def api_endpoint(request):
 from logly import logger
 import time
 
+
 def retry_with_logging(func, max_retries=3, delay=1):
     """Retry function with exception logging."""
     for attempt in range(max_retries):
@@ -795,6 +841,7 @@ def retry_with_logging(func, max_retries=3, delay=1):
     logger.error("All {} attempts failed", max_retries)
     raise RuntimeError(f"Failed after {max_retries} attempts")
 
+
 # Usage
 result = retry_with_logging(lambda: api_call(), max_retries=3)
 ```
@@ -807,16 +854,19 @@ from collections import defaultdict
 
 error_counts = defaultdict(int)
 
+
 def track_errors(exc):
     """Track error types for metrics."""
     error_type = type(exc).__name__
     error_counts[error_type] += 1
     logger.bind(error_type=error_type).error("Error: {}", exc)
 
+
 def critical_task():
     """Task with error tracking."""
     with logger.catch(onerror=track_errors):
         risky_operation()
+
 
 # Run task
 for _ in range(100):
@@ -834,11 +884,13 @@ from logly import logger
 import signal
 import sys
 
+
 def shutdown_handler(signum, frame):
     """Handle shutdown signals gracefully."""
     logger.warning("Received signal {}, shutting down", signum)
     logger.complete()
     sys.exit(0)
+
 
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
@@ -860,6 +912,7 @@ finally:
 from logly import logger
 from contextlib import contextmanager
 
+
 @contextmanager
 def error_context(operation, **context):
     """Context manager with error handling and context."""
@@ -867,10 +920,9 @@ def error_context(operation, **context):
         yield
         logger.success("{} completed", operation)
     except Exception as e:
-        logger.bind(error=str(e), **context).exception(
-            "{} failed", operation
-        )
+        logger.bind(error=str(e), **context).exception("{} failed", operation)
         raise
+
 
 # Usage
 with error_context("database migration", table="users"):

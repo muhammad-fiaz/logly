@@ -69,10 +69,12 @@ from logly.integrations.fastapi import LoglyMiddleware
 app = FastAPI()
 app.add_middleware(LoglyMiddleware)
 
+
 @app.get("/")
 async def root():
     logger.info("Handling request")
     return {"message": "Hello World"}
+
 
 @app.get("/items/{item_id}")
 async def read_item(item_id: int):

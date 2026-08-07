@@ -35,9 +35,11 @@ logger.complete()
 ```python
 from logly import logger
 
+
 def add_version(record):
     record["extra"]["version"] = "2.1.0"
     record["extra"]["deploy"] = "eu-west-1"
+
 
 logger.add("app.log", patch=add_version)
 logger.info("Patched record")

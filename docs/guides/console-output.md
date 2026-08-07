@@ -31,6 +31,7 @@ Set the `LOGLY_AUTOINIT` environment variable to `false` before importing:
 
 ```python
 import os
+
 os.environ["LOGLY_AUTOINIT"] = "false"
 
 from logly import logger
@@ -200,8 +201,8 @@ logger.configure(
         {"sink": "app.log", "level": "DEBUG", "rotation": "daily"},
     ],
     activation=[
-        ("myapp", True),     # Enable myapp
-        ("debug", False),    # Disable debug
+        ("myapp", True),  # Enable myapp
+        ("debug", False),  # Disable debug
     ],
 )
 ```

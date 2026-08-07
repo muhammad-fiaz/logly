@@ -47,11 +47,13 @@ logger.add(
 # Start background processing
 logger.start()
 
+
 def run_server():
     # Simulate server workload
     for i in range(100):
         logger.info("Processing request {}", i)
         time.sleep(0.1)
+
 
 try:
     run_server()
@@ -72,6 +74,7 @@ logger.add("worker.log", enqueue=True, level="DEBUG")
 # Start background processing
 logger.start()
 
+
 def background_worker():
     while True:
         task = get_task()
@@ -83,6 +86,7 @@ def background_worker():
             logger.success("Task {} completed", task["id"])
         except Exception:
             logger.exception("Task {} failed", task["id"])
+
 
 background_worker()
 
@@ -106,6 +110,7 @@ logger.add(
     retention="30 days",
 )
 
+
 def rotate_logs(signum, frame):
     logger.info("Log rotation triggered")
     logger.stop()
@@ -116,6 +121,7 @@ def rotate_logs(signum, frame):
         rotation="daily",
         retention="30 days",
     )
+
 
 signal.signal(signal.SIGUSR1, rotate_logs)
 
@@ -140,12 +146,14 @@ from logly import logger
 
 logger.add("app.log", level="INFO")
 
+
 def health_check():
     try:
         status = "healthy"
         logger.debug("Health check: {}", status)
     except Exception as e:
         logger.error("Health check failed: {}", e)
+
 
 logger.start()
 
@@ -168,6 +176,7 @@ error_count = 0
 
 logger.add("metrics.log", level="INFO")
 
+
 def flush_metrics():
     global request_count, error_count
     logger.info(
@@ -177,6 +186,7 @@ def flush_metrics():
     )
     request_count = 0
     error_count = 0
+
 
 logger.start()
 
@@ -223,10 +233,12 @@ from logly import logger
 
 logger.add("app.log", enqueue=True)
 
+
 def shutdown(signum, frame):
     logger.warning("Received signal {}, shutting down", signum)
     logger.stop()
     sys.exit(0)
+
 
 signal.signal(signal.SIGINT, shutdown)
 signal.signal(signal.SIGTERM, shutdown)
@@ -256,10 +268,12 @@ from logly import logger
 
 logger.add("app.log", enqueue=True)
 
+
 def worker(worker_id: int):
     for i in range(10):
         logger.info("Worker {} message {}", worker_id, i)
         time.sleep(0.01)
+
 
 logger.start()
 

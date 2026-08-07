@@ -86,6 +86,7 @@ from logly import logger
 # Register a custom level
 logger.level("AUDIT", no=25)
 
+
 # Add custom mapping
 class CustomInterceptHandler(InterceptHandler):
     _LEVEL_MAP = {

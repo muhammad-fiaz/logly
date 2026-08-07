@@ -18,6 +18,7 @@ import json
 import urllib.request
 from logly import logger
 
+
 def http_sink(message: str) -> None:
     payload = json.dumps({"log": message}).encode("utf-8")
     request = urllib.request.Request(
@@ -27,6 +28,7 @@ def http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=5)
+
 
 logger.add(http_sink, level="INFO", enqueue=True)
 ```
@@ -56,12 +58,15 @@ import json
 import urllib.request
 from logly import logger
 
+
 def http_sink(message: str) -> None:
-    payload = json.dumps({
-        "log": message,
-        "source": "myapp",
-        "timestamp": "2026-07-01T14:30:00Z",
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "log": message,
+            "source": "myapp",
+            "timestamp": "2026-07-01T14:30:00Z",
+        }
+    ).encode("utf-8")
 
     request = urllib.request.Request(
         "https://logs.example.com/ingest",
@@ -75,6 +80,7 @@ def http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=10)
+
 
 logger.add(
     http_sink,
@@ -91,6 +97,7 @@ import urllib.request
 import time
 from logly import logger
 
+
 def http_sink_with_retry(message: str, max_retries=3) -> None:
     payload = json.dumps({"log": message}).encode("utf-8")
 
@@ -106,9 +113,10 @@ def http_sink_with_retry(message: str, max_retries=3) -> None:
             return
         except Exception as e:
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             else:
                 logger.error("HTTP sink failed after {} retries: {}", max_retries, e)
+
 
 logger.add(http_sink_with_retry, level="WARNING", enqueue=True)
 ```
@@ -134,10 +142,12 @@ Send logs over a TCP socket for reliable delivery.
 import socket
 from logly import logger
 
+
 def tcp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("logserver.example.com", 9000))
         sock.sendall(message.encode("utf-8"))
+
 
 logger.add(tcp_sink, level="INFO")
 ```
@@ -148,11 +158,13 @@ logger.add(tcp_sink, level="INFO")
 import socket
 from logly import logger
 
+
 def tcp_sink_with_delimiter(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("logserver.example.com", 9000))
         # Add newline delimiter for line-based protocols
         sock.sendall(message.encode("utf-8") + b"\n")
+
 
 logger.add(tcp_sink_with_delimiter, level="INFO")
 ```
@@ -162,6 +174,7 @@ logger.add(tcp_sink_with_delimiter, level="INFO")
 ```python
 import socket
 from logly import logger
+
 
 class PersistentTCPSink:
     def __init__(self, host: str, port: int):
@@ -182,6 +195,7 @@ class PersistentTCPSink:
             self.sock = None
             self.connect()
             self.sock.sendall(message.encode("utf-8") + b"\n")
+
 
 logger.add(PersistentTCPSink("logserver.example.com", 9000), level="INFO")
 ```
@@ -205,12 +219,14 @@ Send logs over a UDP socket (fire-and-forget, low latency).
 import socket
 from logly import logger
 
+
 def udp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.sendto(
             message.encode("utf-8"),
             ("logserver.example.com", 514),
         )
+
 
 logger.add(udp_sink, level="WARNING")
 ```
@@ -222,13 +238,17 @@ import socket
 import json
 from logly import logger
 
+
 def udp_structured_sink(message: str) -> None:
-    payload = json.dumps({
-        "log": message,
-        "source": "myapp",
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "log": message,
+            "source": "myapp",
+        }
+    ).encode("utf-8")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.sendto(payload, ("logserver.example.com", 514))
+
 
 logger.add(udp_structured_sink, level="WARNING")
 ```
@@ -420,6 +440,7 @@ import json
 import urllib.request
 from logly import logger
 
+
 def reliable_http_sink(message: str) -> None:
     try:
         payload = json.dumps({"log": message}).encode("utf-8")
@@ -434,6 +455,7 @@ def reliable_http_sink(message: str) -> None:
         # Log to stderr if network sink fails
         logger.opt(exception=True).error("HTTP sink failed")
 
+
 logger.add(reliable_http_sink, level="INFO", enqueue=True)
 ```
 
@@ -442,15 +464,19 @@ logger.add(reliable_http_sink, level="INFO", enqueue=True)
 ```python
 from logly import logger
 
+
 def primary_sink(message: str) -> None:
     # Try primary destination
     import urllib.request
+
     urllib.request.urlopen("https://primary.example.com/logs", data=message.encode())
+
 
 def fallback_sink(message: str) -> None:
     # Fallback to local file
     with open("fallback.log", "a") as f:
         f.write(message + "\n")
+
 
 # Primary: network sink
 logger.add(primary_sink, level="INFO", enqueue=True, catch=True)
@@ -469,6 +495,7 @@ Network sinks should handle reconnection automatically:
 import socket
 from logly import logger
 
+
 class ReconnectingTCPSink:
     def __init__(self, host: str, port: int, max_retries=3):
         self.host = host
@@ -485,7 +512,8 @@ class ReconnectingTCPSink:
             except (ConnectionError, OSError) as e:
                 if attempt < self.max_retries - 1:
                     import time
-                    time.sleep(2 ** attempt)
+
+                    time.sleep(2**attempt)
                 else:
                     raise
 
@@ -498,6 +526,7 @@ class ReconnectingTCPSink:
             self.sock = None
             self.connect()
             self.sock.sendall(message.encode("utf-8") + b"\n")
+
 
 logger.add(
     ReconnectingTCPSink("logserver.example.com", 9000),
@@ -514,6 +543,7 @@ import urllib.request
 import time
 from logly import logger
 
+
 def http_sink_with_retry(message: str, max_retries=3) -> None:
     payload = json.dumps({"log": message}).encode("utf-8")
 
@@ -529,9 +559,10 @@ def http_sink_with_retry(message: str, max_retries=3) -> None:
             return
         except Exception as e:
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             else:
                 logger.error("HTTP sink failed after {} retries", max_retries)
+
 
 logger.add(http_sink_with_retry, level="WARNING", enqueue=True)
 ```
@@ -547,12 +578,15 @@ from logly import logger
 
 logger.remove()
 
+
 def http_json_sink(message: str) -> None:
-    payload = json.dumps({
-        "log": message,
-        "source": "myapp",
-        "environment": "production",
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "log": message,
+            "source": "myapp",
+            "environment": "production",
+        }
+    ).encode("utf-8")
 
     request = urllib.request.Request(
         "https://logs.example.com/ingest",
@@ -565,6 +599,7 @@ def http_json_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=5)
+
 
 # HTTP sink for warnings and above
 logger.add(
@@ -607,16 +642,19 @@ from logly import logger
 
 logger.remove()
 
+
 # TCP for reliable local delivery
 def tcp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("logserver.local", 9000))
         sock.sendall(message.encode("utf-8") + b"\n")
 
+
 # UDP for metrics (fire-and-forget)
 def udp_sink(message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.sendto(message.encode("utf-8"), ("logserver.local", 514))
+
 
 # HTTP for cloud logging
 def http_sink(message: str) -> None:
@@ -628,6 +666,7 @@ def http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=5)
+
 
 # All logs to TCP
 logger.add(tcp_sink, level="DEBUG", enqueue=True)
@@ -690,6 +729,7 @@ import time
 
 logger.remove()
 
+
 def batch_http_sink(message: str) -> None:
     payload = json.dumps({"log": message, "ts": time.time()}).encode("utf-8")
     request = urllib.request.Request(
@@ -699,6 +739,7 @@ def batch_http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=10)
+
 
 # High-throughput with batch processing
 logger.add(

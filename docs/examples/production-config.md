@@ -71,6 +71,7 @@ logger.complete()
 
 ```python
 import os
+
 os.environ["LOGLY_AUTOINIT"] = "0"
 
 from logly import logger

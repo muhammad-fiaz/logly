@@ -565,6 +565,7 @@ import json
 import urllib.request
 from logly import logger
 
+
 def http_sink(message: str) -> None:
     # Strip ANSI codes before sending
     payload = json.dumps({"log": message}).encode("utf-8")
@@ -575,6 +576,7 @@ def http_sink(message: str) -> None:
         method="POST",
     )
     urllib.request.urlopen(request, timeout=5)
+
 
 logger.add(
     http_sink,

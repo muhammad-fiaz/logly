@@ -13,8 +13,10 @@ Logly supports async callable sinks, including regular `async def` functions, cl
 import asyncio
 from logly import logger
 
+
 async def async_sink(message: str) -> None:
     await send_to_cloud(message)
+
 
 logger.add(async_sink, level="INFO")
 logger.info("Hello from async sink")
@@ -28,12 +30,14 @@ Logly correctly detects class instances with async `__call__` methods as async s
 import asyncio
 from logly import logger
 
+
 class AsyncCloudSink:
     def __init__(self, api_key: str):
         self.api_key = api_key
 
     async def __call__(self, message: str) -> None:
         await send_to_cloud(message, self.api_key)
+
 
 sink = AsyncCloudSink(api_key="your-key")
 logger.add(sink, level="INFO")
@@ -45,6 +49,7 @@ This also works with stateful sinks that maintain context between log calls:
 
 ```python
 from logly import logger
+
 
 class BufferedAsyncSink:
     def __init__(self):
@@ -59,6 +64,7 @@ class BufferedAsyncSink:
         await send_batch(self.buffer)
         self.buffer.clear()
 
+
 logger.add(BufferedAsyncSink(), level="INFO")
 ```
 
@@ -69,8 +75,10 @@ import asyncio
 import functools
 from logly import logger
 
+
 async def cloud_sink(prefix: str, message: str) -> None:
     await send_to_cloud(f"[{prefix}] {message}")
+
 
 sink = functools.partial(cloud_sink, "APP")
 logger.add(sink, level="INFO")
@@ -87,13 +95,16 @@ Logly automatically detects the event loop context when you add an async sink:
 import asyncio
 from logly import logger
 
+
 async def cloud_sink(message: str) -> None:
     await http_client.post("https://logs.example.com", content=message)
+
 
 async def main():
     logger.add(cloud_sink, level="INFO")
     logger.info("Running inside event loop")
     logger.complete()  # Waits for async tasks
+
 
 asyncio.run(main())
 ```
@@ -103,8 +114,10 @@ asyncio.run(main())
 ```python
 from logly import logger
 
+
 async def cloud_sink(message: str) -> None:
     await send_to_cloud(message)
+
 
 logger.add(cloud_sink, level="INFO")
 logger.info("Running outside event loop")
@@ -123,8 +136,10 @@ from logly import logger
 
 loop = asyncio.new_event_loop()
 
+
 async def async_sink(message: str) -> None:
     await process_log(message)
+
 
 logger.add(async_sink, level="INFO", loop=loop)
 logger.info("Sent to async sink on custom loop")
@@ -141,13 +156,16 @@ Always call `logger.complete()` before your process exits. This:
 ```python
 from logly import logger
 
+
 async def metrics_sink(message: str) -> None:
     await send_to_metrics(message)
+
 
 async def main():
     logger.add(metrics_sink, level="INFO")
     logger.info("Processing...")
     logger.complete()  # Ensures all async messages are flushed
+
 
 asyncio.run(main())
 ```
@@ -158,11 +176,14 @@ asyncio.run(main())
 import asyncio
 from logly import logger
 
+
 async def cloud_sink(message: str) -> None:
     await send_to_cloud(message)
 
+
 async def db_sink(message: str) -> None:
     await insert_into_database(message)
+
 
 async def main():
     logger.add(cloud_sink, level="INFO")
@@ -170,6 +191,7 @@ async def main():
     logger.info("This goes to cloud only")
     logger.error("This goes to both cloud and database")
     logger.complete()
+
 
 asyncio.run(main())
 ```
@@ -180,17 +202,21 @@ asyncio.run(main())
 import asyncio
 from logly import logger
 
+
 def sync_sink(message: str) -> None:
     print(f"SYNC: {message}", end="")
 
+
 async def async_sink(message: str) -> None:
     await send_to_cloud(message)
+
 
 async def main():
     logger.add(sync_sink, level="INFO")
     logger.add(async_sink, level="INFO")
     logger.info("Goes to both sync and async sinks")
     logger.complete()
+
 
 asyncio.run(main())
 ```
@@ -202,9 +228,11 @@ If an async sink raises an exception, the error is logged to stderr but does not
 ```python
 from logly import logger
 
+
 async def risky_sink(message: str) -> None:
     # This might fail
     await unreliable_api_call(message)
+
 
 logger.add(risky_sink, level="ERROR", catch=True)
 ```
@@ -217,6 +245,7 @@ logger.add(risky_sink, level="ERROR", catch=True)
 import asyncio
 from logly import logger
 
+
 async def cloud_logger(message: str) -> None:
     async with aiohttp.ClientSession() as session:
         await session.post(
@@ -224,9 +253,11 @@ async def cloud_logger(message: str) -> None:
             json={"log": message},
         )
 
+
 async def main():
     logger.add(cloud_logger, level="WARNING")
     logger.complete()
+
 
 asyncio.run(main())
 ```
@@ -237,6 +268,7 @@ asyncio.run(main())
 import asyncio
 from logly import logger
 
+
 async def db_logger(message: str) -> None:
     async with aiosqlite.connect("logs.db") as db:
         await db.execute(
@@ -245,9 +277,11 @@ async def db_logger(message: str) -> None:
         )
         await db.commit()
 
+
 async def main():
     logger.add(db_logger, level="INFO")
     logger.complete()
+
 
 asyncio.run(main())
 ```
@@ -258,15 +292,18 @@ asyncio.run(main())
 import asyncio
 from logly import logger
 
+
 async def kafka_sink(message: str) -> None:
     producer = AIOKafkaProducer()
     await producer.start()
     await producer.send("log-topic", message.encode())
     await producer.stop()
 
+
 async def main():
     logger.add(kafka_sink, level="INFO")
     logger.complete()
+
 
 asyncio.run(main())
 ```
@@ -275,13 +312,13 @@ asyncio.run(main())
 
 ```python
 logger.add(
-    async_sink,          # async def callable, class with async __call__, or functools.partial
-    level="INFO",        # Minimum log level
-    format=None,         # Format string or callable
-    loop=None,           # Explicit event loop (optional)
-    catch=True,          # Catch sink errors
-    enqueue=False,       # Use background worker
-    **kwargs,            # Other add() parameters
+    async_sink,  # async def callable, class with async __call__, or functools.partial
+    level="INFO",  # Minimum log level
+    format=None,  # Format string or callable
+    loop=None,  # Explicit event loop (optional)
+    catch=True,  # Catch sink errors
+    enqueue=False,  # Use background worker
+    **kwargs,  # Other add() parameters
 )
 ```
 
@@ -311,8 +348,8 @@ from logly import BatchHttpJsonSink, logger
 # Create a batch HTTP sink
 sink = BatchHttpJsonSink(
     url="https://logs.example.com/ingest",
-    batch_size=100,        # Send after 100 records
-    flush_interval=5.0,    # Or flush every 5 seconds
+    batch_size=100,  # Send after 100 records
+    flush_interval=5.0,  # Or flush every 5 seconds
     headers={"Authorization": "Bearer token"},
 )
 
@@ -335,14 +372,14 @@ from logly import BatchHttpJsonSink
 
 sink = BatchHttpJsonSink(
     url="https://logs.example.com/ingest",
-    batch_size=100,        # Max records per batch
-    flush_interval=5.0,    # Seconds between flushes
-    timeout=10.0,          # HTTP timeout in seconds
-    headers={},            # Custom HTTP headers
+    batch_size=100,  # Max records per batch
+    flush_interval=5.0,  # Seconds between flushes
+    timeout=10.0,  # HTTP timeout in seconds
+    headers={},  # Custom HTTP headers
 )
 
 # Manual control
-sink.write(record)        # Add record to buffer
-sink.flush()              # Force flush all buffered records
-sink.buffer_len()         # Get current buffer size
+sink.write(record)  # Add record to buffer
+sink.flush()  # Force flush all buffered records
+sink.buffer_len()  # Get current buffer size
 ```

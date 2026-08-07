@@ -395,9 +395,11 @@ logger.opt(lazy=True).debug("Result: {}", lambda: expensive_computation())
 import asyncio
 from logly import logger
 
+
 # Async function sink
 async def cloud_sink(message: str) -> None:
     await send_to_cloud(message)
+
 
 # Async class-based sink
 class AsyncDBSink:
@@ -407,12 +409,14 @@ class AsyncDBSink:
     async def __call__(self, message: str) -> None:
         await insert_into_db(self.db_url, message)
 
+
 async def main():
     logger.add(cloud_sink, level="WARNING")
     logger.add(AsyncDBSink("postgresql://localhost/logs"), level="ERROR")
     logger.warning("Sent to cloud")
     logger.error("Sent to both cloud and database")
     logger.complete()
+
 
 asyncio.run(main())
 ```

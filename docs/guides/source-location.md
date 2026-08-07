@@ -47,6 +47,8 @@ Use these tokens in format strings to include source information in output:
 |-------|-------------|---------|
 | `{file}` | Full source file path | `/home/user/app.py` |
 | `{filename}` | Just the filename | `app.py` |
+| `{file.name}` | Filename (Loguru-compatible) | `app.py` |
+| `{file.path}` | Full path (Loguru-compatible) | `/home/user/app.py` |
 | `{line}` | Line number | `42` |
 | `{function}` | Function name | `main` |
 | `{module}` | Module name (no extension) | `app` |
@@ -112,8 +114,7 @@ logger.remove()
 logger.add(
     "app.log",
     format=(
-        "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | "
-        "{filename}:{line} in {function} | {message}"
+        "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {filename}:{line} in {function} | {message}"
     ),
 )
 logger.info("Detailed source info")
@@ -140,16 +141,20 @@ Each `depth` value skips one stack frame:
 ```python
 from logly import logger
 
+
 def log_wrapper(func):
     def wrapper(*args, **kwargs):
         # depth=1 skips the wrapper, points to the caller
         logger.opt(depth=1).info(f"Calling {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 @log_wrapper
 def my_function():
     pass
+
 
 my_function()
 # Source points to the line calling my_function, not the wrapper
@@ -160,24 +165,30 @@ my_function()
 ```python
 from logly import logger
 
+
 def outer_wrapper(func):
     def wrapper(*args, **kwargs):
         # depth=2 skips both outer_wrapper and wrapper
         logger.opt(depth=2).info(f"Outer call to {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 def inner_wrapper(func):
     def wrapper(*args, **kwargs):
         # depth=1 skips only inner_wrapper
         logger.opt(depth=1).info(f"Inner call to {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 @outer_wrapper
 @inner_wrapper
 def decorated_function():
     pass
+
 
 decorated_function()
 ```
@@ -187,6 +198,7 @@ decorated_function()
 ```python
 from logly import logger
 
+
 class UserService:
     def __init__(self):
         self.log = logger.bind(service="user")
@@ -195,6 +207,7 @@ class UserService:
         # depth=1 points to the caller of create_user
         self.log.opt(depth=1).info(f"Creating user: {name}")
         return {"name": name}
+
 
 service = UserService()
 service.create_user("Alice")
@@ -378,11 +391,9 @@ logger.add(
 logger.add(
     "debug.log",
     level="DEBUG",
-    format=(
-        "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | "
-        "{file}:{line} in {function}\n{message}"
-    ),
+    format=("{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {file}:{line} in {function}\n{message}"),
 )
+
 
 def process_data(items):
     results = []
@@ -390,6 +401,7 @@ def process_data(items):
         logger.debug("Processing item: {}", item)
         results.append(item * 2)
     return results
+
 
 process_data([1, 2, 3])
 ```
@@ -448,23 +460,29 @@ logger.add(
     format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {function_location} | {message}",
 )
 
+
 def traced(func):
     """Decorator that logs function calls with correct source location."""
+
     def wrapper(*args, **kwargs):
         logger.opt(depth=1).info("Entering {}", func.__name__)
         result = func(*args, **kwargs)
         logger.opt(depth=1).info("Exiting {}", func.__name__)
         return result
+
     return wrapper
+
 
 @traced
 def calculate(x, y):
     return x + y
 
+
 @traced
 def main():
     result = calculate(1, 2)
     logger.info("Result: {}", result)
+
 
 main()
 # Source locations point to the actual call sites, not the decorator

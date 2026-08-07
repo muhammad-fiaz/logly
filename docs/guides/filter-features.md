@@ -47,8 +47,10 @@ from logly import logger
 
 messages = []
 
+
 def capture(msg: str) -> None:
     messages.append(msg)
+
 
 # Only WARNING and above pass through
 sink_id = logger.add(capture, level="WARNING")
@@ -86,9 +88,9 @@ logger.add("db.log", filter={"name": "database."})
 logger.add("http.log", filter={"name": "http."})
 
 # Usage
-logger.bind(name="auth.login").info("User logged in")      # -> auth.log
-logger.bind(name="database.query").info("SELECT *")        # -> db.log
-logger.bind(name="http.request").info("GET /api/users")    # -> http.log
+logger.bind(name="auth.login").info("User logged in")  # -> auth.log
+logger.bind(name="database.query").info("SELECT *")  # -> db.log
+logger.bind(name="http.request").info("GET /api/users")  # -> http.log
 ```
 
 ## Callable Filtering
@@ -111,8 +113,10 @@ def my_filter(record: dict[str, object]) -> bool:
 ```python
 from logly import logger
 
+
 def only_errors(record: dict[str, object]) -> bool:
     return record.get("level") in {"ERROR", "CRITICAL", "FAIL"}
+
 
 logger.add("errors.log", filter=only_errors)
 ```
@@ -122,9 +126,11 @@ logger.add("errors.log", filter=only_errors)
 ```python
 from logly import logger
 
+
 def important_messages(record: dict[str, object]) -> bool:
     msg = str(record.get("message", "")).lower()
     return "critical" in msg or "urgent" in msg
+
 
 logger.add("important.log", filter=important_messages)
 ```
@@ -134,9 +140,11 @@ logger.add("important.log", filter=important_messages)
 ```python
 from logly import logger
 
+
 def production_only(record: dict[str, object]) -> bool:
     extra = record.get("extra", {})
     return extra.get("env") == "production"
+
 
 logger.add("prod.log", filter=production_only)
 ```
@@ -146,9 +154,11 @@ logger.add("prod.log", filter=production_only)
 ```python
 from logly import logger
 
+
 def module_filter(record: dict[str, object]) -> bool:
     module = record.get("module", "")
     return module in {"auth", "security"}
+
 
 logger.add("security.log", filter=module_filter)
 ```
@@ -158,8 +168,10 @@ logger.add("security.log", filter=module_filter)
 ```python
 from logly import logger
 
+
 def block_all(record: dict[str, object]) -> bool:
     return False
+
 
 logger.add("disabled.log", filter=block_all)
 ```
@@ -178,7 +190,7 @@ logger.add("audit.log", filter={"channel": "audit"})
 
 # Usage
 logger.bind(channel="audit").info("Permission changed")  # -> audit.log
-logger.bind(channel="access").info("Page viewed")        # Not routed
+logger.bind(channel="access").info("Page viewed")  # Not routed
 ```
 
 ### Multiple Fields (AND Logic)
@@ -193,9 +205,9 @@ logger.add(
 )
 
 # Usage
-logger.bind(env="production", service="api").info("Request processed")   # -> filtered.log
-logger.bind(env="production", service="web").info("Page rendered")       # Not routed
-logger.bind(env="staging", service="api").info("Test request")          # Not routed
+logger.bind(env="production", service="api").info("Request processed")  # -> filtered.log
+logger.bind(env="production", service="web").info("Page rendered")  # Not routed
+logger.bind(env="staging", service="api").info("Test request")  # Not routed
 ```
 
 ### Mapping Filter with Patch
@@ -203,9 +215,11 @@ logger.bind(env="staging", service="api").info("Test request")          # Not ro
 ```python
 from logly import logger
 
+
 def add_context(record: dict[str, object]) -> None:
     record.setdefault("extra", {})["service"] = "api"
     record.setdefault("extra", {})["env"] = "production"
+
 
 sink_id = logger.add(
     "api.log",
@@ -269,6 +283,7 @@ logger.add(
 ```python
 from logly import logger
 
+
 def complex_filter(record: dict[str, object]) -> bool:
     extra = record.get("extra", {})
     # Allow production API errors or any critical message
@@ -277,6 +292,7 @@ def complex_filter(record: dict[str, object]) -> bool:
     if record.get("level") in {"CRITICAL", "FATAL"}:
         return True
     return False
+
 
 logger.add(
     "complex.log",
@@ -299,10 +315,10 @@ logger.add("http.log", filter={"name": "http."})
 logger.add("cache.log", filter={"name": "cache."})
 
 # Usage
-logger.bind(name="auth.core").info("Login successful")       # -> auth.log
-logger.bind(name="database.pool").info("Connection acquired") # -> db.log
-logger.bind(name="http.server").info("Request handled")       # -> http.log
-logger.bind(name="cache.redis").info("Cache hit")             # -> cache.log
+logger.bind(name="auth.core").info("Login successful")  # -> auth.log
+logger.bind(name="database.pool").info("Connection acquired")  # -> db.log
+logger.bind(name="http.server").info("Request handled")  # -> http.log
+logger.bind(name="cache.redis").info("Cache hit")  # -> cache.log
 ```
 
 ### Extra-Based Routing
@@ -316,9 +332,9 @@ logger.add("background.log", filter={"type": "background"})
 logger.add("audit.log", filter={"channel": "audit"})
 
 # Usage
-logger.bind(type="request").info("GET /api")           # -> requests.log
-logger.bind(type="background").info("Job completed")   # -> background.log
-logger.bind(channel="audit").info("User modified")     # -> audit.log
+logger.bind(type="request").info("GET /api")  # -> requests.log
+logger.bind(type="background").info("Job completed")  # -> background.log
+logger.bind(channel="audit").info("User modified")  # -> audit.log
 ```
 
 ### Message Content Routing
@@ -326,13 +342,16 @@ logger.bind(channel="audit").info("User modified")     # -> audit.log
 ```python
 from logly import logger
 
+
 def security_filter(record: dict[str, object]) -> bool:
     msg = str(record.get("message", "")).lower()
     return any(word in msg for word in ["unauthorized", "forbidden", "breach", "intrusion"])
 
+
 def performance_filter(record: dict[str, object]) -> bool:
     msg = str(record.get("message", "")).lower()
     return any(word in msg for word in ["slow query", "timeout", "latency", "memory"])
+
 
 logger.add("security.log", filter=security_filter)
 logger.add("performance.log", filter=performance_filter)
@@ -342,6 +361,7 @@ logger.add("performance.log", filter=performance_filter)
 
 ```python
 from logly import logger
+
 
 # Complex filter combining multiple criteria
 def production_api_errors(record: dict[str, object]) -> bool:
@@ -365,6 +385,7 @@ def production_api_errors(record: dict[str, object]) -> bool:
 
     return False
 
+
 logger.add("prod-api-errors.log", filter=production_api_errors)
 ```
 
@@ -386,8 +407,8 @@ from logly import logger
 # Fast: level + mapping filters
 logger.add(
     "production.log",
-    level="INFO",           # Fast level check
-    filter={"env": "prod"}, # Fast mapping check
+    level="INFO",  # Fast level check
+    filter={"env": "prod"},  # Fast mapping check
 )
 
 # Slower: callable filter (use only when needed)
@@ -439,14 +460,13 @@ logger.add("debug.log", level="TRACE")
 logger.add("requests.log", filter={"type": "request"})
 logger.add("background.log", filter={"type": "background"})
 
+
 # Complex filter
 def critical_filter(record: dict[str, object]) -> bool:
     level = record.get("level", "")
     extra = record.get("extra", {})
-    return (
-        level in {"ERROR", "CRITICAL", "FAIL"}
-        or extra.get("priority") == "critical"
-    )
+    return level in {"ERROR", "CRITICAL", "FAIL"} or extra.get("priority") == "critical"
+
 
 logger.add("critical.log", filter=critical_filter)
 
@@ -458,12 +478,12 @@ logger.add(
 )
 
 # Usage examples
-logger.bind(name="auth.core").info("Login successful")                    # -> auth.log, stdout
-logger.bind(name="database.pool").error("Connection failed")              # -> db.log, stderr
-logger.bind(name="http.server").info("GET /api")                          # -> http.log, stdout
-logger.bind(type="request").info("Processing request")                    # -> requests.log
-logger.bind(env="production").error("Service down")                       # -> prod-errors.log, stderr
-logger.opt(exception=True).error("Critical failure")                      # -> critical.log, stderr
+logger.bind(name="auth.core").info("Login successful")  # -> auth.log, stdout
+logger.bind(name="database.pool").error("Connection failed")  # -> db.log, stderr
+logger.bind(name="http.server").info("GET /api")  # -> http.log, stdout
+logger.bind(type="request").info("Processing request")  # -> requests.log
+logger.bind(env="production").error("Service down")  # -> prod-errors.log, stderr
+logger.opt(exception=True).error("Critical failure")  # -> critical.log, stderr
 
 logger.complete()
 ```

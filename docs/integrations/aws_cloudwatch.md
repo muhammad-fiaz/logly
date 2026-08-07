@@ -46,10 +46,12 @@ import logging
 from logly.integrations.aws_cloudwatch import CloudWatchSink
 
 logger = logging.getLogger("myapp")
-logger.addHandler(CloudWatchSink(
-    log_group="my-app",
-    log_stream="main",
-))
+logger.addHandler(
+    CloudWatchSink(
+        log_group="my-app",
+        log_stream="main",
+    )
+)
 logger.setLevel(logging.INFO)
 ```
 

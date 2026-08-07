@@ -23,9 +23,11 @@ logger.complete()
 ```python
 from logly import logger
 
+
 @logger.catch()
 def process():
     raise ValueError("Invalid input")
+
 
 process()
 logger.complete()

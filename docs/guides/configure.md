@@ -108,6 +108,7 @@ def enrich_records(record: dict) -> None:
     record.setdefault("extra", {})["hostname"] = socket.gethostname()
     record.setdefault("extra", {})["pid"] = os.getpid()
 
+
 logger.configure(patcher=enrich_records)
 logger.info("This has hostname and pid automatically")
 ```
@@ -119,9 +120,9 @@ Enable or disable logger names by pattern:
 ```python
 logger.configure(
     activation=[
-        ("myapp.*", True),       # Enable myapp.*
-        ("debug.*", False),       # Disable debug.*
-        ("third_party.*", False), # Disable noisy third-party loggers
+        ("myapp.*", True),  # Enable myapp.*
+        ("debug.*", False),  # Disable debug.*
+        ("third_party.*", False),  # Disable noisy third-party loggers
     ],
 )
 ```

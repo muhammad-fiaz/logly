@@ -12,9 +12,11 @@ Use `opt(lazy=True)` to defer message evaluation until the log is actually emitt
 ```python
 from logly import logger
 
+
 def get_user_data():
     print("Expensive query executed")
     return {"name": "alice", "role": "admin"}
+
 
 logger.opt(lazy=True).debug("User data: {}", get_user_data)
 # "Expensive query executed" only prints if DEBUG is enabled

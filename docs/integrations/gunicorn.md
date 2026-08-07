@@ -51,6 +51,7 @@ worker_class = "logly.integrations.gunicorn.LoglyWorker"
 ```python
 # gunicorn.conf.py
 from logly.integrations.gunicorn import setup_gunicorn_logging
+
 setup_gunicorn_logging(level="INFO")
 ```
 

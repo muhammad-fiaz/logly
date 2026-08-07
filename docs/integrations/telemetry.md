@@ -26,8 +26,10 @@ logger.add(HttpJsonSink(endpoint="http://localhost:8080/logs"), level="INFO")
 from logly import logger
 from logly.integrations.telemetry import TelemetrySink
 
+
 def my_collector(event):
     print(f"Telemetry event: {event}")
+
 
 logger.add(TelemetrySink(emit=my_collector, service_name="my-service"), level="INFO")
 ```

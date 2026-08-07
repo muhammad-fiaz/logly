@@ -56,9 +56,11 @@ logger.add("app.log", enqueue=True)
 # This sink is synchronous
 logger.add("stderr")
 
+
 def worker():
     for i in range(100):
         logger.info("Thread {} message {}", threading.current_thread().name, i)
+
 
 # Multiple threads can log simultaneously
 threads = [threading.Thread(target=worker) for _ in range(4)]
@@ -127,6 +129,7 @@ print("Done")
 ```python
 from logly import logger
 
+
 def main():
     logger.add("app.log", enqueue=True)
 
@@ -135,6 +138,7 @@ def main():
     finally:
         # Always flush before exit
         logger.complete()
+
 
 if __name__ == "__main__":
     main()
@@ -216,11 +220,13 @@ from logly import logger
 logger.remove()
 logger.add("app.log", enqueue=True)
 
+
 async def handle_request(request_id: str):
     with logger.contextualize(request_id=request_id):
         logger.info("Starting request")
         await asyncio.sleep(0.1)
         logger.info("Request complete")
+
 
 async def main():
     await asyncio.gather(
@@ -228,6 +234,7 @@ async def main():
         handle_request("req-2"),
         handle_request("req-3"),
     )
+
 
 asyncio.run(main())
 logger.complete()
@@ -353,6 +360,7 @@ logger.add(
     compression="gzip",
 )
 
+
 def process_batch(items):
     """Process a batch of items with logging."""
     for item in items:
@@ -360,6 +368,7 @@ def process_batch(items):
         result = transform(item)
         logger.trace("Transformed {}", result)
     logger.info("Batch complete: {} items", len(items))
+
 
 # Process millions of items
 for batch in get_batches():
@@ -391,6 +400,7 @@ logger.add(
     backtrace=True,
 )
 
+
 def handle_request(request):
     with logger.contextualize(request_id=request["id"]):
         logger.info("{} {} {}", request["method"], request["path"], request["status"])
@@ -406,6 +416,7 @@ logger.remove()
 
 logger.add("worker.log", enqueue=True)
 
+
 def background_worker():
     """Background worker with its own logging context."""
     with logger.contextualize(worker_id=threading.current_thread().name):
@@ -419,6 +430,7 @@ def background_worker():
                 logger.success("Task {} completed", task["id"])
             except Exception:
                 logger.exception("Task {} failed", task["id"])
+
 
 # Start multiple workers
 workers = [threading.Thread(target=background_worker) for _ in range(4)]
@@ -437,14 +449,17 @@ from logly import logger
 import signal
 import sys
 
+
 def shutdown(signum, frame):
     """Graceful shutdown handler."""
     logger.warning("Received signal {}, shutting down", signum)
     logger.complete()
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, shutdown)
 signal.signal(signal.SIGTERM, shutdown)
+
 
 def main():
     logger.remove()
@@ -462,6 +477,7 @@ def main():
         logger.exception("Fatal error")
     finally:
         logger.complete()
+
 
 if __name__ == "__main__":
     main()

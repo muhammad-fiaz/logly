@@ -42,6 +42,7 @@ uv run maturin develop
 
 ```python
 import logly
+
 print(logly.__version__)
 ```
 

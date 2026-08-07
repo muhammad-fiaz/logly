@@ -55,6 +55,7 @@ app.conf.on_after_configure.connect(setup_celery_logging)
 @app.task
 def my_task():
     from logly.integrations.celery import patch_task_logger
+
     patch_task_logger(my_task.get_logger())
     # ... task logic
 ```
@@ -69,6 +70,7 @@ app = Celery("myapp")
 app.conf.broker_url = "redis://localhost:6379/0"
 app.conf.on_after_configure.connect(setup_celery_logging)
 
+
 @app.task(bind=True)
 def process_order(self, order_id):
     logger = self.get_logger()
@@ -76,6 +78,7 @@ def process_order(self, order_id):
     logger.info("Processing order %s", order_id)
     # ... process order
     logger.info("Order %s completed", order_id)
+
 
 @app.task
 def send_email(recipient, subject, body):

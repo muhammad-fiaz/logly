@@ -41,34 +41,42 @@ with logger.catch(exclude=KeyboardInterrupt):
 ```python
 from logly import logger
 
+
 # Catch all exceptions
 @logger.catch()
 def risky_function():
     raise ValueError("Something went wrong")
 
+
 risky_function()
+
 
 # Custom level
 @logger.catch(level="ERROR")
 def run_job():
     raise RuntimeError("Job error")
 
+
 run_job()
+
 
 # Catch specific exception type
 @logger.catch(ValueError)
 def parse_data():
     raise ValueError("Bad data")
 
+
 # With re-raise
 @logger.catch(reraise=True)
 def critical_function():
     raise TypeError("Critical error")
 
+
 try:
     critical_function()
 except TypeError:
     print("Caught outside")
+
 
 # With onerror callback
 @logger.catch(onerror=lambda exc: cleanup())
@@ -154,20 +162,24 @@ from logly import logger
 with logger.catch(level="CRITICAL"):
     db.connect()
 
+
 # Example 2: HTTP requests
 @logger.catch(level="ERROR")
 def make_request(url: str):
     return httpx.get(url)
+
 
 # Example 3: Background task
 @logger.catch(level="ERROR")
 def background_task():
     process_data()
 
+
 # Example 4: File operations
 with logger.catch():
     with open("data.txt", "w") as f:
         f.write("content")
+
 
 # Example 5: Nested exception handling
 @logger.catch(level="ERROR")

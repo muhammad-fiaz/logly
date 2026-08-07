@@ -43,6 +43,7 @@ ModuleNotFoundError: No module named 'sqlalchemy'
 
 ```python
 from logly.integrations.sqlalchemy import setup_sqlalchemy_logging
+
 setup_sqlalchemy_logging(level="INFO", echo=True)
 ```
 
@@ -67,10 +68,12 @@ setup_sqlalchemy_logging(level="INFO", echo=True)
 
 Base = declarative_base()
 
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
+
 
 engine = create_engine("sqlite:///db.sqlite3")
 Base.metadata.create_all(engine)

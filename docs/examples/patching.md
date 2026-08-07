@@ -12,9 +12,11 @@ Inject fields or transform records globally or per-sink.
 ```python
 from logly import logger
 
+
 def add_service(record):
     record["extra"]["service"] = "auth-api"
     record["extra"]["env"] = "production"
+
 
 logger.add("app.log", patch=add_service)
 logger.info("Patched with service info")
@@ -26,9 +28,11 @@ logger.complete()
 ```python
 from logly import logger
 
+
 def enrich_record(record):
     record["extra"]["version"] = "2.3.1"
     record["extra"]["region"] = "eu-west-1"
+
 
 # Only this sink gets the patch
 sink_id = logger.add("enriched.log", patch=enrich_record)
@@ -42,8 +46,10 @@ logger.remove(sink_id)
 ```python
 from logly import logger
 
+
 def uppercase_messages(record):
     record["message"] = record["message"].upper()
+
 
 logger.add("upper.log", patch=uppercase_messages)
 logger.info("this message will be uppercased")

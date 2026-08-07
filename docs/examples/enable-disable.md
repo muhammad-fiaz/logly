@@ -10,7 +10,7 @@ Logly lets you enable or disable logging for specific module names.
 ## Example
 
 ```python
---8<-- "examples/enable_disable.py"
+--8 < --"examples/enable_disable.py"
 ```
 
 ## How It Works

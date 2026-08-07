@@ -67,9 +67,11 @@ logger.add("app.log", delay=True)
 ```python
 from logly import logger
 
+
 # Simple callable
 def my_sink(message: str) -> None:
     print(f"LOG: {message}", end="")
+
 
 logger.add(my_sink, level="INFO")
 
@@ -77,10 +79,12 @@ logger.add(my_sink, level="INFO")
 messages: list[str] = []
 logger.add(lambda m: messages.append(m), level="DEBUG")
 
+
 # Send to external service
 def send_to_datadog(message: str) -> None:
     # Your Datadog API call here
     pass
+
 
 logger.add(send_to_datadog, level="ERROR")
 ```
@@ -90,17 +94,21 @@ logger.add(send_to_datadog, level="ERROR")
 ```python
 from logly import logger
 
+
 # Any object with a write() method
 class CustomWriter:
     def write(self, message: str) -> None:
         print(f"[CUSTOM] {message}", end="")
+
     def flush(self) -> None:
         pass
+
 
 logger.add(CustomWriter(), level="INFO")
 
 # StringIO
 from io import StringIO
+
 buffer = StringIO()
 logger.add(buffer, level="DEBUG")
 ```

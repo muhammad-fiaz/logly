@@ -17,6 +17,7 @@ By default, Logly adds a `stderr` sink with `level="DEBUG"` when the module is f
 
 ```python
 from logly import logger
+
 # stderr sink is already active at DEBUG level
 logger.info("This prints to stderr immediately")
 ```
@@ -31,6 +32,7 @@ export LOGLY_AUTOINIT=false
 
 ```python
 from logly import logger
+
 # No sinks configured - you must add your own
 logger.add("app.log", level="INFO")
 logger.info("This only goes to app.log")
@@ -73,6 +75,7 @@ export LOGLY_LEVEL=WARNING
 
 ```python
 from logly import logger
+
 # Configuration applied from environment
 logger.info("This respects env overrides")
 ```
@@ -89,6 +92,7 @@ export LOGLY_AUTOINIT=true
 
 ```python
 import os
+
 os.environ["LOGLY_AUTOINIT"] = "false"
 
 from logly import logger

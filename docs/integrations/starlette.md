@@ -58,18 +58,23 @@ from starlette.routing import Route
 from logly import logger
 from logly.integrations.starlette import LoglyMiddleware
 
+
 async def homepage(request):
     logger.info("Homepage accessed")
     return JSONResponse({"message": "Hello World"})
+
 
 async def item(request):
     item_id = request.path_params["item_id"]
     logger.debug("Fetching item {}", item_id)
     return JSONResponse({"item_id": item_id})
 
-app = Starlette(routes=[
-    Route("/", homepage),
-    Route("/items/{item_id}", item),
-])
+
+app = Starlette(
+    routes=[
+        Route("/", homepage),
+        Route("/items/{item_id}", item),
+    ]
+)
 app.add_middleware(LoglyMiddleware)
 ```

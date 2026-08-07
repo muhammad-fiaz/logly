@@ -18,9 +18,9 @@ from logly import logger
 logger.root_dir("/var/log/myapp")
 
 # These paths are relative to the root
-logger.add("app.log")          # /var/log/myapp/app.log
-logger.add("errors.log")       # /var/log/myapp/errors.log
-logger.add("access.log")       # /var/log/myapp/access.log
+logger.add("app.log")  # /var/log/myapp/app.log
+logger.add("errors.log")  # /var/log/myapp/errors.log
+logger.add("access.log")  # /var/log/myapp/access.log
 ```
 
 ::: info
@@ -45,9 +45,9 @@ from logly import logger
 logger.root_dir("/var/log/myapp")
 
 # All of these resolve relative to root_dir
-logger.add("app.log")                          # /var/log/myapp/app.log
-logger.add("errors/app.log")                   # /var/log/myapp/errors/app.log
-logger.add("modules/auth/auth.log")            # /var/log/myapp/modules/auth/auth.log
+logger.add("app.log")  # /var/log/myapp/app.log
+logger.add("errors/app.log")  # /var/log/myapp/errors/app.log
+logger.add("modules/auth/auth.log")  # /var/log/myapp/modules/auth/auth.log
 ```
 
 ## How `root_dir` Interacts with `add()`
@@ -61,8 +61,8 @@ from logly import logger
 
 logger.root_dir("/var/log/myapp")
 
-logger.add("app.log")          # Resolves to /var/log/myapp/app.log
-logger.add("subdir/app.log")   # Resolves to /var/log/myapp/subdir/app.log
+logger.add("app.log")  # Resolves to /var/log/myapp/app.log
+logger.add("subdir/app.log")  # Resolves to /var/log/myapp/subdir/app.log
 ```
 
 ### Absolute Paths
@@ -74,8 +74,8 @@ from logly import logger
 
 logger.root_dir("/var/log/myapp")
 
-logger.add("/tmp/debug.log")              # /tmp/debug.log (not affected)
-logger.add("/var/log/system.log")         # /var/log/system.log (not affected)
+logger.add("/tmp/debug.log")  # /tmp/debug.log (not affected)
+logger.add("/var/log/system.log")  # /var/log/system.log (not affected)
 ```
 
 ### stdout/stderr
@@ -87,9 +87,9 @@ from logly import logger
 
 logger.root_dir("/var/log/myapp")
 
-logger.add("stderr")           # stderr (not affected)
-logger.add("stdout")           # stdout (not affected)
-logger.add(sys.stderr)         # stderr (not affected)
+logger.add("stderr")  # stderr (not affected)
+logger.add("stdout")  # stdout (not affected)
+logger.add(sys.stderr)  # stderr (not affected)
 ```
 
 ## Creating Directories Automatically
@@ -244,9 +244,9 @@ from logly import logger
 logger.root_dir("/var/log/myapp")
 
 # Creates subdirectories as needed
-logger.add("modules/auth/auth.log")     # Creates modules/auth/
-logger.add("modules/db/db.log")         # Creates modules/db/
-logger.add("http/requests.log")         # Creates http/
+logger.add("modules/auth/auth.log")  # Creates modules/auth/
+logger.add("modules/db/db.log")  # Creates modules/db/
+logger.add("http/requests.log")  # Creates http/
 ```
 
 ### Organized by Component

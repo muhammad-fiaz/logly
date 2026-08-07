@@ -100,7 +100,7 @@ logger.add(
     "app.log",
     rotation="daily",
     retention="30 days",  # Keep only last 30 days
-    compression="gzip",   # Compress old files
+    compression="gzip",  # Compress old files
 )
 ```
 
@@ -140,7 +140,7 @@ bound_logger.info("User logged in")
 
 # Wrong: binding after logging
 logger.info("User logged in")  # No extra fields here
-logger.bind(user_id="12345")   # This creates a new logger instance
+logger.bind(user_id="12345")  # This creates a new logger instance
 ```
 
 ## Performance Issues

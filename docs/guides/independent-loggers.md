@@ -21,6 +21,7 @@ db_logger.info("Database connected")  # Only goes to database.log
 
 # The global logger does not see this
 from logly import logger
+
 logger.info("App started")  # Only goes to default stderr
 ```
 
@@ -153,15 +154,16 @@ error_logger.add(
     retention="1 year",
 )
 
+
 @error_logger.catch(reraise=True)
-def risky_operation():
-    ...
+def risky_operation(): ...
 ```
 
 ### Multi-Tenant Logging
 
 ```python
 from logly import Logger
+
 
 def get_tenant_logger(tenant_id: str) -> Logger:
     log = Logger(name=f"tenant.{tenant_id}")
@@ -173,6 +175,7 @@ def get_tenant_logger(tenant_id: str) -> Logger:
     )
     return log.bind(tenant_id=tenant_id)
 
+
 tenant_log = get_tenant_logger("acme-corp")
 tenant_log.info("Data imported")
 ```
@@ -181,6 +184,7 @@ tenant_log.info("Data imported")
 
 ```python
 from logly import Logger
+
 
 def test_my_function():
     test_logger = Logger(name="test")

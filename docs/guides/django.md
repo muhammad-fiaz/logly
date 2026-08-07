@@ -64,6 +64,7 @@ MIDDLEWARE = [
 ```python
 from logly import logger
 
+
 def my_view(request):
     logger.info("Processing request for {}", request.path)
     # Output includes request_id, method, path, client_ip
