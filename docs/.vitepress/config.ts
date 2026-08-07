@@ -23,6 +23,10 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: false,
 
+  rewrites: {
+    "quickstart.md": "getting-started.md",
+  },
+
   sitemap: {
     hostname: SITE_URL,
     lastmodDateOnly: false,
@@ -160,7 +164,10 @@ gtag('config', '${GA_ID}');`,
   transformPageData(pageData) {
     const pageTitle = pageData.title || SITE_NAME;
     const pageDescription = pageData.description || SITE_DESCRIPTION;
-    const canonicalUrl = `${SITE_URL}/${pageData.relativePath.replace(/\.md$/, ".html")}`;
+    const canonicalPath = pageData.relativePath
+      .replace(/\.md$/, ".html")
+      .replace(/\/index\.html$/, "/");
+    const canonicalUrl = `${SITE_URL}/${canonicalPath}`;
 
     pageData.frontmatter.head ??= [];
     pageData.frontmatter.head.push(
