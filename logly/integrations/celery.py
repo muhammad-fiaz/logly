@@ -51,7 +51,7 @@ def setup_celery_logging(
         from logly.integrations.celery import setup_celery_logging
 
         app = Celery("myapp")
-        app.conf.on_after_configure.connect(setup_celery_logging)
+        app.on_after_configure.connect(setup_celery_logging)
 
     Args:
         level: Minimum log level for Celery logs (default ``"INFO"``).

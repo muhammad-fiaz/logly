@@ -63,11 +63,13 @@ logger.add(
     NewRelicSink(
         license_key="abc123def456",
         app_name="my-api",
-        insert_key="your-insights-insert-key",
-        region="US",
     ),
     level="INFO",
 )
+
+Credentials may also come from the `NEW_RELIC_LICENSE_KEY` and
+`NEW_RELIC_APP_NAME` environment variables (constructor arguments take
+precedence). Events are recorded with `newrelic.agent.record_log_event`.
 
 logger.info("Deployment completed", version="2.1.0")
 logger.error("Database timeout", query="SELECT * FROM users")

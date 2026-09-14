@@ -16,7 +16,7 @@ from logly.integrations.celery import setup_celery_logging
 app = Celery("myapp")
 
 # Connect Logly to Celery's logging
-app.conf.on_after_configure.connect(setup_celery_logging)
+app.on_after_configure.connect(setup_celery_logging)
 ```
 
 ## Configuration
