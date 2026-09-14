@@ -49,6 +49,26 @@ def _check_structlog() -> None:
         raise ImportError(_IMPORT_MSG) from None  # pragma: no cover
 
 
+def _forward_to_logly(
+    logger_name: str | None,
+    method_name: str,
+    event_dict: dict[str, Any],
+    *,
+    include_logger_name: bool = True,
+) -> dict[str, Any]:
+    """Forward one structlog event to Logly (shared by processor/renderer)."""
+    level = method_name.upper()
+    message = event_dict.pop("event", "")
+    extra = {k: str(v) for k, v in event_dict.items() if k != "level"}
+
+    bound = logger.bind(**extra) if extra else logger
+    if include_logger_name and logger_name:
+        bound = bound.bind(logger_name=logger_name)
+
+    bound.log(level, str(message))
+    return event_dict
+
+
 def logly_processor(
     logger_name: str | None = None,
     wrapper_class: Any = None,
@@ -89,16 +109,7 @@ def logly_processor(
         event_method: str,
         event_dict: dict[str, Any],
     ) -> dict[str, Any]:
-        level = event_method.upper()
-        message = event_dict.pop("event", "")
-        extra = {k: str(v) for k, v in event_dict.items() if k != "level"}
-
-        bound = logger.bind(**extra) if extra else logger
-        if logger_name:
-            bound = bound.bind(logger_name=logger_name)
-
-        bound.log(level, str(message))
-        return event_dict
+        return _forward_to_logly(logger_name, event_method, event_dict)
 
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
@@ -153,9 +164,6 @@ class LoglyRenderer:
             method_name: Log method name (e.g. ``"info"``).
             event_dict: Structlog event dictionary.
         """
-        level = method_name.upper()
-        message = event_dict.pop("event", "")
-        extra = {k: str(v) for k, v in event_dict.items() if k != "level"}
-
-        bound = logger.bind(**extra) if extra else logger
-        bound.log(level, str(message))
+        # Preserve legacy renderer behavior: logger_name is accepted
+        # for API compat but not bound (processor binds it).
+        _forward_to_logly(logger_name, method_name, event_dict, include_logger_name=False)

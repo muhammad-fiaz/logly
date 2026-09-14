@@ -783,6 +783,8 @@ logger.add(TelemetrySink(emit=send_to_collector))
 
 ### HttpJsonSink
 
+Back-compat subclass of `HttpHandler` (see [HTTP](#http)). Prefer `HttpHandler` for new code.
+
 ```python
 from logly import logger
 from logly.integrations.telemetry import HttpJsonSink
@@ -799,9 +801,10 @@ logger.add(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `endpoint` | `str` | | HTTP endpoint URL |
+| `endpoint` | `str` | | HTTP endpoint URL (alias for `HttpHandler.url`) |
+| `url` | `str \| None` | `None` | Preferred URL arg (overrides `endpoint`) |
 | `headers` | `dict \| None` | `None` | Request headers |
-| `timeout` | `int` | `10` | Request timeout (seconds) |
+| `timeout` | `float` | `5.0` | Request timeout (seconds) |
 
 ---
 
@@ -929,36 +932,6 @@ logger.add(
 | `routing_key` | `str \| None` | `None` | Routing key |
 | `durable` | `bool` | `True` | Durable queue |
 | `timeout` | `int` | `10` | Connection timeout (seconds) |
-
----
-
-## Pydantic
-
-### PydanticLogHandler
-
-```python
-import logging
-from logly.integrations.pydantic import PydanticLogHandler
-
-handler = PydanticLogHandler()
-handler.setLevel(logging.INFO)
-```
-
-Routes Python `logging` records through Logly for Pydantic-based applications. No extra dependencies.
-
-### LoglyFormatter
-
-```python
-import logging
-from logly.integrations.pydantic import LoglyFormatter
-
-handler = logging.StreamHandler()
-handler.setFormatter(LoglyFormatter())
-```
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `logly_logger` | `Logger \| None` | `None` | Logly logger instance (uses global logger) |
 
 ---
 

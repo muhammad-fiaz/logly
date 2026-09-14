@@ -26,7 +26,6 @@ Logly provides first-class integrations for popular Python frameworks, tools, an
 | [APScheduler](apscheduler) | Route APScheduler job logs through Logly | `uv add logly[apscheduler]` |
 | [RQ](rq) | Route RQ worker job logs through Logly | `uv add logly[rq]` |
 | [Celery](celery) | Task logging for Celery workers | `uv add logly[celery]` |
-| [Pydantic](pydantic) | Route Pydantic application logs through Logly | `uv add logly[pydantic]` |
 | [tqdm](tqdm) | Log output through tqdm progress bars | `uv add logly[tqdm]` |
 | [Propagate](propagate) | Propagate records to stdlib `logging` hierarchy | Built-in |
 
@@ -36,7 +35,7 @@ Logly provides first-class integrations for popular Python frameworks, tools, an
 |-------------|-------------|---------|
 | [OpenTelemetry](opentelemetry) | Export log records to OTel collectors | `uv add logly[opentelemetry]` |
 | [Prometheus](prometheus) | Expose log metrics via Prometheus | `uv add logly[prometheus]` |
-| [Loki](loki) | Ship logs to Grafana Loki | `uv add logly[loki]` |
+| [Loki](loki) | Ship logs to Grafana Loki | Built-in |
 | [Sentry](sentry) | Forward error logs to Sentry | `uv add logly[sentry]` |
 | [Elasticsearch](elasticsearch) | Index logs into Elasticsearch | `uv add logly[elasticsearch]` |
 | [Datadog](datadog) | Send logs to Datadog Logs API | Built-in |
