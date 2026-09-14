@@ -46,7 +46,6 @@ logger.add(
     SeqSink(
         server_url="http://localhost:5341",
         api_key="your-api-key",
-        event_type="MyApp",
     ),
     level="INFO",
 )

@@ -433,16 +433,8 @@ from logly import paint_themed
 
 logger.remove()
 
-# Define custom theme
-theme = {
-    "success": "bold green",
-    "error": "bold red",
-    "warning": "bold yellow",
-    "info": "cyan",
-    "debug": "dim",
-}
-
-logger.add("stderr", colorize=True, theme=theme)
+# Theme-aware colors come from the built-in theme via paint_themed
+logger.add("stderr", colorize=True)
 
 logger.info("{}", paint_themed("Success!", "success"))
 logger.error("{}", paint_themed("Failed!", "error"))
@@ -722,15 +714,15 @@ from logly import logger
 
 logger.remove()
 
-# High-throughput: disable source capture, use simple colors
+# High-throughput: disable source capture per call, use simple colors
 logger.add(
     "app.log",
     level="INFO",
-    capture=False,
     enqueue=True,
     rotation="100 MB",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {message}",
 )
+logger.opt(capture=False).info("fast path without source info")
 
 # Console with colors (cached escape sequences)
 logger.add(

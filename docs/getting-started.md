@@ -200,10 +200,10 @@ LOGGING = {
 
 ```python
 from flask import Flask
-from logly.integrations.flask import LoglyHandler
+from logly.integrations.flask import init_app
 
 app = Flask(__name__)
-LoglyHandler().init_app(app)
+init_app(app)
 ```
 
 ## Async Logging

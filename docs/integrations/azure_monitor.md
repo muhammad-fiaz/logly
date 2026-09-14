@@ -57,8 +57,6 @@ from logly.integrations.azure_monitor import AzureMonitorSink
 logger.add(
     AzureMonitorSink(
         connection_string="InstrumentationKey=abc123;IngestionEndpoint=https://.../",
-        service_name="my-api",
-        cloud_role="production",
     ),
     level="INFO",
 )

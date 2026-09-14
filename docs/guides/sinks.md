@@ -134,10 +134,10 @@ Every `add()` call accepts these options:
 | `delay` | `bool` | `False` | Delay file opening |
 | `catch` | `bool` | `True` | Catch sink errors |
 | `mode` | `str` | `"a"` | File mode (`"a"` or `"w"`) |
-| `backtrace` | `bool` | `False` | Enable backtrace on exceptions |
+| `backtrace` | `bool` | `True` | Enable backtrace on exceptions |
 | `diagnose` | `bool` | `False` | Enable diagnostic mode |
 | `context` | `str \| multiprocessing.context.BaseContext \| None` | `None` | Multiprocessing context |
-| `buffering` | `int` | `-1` | File buffering |
+| `buffering` | `int` | `1` | File buffering |
 | `loop` | `asyncio.AbstractEventLoop \| None` | `None` | Event loop for async sinks |
 | `opener` | `Callable \| None` | `None` | Custom file opener |
 

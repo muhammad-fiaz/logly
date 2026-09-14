@@ -100,7 +100,7 @@ exc = ValueError("bad value")
 logger.opt(exception=exc).error("Value error occurred")
 
 # Exception with lazy evaluation
-logger.opt(exception=True).lazy().error("Error: {}", lambda: expensive_computation())
+logger.opt(exception=True, lazy=True).error("Error: {}", lambda: expensive_computation())
 ```
 
 ## exception() Method

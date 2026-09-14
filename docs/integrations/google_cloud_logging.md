@@ -58,8 +58,6 @@ logger.add(
     GoogleCloudLoggingSink(
         project_id="my-project",
         log_name="my-app-log",
-        resource_type="gae_app",
-        labels={"environment": "production"},
     ),
     level="INFO",
 )

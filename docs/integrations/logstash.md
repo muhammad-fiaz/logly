@@ -27,9 +27,9 @@ logger.setLevel(logging.INFO)
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `host` | `"localhost"` | Logstash host |
-| `port` | `5044` | Logstash port |
+| `port` | `5959` | Logstash port |
 | `protocol` | `"tcp"` | `"tcp"` or `"udp"` |
-| `prefix` | `""` | Prefix for extra fields |
+| `key_prefix` | `""` | Prefix for extra fields |
 | `tags` | `[]` | List of tags to add to each record |
 | `message_type` | `"logstash"` | Message type field |
 
@@ -45,9 +45,9 @@ logger.setLevel(logging.DEBUG)
 # TCP handler
 tcp_handler = LogstashSink(
     host="logstash.example.com",
-    port=5044,
+    port=5959,
     protocol="tcp",
-    prefix="app",
+    key_prefix="app",
     tags=["production", "web"],
 )
 logger.addHandler(tcp_handler)

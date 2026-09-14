@@ -29,9 +29,10 @@ logger.setLevel(logging.INFO)
 | `host` | `"localhost"` | Graylog server host |
 | `port` | `12201` | Graylog server port |
 | `protocol` | `"udp"` | `"tcp"` or `"udp"` |
-| `version` | `"1.1"` | GELF version (`"1.0"` or `"1.1"`) |
-| `compress` | `True` | Enable zlib compression (UDP only) |
-| `chunk_size` | `1420` | UDP chunk size in bytes |
+| `graylog_version` | `"1.1"` | GELF version (`"1.0"` or `"1.1"`) |
+| `chunk_size` | `8192` | UDP chunk size in bytes |
+
+Large UDP payloads are zlib-compressed automatically.
 
 ## Full Example
 
@@ -42,14 +43,13 @@ from logly.integrations.graylog import GraylogSink
 logger = logging.getLogger("myapp")
 logger.setLevel(logging.DEBUG)
 
-# UDP with compression
+# UDP with chunking
 handler = GraylogSink(
     host="graylog.example.com",
     port=12201,
     protocol="udp",
-    version="1.1",
-    compress=True,
-    chunk_size=1420,
+    graylog_version="1.1",
+    chunk_size=8192,
 )
 logger.addHandler(handler)
 

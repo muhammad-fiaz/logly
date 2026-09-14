@@ -540,7 +540,7 @@ from logly import logger
 try:
     risky_operation()
 except Exception:
-    logger.opt(exception=True).lazy().error("Error: {}", lambda: expensive_computation())
+    logger.opt(exception=True, lazy=True).error("Error: {}", lambda: expensive_computation())
 ```
 
 ### Exception in Context

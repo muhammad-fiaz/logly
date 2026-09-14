@@ -49,7 +49,7 @@ logger.add(
         service="my-api",
         source="python",
         tags=["env:production", "team:backend"],
-        hostname="web-01",
+        host="web-01",
     ),
     level="INFO",
 )

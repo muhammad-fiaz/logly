@@ -98,8 +98,8 @@ from logly import logger
 # Keep last 30 days
 logger.add("app.log", retention="30 days")
 
-# Keep last 100 MB
-logger.add("app.log", retention="100 MB")
+# Rotate at 100 MB (size belongs to rotation, not retention)
+logger.add("app.log", rotation="100 MB")
 
 # Keep last 10 files
 logger.add("app.log", retention=10)
@@ -127,8 +127,8 @@ with logger.contextualize(request_id="abc"):
 from logly import logger
 
 
-# As decorator
-@logger.catch
+# As decorator (note the parentheses)
+@logger.catch()
 def risky_operation(): ...
 
 
@@ -164,8 +164,13 @@ logger.add("app.json", serialize=True)
 ```python
 from logly import logger
 
-# Parse with pattern
-entries = logger.parse("app.log", pattern="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}")
+# Parse with pattern (a regex with named groups; returns a generator)
+entries = list(
+    logger.parse(
+        "app.log",
+        pattern=r"(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \| (?P<level>\w+) \| (?P<message>.*)",
+    )
+)
 ```
 
 ## Integrations

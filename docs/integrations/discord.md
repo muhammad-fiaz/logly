@@ -31,7 +31,7 @@ from logly.integrations.discord import DiscordHandler
 
 handler = DiscordHandler(
     "https://discord.com/api/webhooks/...",
-    level="WARNING",
+    username="Logly",
 )
 logger.add(handler, level="WARNING")
 ```

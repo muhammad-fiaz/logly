@@ -72,9 +72,9 @@ Register custom levels during configuration:
 ```python
 logger.configure(
     levels=[
-        {"name": "SECURITY", "no": 45, "color": "<red><bold>"},
-        {"name": "METRIC", "no": 28, "color": "<blue>"},
-        {"name": "AUDIT", "no": 35, "color": "<magenta>"},
+        {"name": "SECURITY", "no": 45, "color": "bold red"},
+        {"name": "METRIC", "no": 28, "color": "blue"},
+        {"name": "AUDIT", "no": 35, "color": "magenta"},
     ],
     handlers=[
         {"sink": "stderr", "level": "INFO"},
@@ -139,7 +139,7 @@ logger.configure(
         {"sink": "logs/errors.log", "level": "ERROR", "serialize": True},
     ],
     levels=[
-        {"name": "SECURITY", "no": 45, "color": "<red><bold>"},
+        {"name": "SECURITY", "no": 45, "color": "bold red"},
     ],
     extra={"service": "api", "env": "prod"},
     patcher=lambda r: r.setdefault("extra", {}).setdefault("region", "us-east-1"),

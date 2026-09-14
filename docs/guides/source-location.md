@@ -31,8 +31,8 @@ logger.info("Has file/line/function info")
 # Disable source capture for a single call
 logger.opt(capture=False).info("No source info captured")
 
-# Disable source capture for an entire sink
-logger.add("app.log", capture=False, format="{time} | {level} | {message}")
+# Disable source capture per call (capture is an opt() option, not a sink option)
+logger.opt(capture=False).info("No source info captured")
 ```
 
 ::: tip Performance
@@ -344,14 +344,14 @@ from logly import logger
 
 logger.remove()
 
-# High-throughput: disable source capture entirely
+# High-throughput: disable source capture per call
 logger.add(
     "app.log",
     level="INFO",
-    capture=False,
     enqueue=True,
     rotation="100 MB",
 )
+logger.opt(capture=False).info("fast path without source info")
 
 # Production: minimal source info
 logger.add(
@@ -419,8 +419,8 @@ logger.add(
     level="INFO",
     format="{time:HH:mm:ss} | <level>{level:<8}</level> | <level>{message}</level>",
     colorize=True,
-    capture=False,
 )
+logger.opt(capture=False).info("fast console message")
 
 # File with minimal source info
 logger.add(
