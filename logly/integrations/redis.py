@@ -87,7 +87,7 @@ class RedisHandler:
 
         redis_mod = importlib.import_module("redis")  # pragma: no cover
 
-        self._client = redis_mod.Redis.fromurl(
+        self._client = redis_mod.Redis.from_url(
             url,
             socket_timeout=timeout,
             decode_responses=True,

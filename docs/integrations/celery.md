@@ -46,7 +46,7 @@ from celery import Celery
 from logly.integrations.celery import setup_celery_logging
 
 app = Celery("myapp")
-app.conf.on_after_configure.connect(setup_celery_logging)
+app.on_after_configure.connect(setup_celery_logging)
 ```
 
 ## Patch Task Logger
@@ -68,7 +68,7 @@ from logly.integrations.celery import setup_celery_logging, patch_task_logger
 
 app = Celery("myapp")
 app.conf.broker_url = "redis://localhost:6379/0"
-app.conf.on_after_configure.connect(setup_celery_logging)
+app.on_after_configure.connect(setup_celery_logging)
 
 
 @app.task(bind=True)

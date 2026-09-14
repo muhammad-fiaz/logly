@@ -28,6 +28,7 @@ import uuid
 from typing import Any
 
 from logly import logger
+from logly.integrations.stdlib import _resolve_level
 
 try:
     from flask import Flask, g, request  # pragma: no cover
@@ -49,27 +50,6 @@ _IMPORT_MSG = (  # pragma: no cover
 )  # pragma: no cover
 
 __all__ = ["LoglyHandler", "init_app"]
-
-
-def _resolve_level(record: logging.LogRecord) -> str:
-    """Resolve a Python logging record to a Logly level name.
-
-    Maps Python's 5 standard levels to their Logly equivalents.
-
-    Args:
-        record: The Python logging record.
-
-    Returns:
-        Logly level name string.
-    """
-    stdlib_map: dict[int, str] = {
-        logging.DEBUG: "DEBUG",
-        logging.INFO: "INFO",
-        logging.WARNING: "WARNING",
-        logging.ERROR: "ERROR",
-        logging.CRITICAL: "CRITICAL",
-    }
-    return stdlib_map.get(record.levelno, record.levelname.upper())
 
 
 class LoglyHandler(logging.Handler):

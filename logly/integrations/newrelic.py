@@ -23,7 +23,7 @@ Install with::
 from __future__ import annotations
 
 import importlib.util
-from typing import Any
+import os
 
 _IMPORT_MSG = (  # pragma: no cover
     "newrelic is required for Logly New Relic integration.\n"
@@ -83,14 +83,15 @@ class NewRelicSink:
 
         import newrelic.agent  # pragma: no cover
 
-        settings: dict[str, Any] = {}
+        # newrelic.agent.initialize() only accepts config-file-style
+        # options, so credentials are passed via the documented
+        # environment variables instead of keyword arguments.
         if license_key:
-            settings["license_key"] = license_key
+            os.environ["NEW_RELIC_LICENSE_KEY"] = license_key
         if app_name:
-            settings["app_name"] = app_name
+            os.environ["NEW_RELIC_APP_NAME"] = app_name
 
-        if settings:
-            newrelic.agent.initialize(**settings)  # pragma: no cover
+        newrelic.agent.initialize()  # pragma: no cover
 
         self._application = newrelic.agent.application()  # pragma: no cover
 
@@ -107,12 +108,11 @@ class NewRelicSink:
         msg = strip_ansi(message.rstrip("\n"))
         severity = self._detect_severity(msg)
 
-        with newrelic.agent.GroupTrace(speedscope=True, group="Logly"):
-            newrelic.agent.log(  # pragma: no cover
-                msg,
-                level=severity,
-                attributes={},
-            )
+        newrelic.agent.record_log_event(  # pragma: no cover
+            msg,
+            level=severity,
+            application=self._application,
+        )
 
     @staticmethod
     def _detect_severity(message: str) -> str:
@@ -126,18 +126,18 @@ class NewRelicSink:
         """
         upper = message.upper()
         if "FATAL" in upper or "CRITICAL" in upper:
-            return "critical"
+            return "CRITICAL"
         if "ERROR" in upper or "FAIL" in upper:
-            return "error"
+            return "ERROR"
         if "WARNING" in upper or "WARN" in upper:
-            return "warning"
+            return "WARNING"
         if "NOTICE" in upper:
-            return "info"
+            return "INFO"
         if "SUCCESS" in upper:
-            return "info"
+            return "INFO"
         if "DEBUG" in upper or "TRACE" in upper:
-            return "debug"
-        return "info"
+            return "DEBUG"
+        return "INFO"
 
     def flush(self) -> None:
         """No-op for New Relic sink."""

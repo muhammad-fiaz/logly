@@ -139,7 +139,6 @@ pip install "logly[click]"                   # Click CLI output
 pip install "logly[typer]"                   # Typer CLI output
 pip install "logly[apscheduler]"             # APScheduler job logging
 pip install "logly[rq]"                      # RQ worker logging
-pip install "logly[pydantic]"                # Pydantic log handler
 pip install "logly[tqdm]"                    # tqdm progress bar sink
 
 # Monitoring & Observability
@@ -147,10 +146,8 @@ pip install "logly[opentelemetry]"           # OpenTelemetry export
 pip install "logly[prometheus]"              # Prometheus metrics
 pip install "logly[elasticsearch]"           # Elasticsearch indexing
 pip install "logly[sentry]"                  # Sentry error tracking
-pip install "logly[datadog]"                 # Datadog Logs API (stdlib)
 pip install "logly[newrelic]"                # New Relic agent
-pip install "logly[seq]"                     # Seq structured logs (stdlib)
-pip install "logly[telemetry]"               # Generic telemetry (stdlib)
+# Built-in (no extra needed): datadog, seq, telemetry, loki
 
 # Cloud Providers
 pip install "logly[aws]"                     # AWS CloudWatch Logs
@@ -164,25 +161,23 @@ pip install "logly[mongodb]"                 # MongoDB collections
 pip install "logly[postgresql]"              # PostgreSQL tables
 pip install "logly[rabbitmq]"                # RabbitMQ queues
 
-# Log Aggregation
-pip install "logly[logstash]"                # Logstash TCP/UDP (stdlib)
-pip install "logly[graylog]"                 # Graylog GELF (stdlib)
-pip install "logly[loki]"                    # Grafana Loki
+# Log Aggregation (all built-in, no extra needed)
+# logstash, graylog, loki use only Python stdlib
 
 # Notifications
-pip install "logly[discord]"                 # Discord webhooks (stdlib)
-pip install "logly[slack]"                   # Slack webhooks (stdlib)
-pip install "logly[email]"                   # Email via SMTP (stdlib)
-pip install "logly[http]"                    # HTTP endpoint (stdlib)
+pip install "logly[discord]"                 # Discord webhooks (urllib by default, aiohttp optional)
+pip install "logly[slack]"                   # Slack webhooks (urllib by default, slack-sdk optional)
+# Built-in (no extra needed): email, http
 
 # Utilities
 pip install "logly[compression]"             # Zstandard compression
+pip install "logly[pydantic]"                # Optional: nest logly.models in your pydantic BaseModels
 
 # Everything
-pip install "logly[all]"                     # all of the above
+pip install "logly[all]"                     # all of the above (includes pydantic)
 ```
 
-> Several integrations (`datadog`, `seq`, `logstash`, `graylog`, `discord`, `slack`, `email`, `http`, `telemetry`) use only Python stdlib and require no extra dependencies.
+> Several integrations (`datadog`, `seq`, `logstash`, `graylog`, `loki`, `email`, `http`, `telemetry`, `stdlib`, `propagate`) use only Python stdlib and require no extra dependencies. `discord`/`slack` work with stdlib `urllib` by default; their extras (`aiohttp`, `slack-sdk`) are optional.
 
 > The `kafka` extra requires `librdkafka` to be installed on your system. See [Kafka integration docs](https://muhammad-fiaz.github.io/logly/integrations/kafka/) for details.
 
@@ -210,7 +205,6 @@ uv add "logly[click]"
 uv add "logly[typer]"
 uv add "logly[apscheduler]"
 uv add "logly[rq]"
-uv add "logly[pydantic]"
 uv add "logly[tqdm]"
 
 # Monitoring & Observability
@@ -218,10 +212,8 @@ uv add "logly[opentelemetry]"
 uv add "logly[prometheus]"
 uv add "logly[elasticsearch]"
 uv add "logly[sentry]"
-uv add "logly[datadog]"
 uv add "logly[newrelic]"
-uv add "logly[seq]"
-uv add "logly[telemetry]"
+# Built-in (no extra needed): datadog, seq, telemetry, loki
 
 # Cloud Providers
 uv add "logly[aws]"
@@ -235,22 +227,20 @@ uv add "logly[mongodb]"
 uv add "logly[postgresql]"
 uv add "logly[rabbitmq]"
 
-# Log Aggregation
-uv add "logly[logstash]"
-uv add "logly[graylog]"
-uv add "logly[loki]"
+# Log Aggregation (all built-in, no extra needed)
+# logstash, graylog, loki use only Python stdlib
 
 # Notifications
 uv add "logly[discord]"
 uv add "logly[slack]"
-uv add "logly[email]"
-uv add "logly[http]"
+# Built-in (no extra needed): email, http
 
 # Utilities
 uv add "logly[compression]"
+uv add "logly[pydantic]"  # Optional: nest logly.models in your pydantic BaseModels
 
 # Everything
-uv add "logly[all]"
+uv add "logly[all]"  # includes pydantic
 ```
 
 </details>

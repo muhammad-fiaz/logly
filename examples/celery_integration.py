@@ -13,7 +13,7 @@ app = Celery("myapp")
 
 # Connect Logly to Celery's logging system
 # This intercepts logs from celery, celery.app, celery.task, celery.worker
-app.conf.on_after_configure.connect(setup_celery_logging)
+app.on_after_configure.connect(setup_celery_logging)
 
 
 @app.task

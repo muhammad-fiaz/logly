@@ -113,8 +113,7 @@ python examples/basic_logging.py
 
 | Example | Description |
 |---------|-------------|
-| [stdlib_integration.py](stdlib_integration.py) | Bridge Python `logging` to Logly. |
+| [stdlib_integration.py](stdlib_integration.py) | Bridge Python `logging` to Logly. Use this for Pydantic apps too. |
 | [structlog_integration.py](structlog_integration.py) | Structlog processor integration. |
-| [pydantic_integration.py](pydantic_integration.py) | Pydantic model logging. |
 | [propagate_integration.py](propagate_integration.py) | Log propagation across library boundaries. |
 | [telemetry_integration.py](telemetry_integration.py) | OpenTelemetry and distributed tracing integration. |

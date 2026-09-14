@@ -18,18 +18,18 @@ class TestRedisHandlerInit:
     def test_init_creates_client(self) -> None:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler("redis://localhost:6379/0", key="test:logs")
                 assert handler.key == "test:logs"
                 assert handler.mode == "list"
-                mock_redis.Redis.fromurl.assert_called_once()
+                mock_redis.Redis.from_url.assert_called_once()
 
     def test_init_default_params(self) -> None:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler()
@@ -40,7 +40,7 @@ class TestRedisHandlerInit:
     def test_init_stream_mode(self) -> None:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler(mode="stream")
@@ -51,7 +51,7 @@ class TestRedisHandlerWrite:
     def _make_handler(self, mode: str = "list") -> RedisHandler:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler(mode=mode)  # type: ignore[arg-type]
@@ -85,7 +85,7 @@ class TestRedisHandlerFlush:
     def test_flush_noop(self) -> None:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler()
@@ -96,7 +96,7 @@ class TestRedisHandlerClose:
     def test_close_calls_client_close(self) -> None:
         mock_redis = MagicMock()
         mock_client = MagicMock()
-        mock_redis.Redis.fromurl.return_value = mock_client
+        mock_redis.Redis.from_url.return_value = mock_client
         with patch("importlib.util.find_spec", return_value=MagicMock()):
             with patch.dict(sys.modules, {"redis": mock_redis}):
                 handler = RedisHandler()

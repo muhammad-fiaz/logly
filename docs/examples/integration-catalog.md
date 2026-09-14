@@ -26,7 +26,6 @@ package is installed:
 - [FastAPI](https://github.com/muhammad-fiaz/logly/blob/main/examples/fastapi_integration.py)
 - [Flask](https://github.com/muhammad-fiaz/logly/blob/main/examples/flask_integration.py)
 - [Gunicorn](https://github.com/muhammad-fiaz/logly/blob/main/examples/gunicorn_integration.py)
-- [Pydantic](https://github.com/muhammad-fiaz/logly/blob/main/examples/pydantic_integration.py)
 - [Rich](https://github.com/muhammad-fiaz/logly/blob/main/examples/rich_integration.py)
 - [RQ](https://github.com/muhammad-fiaz/logly/blob/main/examples/rq_integration.py)
 - [SQLAlchemy](https://github.com/muhammad-fiaz/logly/blob/main/examples/sqlalchemy_integration.py)

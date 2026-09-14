@@ -205,6 +205,11 @@ class Logger:
         self._bound = dict(bound or {})
         self._patchers = patchers
         self._options = options or _Options()
+        # Mirror of the native engine's disabled-name set. Consulted first
+        # in log() so disabled logging returns without any formatting,
+        # frame inspection, or FFI crossing. The native engine remains the
+        # source of truth for direct _native users.
+        self._disabled: set[str] = set()
         self._start_time = time.time()
         self._async_futures: list[
             tuple[
@@ -717,9 +722,13 @@ class Logger:
             logger.enable("myapp.database")
         """
         self._native.enable(name)
+        self._disabled.discard(name)
 
     def disable(self, name: str) -> None:
         """Disable log emission for a logger name pattern.
+
+        Disabled names skip formatting and dispatch entirely in
+        :meth:`log`, and are also enforced by the native engine.
 
         Args:
             name: Logger name or pattern to disable.
@@ -729,6 +738,7 @@ class Logger:
             logger.disable("myapp.debug")
         """
         self._native.disable(name)
+        self._disabled.add(name)
 
     def configure(
         self,
@@ -843,18 +853,40 @@ class Logger:
         re_pattern = (
             re.compile(pattern) if isinstance(pattern, str) else pattern or re.compile(r".*")
         )
+        # Read in `chunk`-sized blocks so large files don't require
+        # line-buffered iteration; lines split across blocks are rejoined
+        # via the pending buffer before matching.
+        read_size = chunk if isinstance(chunk, int) and chunk > 0 else 65536
         with file_path.open("r", encoding=encoding) as f:
-            for line in f:
-                line = line.rstrip("\n")
-                match = re_pattern.search(line)
+            pending = ""
+            while True:
+                block = f.read(read_size)
+                if not block:
+                    break
+                pending += block
+                *complete, pending = pending.split("\n")
+                for line in complete:
+                    match = re_pattern.search(line)
+                    if match:
+                        result: dict[str, object] = {"message": line, **match.groupdict()}
+                        if cast:
+                            for key, func in cast.items():
+                                if key in result:
+                                    try:
+                                        result[key] = func(str(result[key]))
+                                    except (ValueError, KeyError, TypeError):
+                                        pass
+                        yield result
+            if pending:
+                match = re_pattern.search(pending)
                 if match:
-                    result: dict[str, object] = {"message": line, **match.groupdict()}
+                    result = {"message": pending, **match.groupdict()}
                     if cast:
                         for key, func in cast.items():
                             if key in result:
                                 try:
                                     result[key] = func(str(result[key]))
-                                except (ValueError, KeyError):
+                                except (ValueError, KeyError, TypeError):
                                     pass
                     yield result
 
@@ -885,6 +917,10 @@ class Logger:
         Returns:
             The record dict if ``opt(record=True)`` was used, otherwise None.
         """
+        # Fast path for disabled loggers: return before level resolution,
+        # message rendering, frame inspection, or any FFI crossing.
+        if self._name in self._disabled:
+            return None
         level_name = resolve_level_name(str(level)) if isinstance(level, int) else str(level)
 
         if self._options.raw:
@@ -982,6 +1018,10 @@ class Logger:
                     if file_val:
                         module_val = os.path.splitext(os.path.basename(file_val))[0]
 
+        # Capture thread/process identity once and reuse for both the
+        # returned record dict and the native dispatch below.
+        thread_name = threading.current_thread().name
+        process_id = os.getpid()
         record_dict: dict[str, object] = {
             "message": rendered,
             "level": level_name,
@@ -996,8 +1036,8 @@ class Logger:
             record_dict["function"] = func_val
         if module_val:
             record_dict["module"] = module_val
-        record_dict["thread"] = threading.current_thread().name
-        record_dict["process"] = os.getpid()
+        record_dict["thread"] = thread_name
+        record_dict["process"] = process_id
         record_dict["exception"] = exc_tuple
 
         for patcher in self._patchers:
@@ -1024,8 +1064,8 @@ class Logger:
             line=line_val,
             function=func_val,
             module=module_val,
-            thread_name=threading.current_thread().name,
-            process_id=os.getpid(),
+            thread_name=thread_name,
+            process_id=process_id,
             extra=extra_str_map,
             exception=exc_text,
             colors=self._options.colors,
@@ -1202,6 +1242,7 @@ class Logger:
             sink_configs=self._sink_configs,
         )
         clone._start_time = self._start_time
+        clone._disabled = set(self._disabled)
         return clone
 
     def __copy__(self) -> Self:
@@ -1232,6 +1273,7 @@ class Logger:
             sink_configs=_copy.deepcopy(self._sink_configs, memo),
         )
         clone._start_time = self._start_time
+        clone._disabled = set(self._disabled)
         memo[id(self)] = clone
         return clone
 

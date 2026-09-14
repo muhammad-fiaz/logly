@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from logly.integrations.stdlib import InterceptHandler
+from logly.integrations.stdlib import InterceptHandler, _resolve_level
 from logly.logger import logger
 
 _IMPORT_MSG = (  # pragma: no cover
@@ -160,7 +160,10 @@ class _UvicornHandler(logging.Handler):
         """
         try:
             msg = self.format(record)
-            level = record.levelname
+            try:
+                level = _resolve_level(record)
+            except Exception:
+                level = record.levelname.upper()
             logger.opt(depth=1).log(level, msg)
         except Exception:
             self.handleError(record)

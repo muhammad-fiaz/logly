@@ -16,7 +16,6 @@ Integrations are organized into four categories:
 - ``fastapi`` - FastAPI middleware
 - ``structlog`` - structlog processor/renderer
 - ``apscheduler`` - APScheduler job logging
-- ``pydantic`` - Pydantic validation logging
 - ``sqlalchemy`` - SQLAlchemy engine logging
 - ``rq`` - RQ worker logging
 - ``click`` - Click echo adapter
@@ -83,15 +82,12 @@ Install integrations with extras::
     uv add logly[apscheduler]   # APScheduler
     uv add logly[rq]            # RQ (Redis Queue)
     uv add logly[rabbitmq]      # RabbitMQ
-    uv add logly[pydantic]      # Pydantic
-    uv add logly[logstash]      # Logstash
-    uv add logly[graylog]       # Graylog GELF
     uv add logly[aws]           # AWS CloudWatch
     uv add logly[gcloud]        # Google Cloud Logging
     uv add logly[azure]         # Azure Monitor
-    uv add logly[datadog]       # Datadog
     uv add logly[newrelic]      # New Relic
-    uv add logly[seq]           # Seq
+    # Built-in (no extra needed): stdlib, propagate, http, email,
+    # datadog, seq, telemetry, loki, logstash, graylog
 
     # pip
     pip install "logly[fastapi]"

@@ -25,6 +25,7 @@ import logging
 import sys
 
 from logly import logger
+from logly.integrations.stdlib import _resolve_level
 
 _IMPORT_MSG = (  # pragma: no cover
     "rq is required for Logly RQ integration.\n"
@@ -36,25 +37,6 @@ _IMPORT_MSG = (  # pragma: no cover
 )  # pragma: no cover
 
 __all__ = ["RQHandler", "setup_rq_logging"]
-
-
-def _resolve_level(record: logging.LogRecord) -> str:
-    """Resolve a Python logging record to a Logly level name.
-
-    Args:
-        record: The Python logging record.
-
-    Returns:
-        Logly level name string.
-    """
-    stdlib_map: dict[int, str] = {
-        logging.DEBUG: "DEBUG",
-        logging.INFO: "INFO",
-        logging.WARNING: "WARNING",
-        logging.ERROR: "ERROR",
-        logging.CRITICAL: "CRITICAL",
-    }
-    return stdlib_map.get(record.levelno, record.levelname.upper())
 
 
 class RQHandler(logging.Handler):

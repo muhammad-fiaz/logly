@@ -13,7 +13,6 @@ readme = { file = "README.md", content-type = "text/markdown" }
 dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
-    "pydantic>=2.12.5",
     "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
@@ -90,12 +89,16 @@ mongodb = [
 postgresql = [
     "psycopg2-binary>=2.9",
 ]
+# Note: discord/slack handlers work with stdlib urllib by default.
+# These extras are optional (for users who already use aiohttp/slack-sdk).
 discord = [
     "aiohttp>=3.0",
 ]
 slack = [
     "slack-sdk>=3.0",
 ]
+# Built-in integrations (no extra needed, stdlib only):
+# stdlib, propagate, http, email, datadog, seq, telemetry, loki, logstash, graylog
 apscheduler = [
     "apscheduler>=3.10",
 ]
@@ -111,6 +114,10 @@ typer = [
 compression = [
     "zstandard>=0.25.0",
 ]
+# Optional in 0.2.3+: Logly core uses stdlib dataclasses (no pydantic required).
+# Install with `uv add logly[pydantic]` / `pip install "logly[pydantic]"` to use
+# logly.models inside your own pydantic BaseModels (via __get_pydantic_core_schema__)
+# and pydantic.TypeAdapter validation. No Logly feature requires it.
 pydantic = [
     "pydantic>=2.0",
 ]
@@ -157,6 +164,7 @@ all = [
     "rq>=1.10",
     "click>=8.0",
     "typer>=0.9",
+    "pydantic>=2.0",
     "tqdm>=4.0",
     "zstandard>=0.25.0",
     "boto3>=1.28",

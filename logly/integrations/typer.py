@@ -23,8 +23,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from logly import logger
-
 _IMPORT_MSG = (  # pragma: no cover
     "typer is required for Logly Typer integration.\n"
     "Install with one of:\n"
@@ -71,13 +69,6 @@ def typer_echo(
         color: Ignored - kept for ``typer.echo`` compatibility.
         **kwargs: Additional keyword arguments (ignored).
     """
-    if message is None:
-        return
+    from logly.integrations._utils import cli_echo  # noqa: PLC0415
 
-    msg = str(message)
-    level = "WARNING" if err else "INFO"
-
-    try:
-        logger.log(level, msg)
-    except Exception:
-        pass
+    cli_echo(message, err=err)

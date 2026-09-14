@@ -26,6 +26,7 @@ import sys
 from typing import Any
 
 from logly import logger
+from logly.integrations.stdlib import _resolve_level
 
 _IMPORT_MSG = (  # pragma: no cover
     "sqlalchemy is required for Logly SQLAlchemy integration.\n"
@@ -37,30 +38,6 @@ _IMPORT_MSG = (  # pragma: no cover
 )  # pragma: no cover
 
 __all__ = ["patch_engine", "setup_sqlalchemy_logging"]
-
-
-def _resolve_level(record: logging.LogRecord) -> str:
-    """Resolve a Python logging record to a Logly level name.
-
-    Maps Python's 5 standard levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    to their Logly equivalents. For custom Python levels, passes the
-    levelname directly so Logly can resolve it if a matching custom
-    level is registered.
-
-    Args:
-        record: The Python logging record.
-
-    Returns:
-        Logly level name string.
-    """
-    stdlib_map: dict[int, str] = {
-        logging.DEBUG: "DEBUG",
-        logging.INFO: "INFO",
-        logging.WARNING: "WARNING",
-        logging.ERROR: "ERROR",
-        logging.CRITICAL: "CRITICAL",
-    }
-    return stdlib_map.get(record.levelno, record.levelname.upper())
 
 
 class _SQLAlchemyHandler(logging.Handler):

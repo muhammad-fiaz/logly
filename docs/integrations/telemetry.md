@@ -5,7 +5,7 @@ description: Generic telemetry sink for custom backends.
 
 # Telemetry
 
-`TelemetrySink` sends log events to any external collector via a custom `emit` callable. `HttpJsonSink` is a convenience class for HTTP JSON endpoints.
+`TelemetrySink` sends log events to any external collector via a custom `emit` callable. `HttpJsonSink` is a back-compat subclass of `HttpHandler` (see [HTTP](http)) for HTTP JSON endpoints — prefer `HttpHandler` for new code.
 
 ## Installation
 

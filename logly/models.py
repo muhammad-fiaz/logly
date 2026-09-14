@@ -1,24 +1,136 @@
-"""Pydantic models for Logly configuration and validation.
+"""Stdlib dataclass models for Logly configuration and validation.
 
 This module provides validated configuration models for log sinks,
 rotation policies, retention policies, and compression settings.
-All models use Pydantic for automatic validation and serialization.
+It uses only the Python standard library (``dataclasses``) with targeted
+runtime validation, so ``pydantic`` is **not** required.
+
+Optional pydantic interop (``uv add logly[pydantic]``):
+
+- The dataclasses work with zero dependencies out of the box.
+- If pydantic v2 is installed, each model exposes
+  ``__get_pydantic_core_schema__``, so you can nest them directly inside
+  your own ``pydantic.BaseModel`` or validate them with
+  ``pydantic.TypeAdapter``.
+- :func:`is_pydantic_available` lets you branch on availability.
+- :meth:`model_validate` accepts plain dicts *and* pydantic model
+  instances (via ``model_dump()``).
 """
 
 from __future__ import annotations
 
-import sys
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
-
-from pydantic import BaseModel, Field, model_validator
+from dataclasses import asdict, dataclass, field
+from typing import Any, Literal
 
 
-class RotationPolicy(BaseModel):
+class ValidationError(ValueError):
+    """Raised when a configuration model fails validation.
+
+    Subclasses :exc:`ValueError` for back-compat with code that previously
+    caught ``pydantic.ValidationError`` (which itself subclasses
+    :exc:`ValueError`). Import from here instead of ``pydantic``::
+
+        from logly.models import ValidationError
+    """
+
+
+_ROTATION_KINDS: frozenset[str] = frozenset(
+    {"never", "size", "interval", "clock", "weekday", "callable"}
+)
+
+_COMPRESSION_CODECS: frozenset[str] = frozenset(
+    {
+        "none",
+        "gzip",
+        "zip",
+        "bz2",
+        "xz",
+        "lzma",
+        "zstd",
+        "gz",
+        "tar",
+        "tar.gz",
+        "tgz",
+        "tar.bz2",
+        "tar.xz",
+    }
+)
+
+
+def _dump(obj: Any) -> dict[str, Any]:
+    return asdict(obj)
+
+
+def is_pydantic_available() -> bool:
+    """Return ``True`` if pydantic v2 is importable.
+
+    Use it to gate optional pydantic-only code paths::
+
+        from logly.models import is_pydantic_available
+
+        if is_pydantic_available():
+            adapter = TypeAdapter(SinkConfig)  # needs logly[pydantic]
+    """
+    try:
+        import pydantic  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _unwrap_pydantic_model(data: Any) -> Any:
+    """Unwrap a pydantic model instance to a plain dict, if applicable."""
+    dump = getattr(data, "model_dump", None)
+    if callable(dump):
+        try:
+            return dump()
+        except Exception:
+            return data
+    return data
+
+
+def _ensure_mapping(data: Any, *, what: str) -> dict[str, Any]:
+    """Coerce ``model_validate`` input to a mapping or raise ``ValidationError``."""
+    if not isinstance(data, dict):
+        data = _unwrap_pydantic_model(data)
+    if not isinstance(data, dict):
+        raise ValidationError(
+            f"{what}.model_validate() expects a mapping or pydantic model, "
+            f"got {type(data).__name__}"
+        )
+    return data
+
+
+def _pydantic_core_schema(cls: type[Any], source_type: Any, handler: Any) -> Any:
+    """Build a pydantic-core schema delegating validation to the dataclass.
+
+    Lazy-imports ``pydantic_core`` so the core package stays dependency-free.
+    """
+    from pydantic_core import core_schema  # noqa: PLC0415
+
+    def _validate(value: Any) -> Any:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, dict):
+            return cls(**value)
+        unwrapped = _unwrap_pydantic_model(value)
+        if isinstance(unwrapped, dict):
+            return cls(**unwrapped)
+        raise ValueError(
+            f"expected {cls.__name__}, dict, or pydantic model, got {type(value).__name__}"
+        )
+
+    return core_schema.no_info_plain_validator_function(
+        _validate,
+        serialization=core_schema.plain_serializer_function_ser_schema(
+            lambda v: asdict(v),
+            return_schema=core_schema.dict_schema(),
+        ),
+    )
+
+
+@dataclass
+class RotationPolicy:
     """Validated file rotation configuration.
 
     Controls how log files are rotated (split into new files).
@@ -42,18 +154,34 @@ class RotationPolicy(BaseModel):
     """
 
     kind: Literal["never", "size", "interval", "clock", "weekday", "callable"] = "never"
-    value: int | str | None = None
+    value: Any = None
 
-    @model_validator(mode="after")
-    def validate_value(self) -> Self:
-        """Validate that value is positive for size/interval rotation."""
+    def __post_init__(self) -> None:
+        if self.kind not in _ROTATION_KINDS:
+            raise ValidationError(
+                f"kind must be one of {sorted(_ROTATION_KINDS)}, got {self.kind!r}"
+            )
         if self.kind in ("size", "interval"):
-            if isinstance(self.value, int) and self.value <= 0:
-                raise ValueError("value must be positive for size or interval rotation")
-        return self
+            if isinstance(self.value, bool) or (isinstance(self.value, int) and self.value <= 0):
+                raise ValidationError("value must be positive for size or interval rotation")
+
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> RotationPolicy:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
 
 
-class RetentionPolicy(BaseModel):
+@dataclass
+class RetentionPolicy:
     """Validated rotated-file retention configuration.
 
     Controls how many rotated log files are kept and for how long.
@@ -68,11 +196,34 @@ class RetentionPolicy(BaseModel):
         RetentionPolicy(seconds=86400 * 30)  # Keep 30 days
     """
 
-    count: int | None = Field(default=None, ge=1)
-    seconds: int | None = Field(default=None, ge=1)
+    count: int | None = None
+    seconds: int | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("count", "seconds"):
+            val = getattr(self, name)
+            if val is None:
+                continue
+            if isinstance(val, bool) or not isinstance(val, int) or val < 1:
+                raise ValidationError(f"{name} must be an int >= 1, got {val!r}")
+
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> RetentionPolicy:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
 
 
-class CompressionPolicy(BaseModel):
+@dataclass
+class CompressionPolicy:
     """Validated rotated-file compression configuration.
 
     Controls how rotated log files are compressed.
@@ -115,8 +266,29 @@ class CompressionPolicy(BaseModel):
         "tar.xz",
     ] = "none"
 
+    def __post_init__(self) -> None:
+        if self.codec not in _COMPRESSION_CODECS:
+            raise ValidationError(
+                f"codec must be one of {sorted(_COMPRESSION_CODECS)}, got {self.codec!r}"
+            )
 
-class PrettyJsonConfig(BaseModel):
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> CompressionPolicy:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
+
+
+@dataclass
+class PrettyJsonConfig:
     """Configuration for pretty-printed JSON output.
 
     When enabled, log records are formatted as indented, human-readable
@@ -133,13 +305,80 @@ class PrettyJsonConfig(BaseModel):
         PrettyJsonConfig(indent=2, sort_keys=True)
     """
 
-    indent: int = 4
+    indent: int | None = 4
     sort_keys: bool = False
     ensure_ascii: bool = False
     separators: tuple[str, str] | None = None
 
+    def __post_init__(self) -> None:
+        if self.indent is not None and (
+            isinstance(self.indent, bool) or not isinstance(self.indent, int) or self.indent < 0
+        ):
+            raise ValidationError(f"indent must be a non-negative int or None, got {self.indent!r}")
+        if self.separators is not None:
+            if (
+                not isinstance(self.separators, (tuple, list))
+                or len(self.separators) != 2
+                or not all(isinstance(s, str) for s in self.separators)
+            ):
+                raise ValidationError(
+                    "separators must be a (item_separator, key_separator) tuple of str"
+                )
+            self.separators = (str(self.separators[0]), str(self.separators[1]))
 
-class SinkConfig(BaseModel):
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> PrettyJsonConfig:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
+
+
+def _coerce_rotation(value: RotationPolicy | dict[str, Any] | None) -> RotationPolicy | None:
+    if value is None or isinstance(value, RotationPolicy):
+        return value
+    if isinstance(value, dict):
+        return RotationPolicy(**value)
+    raise ValidationError(f"rotation must be RotationPolicy, dict, or None, got {value!r}")
+
+
+def _coerce_retention(value: RetentionPolicy | dict[str, Any] | None) -> RetentionPolicy | None:
+    if value is None or isinstance(value, RetentionPolicy):
+        return value
+    if isinstance(value, dict):
+        return RetentionPolicy(**value)
+    raise ValidationError(f"retention must be RetentionPolicy, dict, or None, got {value!r}")
+
+
+def _coerce_compression(
+    value: CompressionPolicy | dict[str, Any] | None,
+) -> CompressionPolicy | None:
+    if value is None or isinstance(value, CompressionPolicy):
+        return value
+    if isinstance(value, dict):
+        return CompressionPolicy(**value)
+    raise ValidationError(f"compression must be CompressionPolicy, dict, or None, got {value!r}")
+
+
+def _coerce_pretty_json(
+    value: PrettyJsonConfig | dict[str, Any] | None,
+) -> PrettyJsonConfig | None:
+    if value is None or isinstance(value, PrettyJsonConfig):
+        return value
+    if isinstance(value, dict):
+        return PrettyJsonConfig(**value)
+    raise ValidationError(f"pretty_json must be PrettyJsonConfig, dict, or None, got {value!r}")
+
+
+@dataclass
+class SinkConfig:
     """Validated sink configuration.
 
     Defines the complete configuration for a log sink, including
@@ -169,18 +408,42 @@ class SinkConfig(BaseModel):
 
     level: str = "INFO"
     format: str = "{level} | {message}"
-    rotation: RotationPolicy | None = None
-    retention: RetentionPolicy | None = None
-    compression: CompressionPolicy | None = None
+    rotation: RotationPolicy | dict[str, Any] | None = None
+    retention: RetentionPolicy | dict[str, Any] | None = None
+    compression: CompressionPolicy | dict[str, Any] | None = None
     enqueue: bool = False
     colorize: bool | None = None
     serialize: bool = False
-    pretty_json: PrettyJsonConfig | None = None
+    pretty_json: PrettyJsonConfig | dict[str, Any] | None = None
     append: bool = True
     mode: Literal["append", "overwrite"] = "append"
 
+    def __post_init__(self) -> None:
+        # Accept plain dicts like pydantic did, coercing to nested models.
+        object.__setattr__(self, "rotation", _coerce_rotation(self.rotation))
+        object.__setattr__(self, "retention", _coerce_retention(self.retention))
+        object.__setattr__(self, "compression", _coerce_compression(self.compression))
+        object.__setattr__(self, "pretty_json", _coerce_pretty_json(self.pretty_json))
+        if self.mode not in ("append", "overwrite"):
+            raise ValidationError(f"mode must be 'append' or 'overwrite', got {self.mode!r}")
 
-class LoggerConfig(BaseModel):
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> SinkConfig:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
+
+
+@dataclass
+class LoggerConfig:
     """Validated logger configuration.
 
     Represents a complete logger configuration with multiple sinks
@@ -201,5 +464,46 @@ class LoggerConfig(BaseModel):
         )
     """
 
-    sinks: list[SinkConfig] = Field(default_factory=list)
-    disabled: set[str] = Field(default_factory=set)
+    sinks: list[SinkConfig] = field(default_factory=list)
+    disabled: set[str] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        coerced: list[SinkConfig] = []
+        for item in self.sinks:
+            if isinstance(item, SinkConfig):
+                coerced.append(item)
+            elif isinstance(item, dict):
+                coerced.append(SinkConfig(**item))
+            else:
+                raise ValidationError(f"sinks must be a list of SinkConfig or dict, got {item!r}")
+        object.__setattr__(self, "sinks", coerced)
+        if isinstance(self.disabled, (list, tuple)):
+            object.__setattr__(self, "disabled", set(self.disabled))
+        if not isinstance(self.disabled, set):
+            raise ValidationError(f"disabled must be a set of str, got {self.disabled!r}")
+
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation (pydantic-compat shim)."""
+        return _dump(self)
+
+    @classmethod
+    def model_validate(cls, data: Any) -> LoggerConfig:
+        """Build from a dict or pydantic model (pydantic-compat shim)."""
+        return cls(**_ensure_mapping(data, what=cls.__name__))
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
+        """Allow nesting inside user ``pydantic.BaseModel`` (needs ``logly[pydantic]``)."""
+        return _pydantic_core_schema(cls, source_type, handler)
+
+
+__all__ = [
+    "CompressionPolicy",
+    "LoggerConfig",
+    "PrettyJsonConfig",
+    "RetentionPolicy",
+    "RotationPolicy",
+    "SinkConfig",
+    "ValidationError",
+    "is_pydantic_available",
+]

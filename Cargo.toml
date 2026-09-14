@@ -21,7 +21,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
@@ -58,7 +58,7 @@ bzip2 = "0.6"
 flate2 = "1"
 xz2 = "0.1"
 zip = { version = "8", default-features = false, features = ["deflate"] }
-zstd = { version = "0.13", default-features = false, features = ["zstdmt"] }
+zstd = { version = "0.14", default-features = false, features = ["zstdmt"] }
 
 [package]
 name = "logly"
@@ -73,6 +73,19 @@ readme = "README.md"
 [lib]
 name = "_logly"
 crate-type = ["cdylib"]
+
+# Production builds (used by `maturin build/develop --release`).
+# Thin LTO + single codegen unit favor runtime speed for the logging hot
+# path while keeping build times reasonable. `panic` stays `unwind`:
+# PyO3 requires unwinding across the FFI boundary, and `abort` would turn
+# recoverable sink errors into process aborts. Symbols are stripped to
+# keep wheels small; use a dev build for backtraces.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "unwind"
+strip = "symbols"
 
 [dependencies]
 color.workspace = true
