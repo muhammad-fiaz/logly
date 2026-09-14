@@ -176,14 +176,19 @@ config = PrettyJsonConfig(ensure_ascii=True)
 Complete sink configuration model.
 
 ```python
-from logly.models import SinkConfig
+from logly.models import (
+    CompressionPolicy,
+    RetentionPolicy,
+    RotationPolicy,
+    SinkConfig,
+)
 
 config = SinkConfig(
     level="INFO",
     format="{time} | {level} | {message}",
-    rotation="daily",
-    retention="30 days",
-    compression="gzip",
+    rotation=RotationPolicy(kind="size", value=10_000_000),
+    retention=RetentionPolicy(count=7),
+    compression=CompressionPolicy(codec="gzip"),
     enqueue=True,
     colorize=True,
     serialize=False,
@@ -193,21 +198,23 @@ config = SinkConfig(
 )
 ```
 
+String shorthands like `rotation="daily"` are accepted by `logger.add(...)`, not by `SinkConfig` — pass model instances (or plain dicts, which are coerced) here.
+
 **Fields:**
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `level` | `str` | `"INFO"` | Minimum log level |
-| `format` | `str \| None` | `None` | Custom format string |
-| `rotation` | `str \| int \| None` | `None` | Rotation policy |
-| `retention` | `str \| int \| None` | `None` | Retention policy |
-| `compression` | `str \| None` | `None` | Compression codec |
+| `format` | `str` | `"{level} \| {message}"` | Format template string |
+| `rotation` | `RotationPolicy \| dict \| None` | `None` | Rotation policy model or dict |
+| `retention` | `RetentionPolicy \| dict \| None` | `None` | Retention policy model or dict |
+| `compression` | `CompressionPolicy \| dict \| None` | `None` | Compression policy model or dict |
 | `enqueue` | `bool` | `False` | Queue-based async |
 | `colorize` | `bool \| None` | `None` | ANSI color output |
 | `serialize` | `bool` | `False` | JSON serialization |
-| `pretty_json` | `dict \| PrettyJsonConfig \| None` | `None` | JSON formatting |
+| `pretty_json` | `PrettyJsonConfig \| dict \| None` | `None` | JSON formatting |
 | `append` | `bool` | `True` | Append to existing file |
-| `mode` | `str` | `"append"` | File mode: `"append"` or `"overwrite"` |
+| `mode` | `"append" \| "overwrite"` | `"append"` | File open mode |
 
 ---
 
@@ -221,9 +228,9 @@ from logly.models import LoggerConfig, SinkConfig
 config = LoggerConfig(
     sinks=[
         SinkConfig(level="INFO", format="{time} | {level} | {message}"),
-        SinkConfig(level="DEBUG", rotation="daily"),
+        SinkConfig(level="DEBUG"),
     ],
-    extra={"app_name": "myapp"},
+    disabled={"debug-only-logger"},
 )
 ```
 
@@ -231,9 +238,8 @@ config = LoggerConfig(
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `sinks` | `list[SinkConfig]` | `[]` | List of sink configurations |
-| `extra` | `dict[str, Any]` | `{}` | Default extra fields |
-| `disabled` | `set[str]` | `set()` | Disabled level names |
+| `sinks` | `list[SinkConfig]` | `[]` | List of sink configurations (dicts are coerced) |
+| `disabled` | `set[str]` | `set()` | Disabled logger names |
 
 ---
 

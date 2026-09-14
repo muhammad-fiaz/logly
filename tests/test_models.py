@@ -94,7 +94,7 @@ def test_pydantic_type_adapter() -> None:
 def test_pydantic_nested_model() -> None:
     pydantic = pytest.importorskip("pydantic")
 
-    class AppConfig(pydantic.BaseModel):
+    class AppConfig(pydantic.BaseModel):  # type: ignore[name-defined]
         sink: SinkConfig
 
     app = AppConfig.model_validate({"sink": {"level": "DEBUG"}})

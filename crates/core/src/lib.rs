@@ -183,16 +183,26 @@ impl LoggerEngine {
     /// Each sink's [`Sink::handle`] method is called with the record.
     /// Sinks are responsible for their own level filtering.
     ///
+    /// Every sink is attempted even if an earlier sink fails, so one broken
+    /// destination (e.g. a full disk) cannot silently suppress the remaining
+    /// sinks. If several sinks fail, the first error is returned.
+    ///
     /// # Arguments
     ///
     /// * `record` — The log record to dispatch.
     ///
     /// # Errors
     ///
-    /// Returns a [`LoglyError`] if any sink fails to handle the record.
+    /// Returns the first [`LoglyError`] reported by any sink, if any.
     pub fn dispatch(&self, record: &LogRecord) -> LoglyResult<()> {
+        let mut first_error: Option<LoglyError> = None;
         for sink in self.sinks.values() {
-            sink.handle(record)?;
+            if let Err(error) = sink.handle(record) {
+                first_error.get_or_insert(error);
+            }
+        }
+        if let Some(error) = first_error {
+            return Err(error);
         }
         Ok(())
     }
@@ -200,13 +210,21 @@ impl LoggerEngine {
     /// Flushes all registered sinks.
     ///
     /// Ensures any buffered data is written to the underlying destination.
+    /// Every sink is flushed even if an earlier sink fails; the first error
+    /// is returned.
     ///
     /// # Errors
     ///
-    /// Returns a [`LoglyError`] if any sink fails to flush.
+    /// Returns the first [`LoglyError`] reported by any sink, if any.
     pub fn complete(&self) -> LoglyResult<()> {
+        let mut first_error: Option<LoglyError> = None;
         for sink in self.sinks.values() {
-            sink.flush()?;
+            if let Err(error) = sink.flush() {
+                first_error.get_or_insert(error);
+            }
+        }
+        if let Some(error) = first_error {
+            return Err(error);
         }
         Ok(())
     }
@@ -304,6 +322,39 @@ mod tests {
     fn remove_nonexistent_sink_errors() {
         let mut logger = LoggerEngine::new();
         assert!(logger.remove_sink(Some(999)).is_err());
+    }
+
+    #[test]
+    fn dispatch_continues_past_failing_sink() {
+        use error::LoglyError;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        struct FailSink;
+        impl sink::Sink for FailSink {
+            fn handle(&self, _record: &record::LogRecord) -> error::LoglyResult<()> {
+                Err(LoglyError::Sink("boom".to_owned()))
+            }
+        }
+
+        struct CountSink {
+            count: Arc<AtomicUsize>,
+        }
+        impl sink::Sink for CountSink {
+            fn handle(&self, _record: &record::LogRecord) -> error::LoglyResult<()> {
+                self.count.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+
+        let mut engine = LoggerEngine::new();
+        engine.add_sink(Arc::new(FailSink));
+        let count = Arc::new(AtomicUsize::new(0));
+        engine.add_sink(Arc::new(CountSink {
+            count: Arc::clone(&count),
+        }));
+        let result = engine.log("tests", "INFO", "hello");
+        assert!(result.is_err());
+        assert_eq!(count.load(Ordering::SeqCst), 1);
     }
 
     #[test]

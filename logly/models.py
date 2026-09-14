@@ -89,6 +89,18 @@ def _unwrap_pydantic_model(data: Any) -> Any:
     return data
 
 
+def _ensure_mapping(data: Any, *, what: str) -> dict[str, Any]:
+    """Coerce ``model_validate`` input to a mapping or raise ``ValidationError``."""
+    if not isinstance(data, dict):
+        data = _unwrap_pydantic_model(data)
+    if not isinstance(data, dict):
+        raise ValidationError(
+            f"{what}.model_validate() expects a mapping or pydantic model, "
+            f"got {type(data).__name__}"
+        )
+    return data
+
+
 def _pydantic_core_schema(cls: type[Any], source_type: Any, handler: Any) -> Any:
     """Build a pydantic-core schema delegating validation to the dataclass.
 
@@ -105,8 +117,7 @@ def _pydantic_core_schema(cls: type[Any], source_type: Any, handler: Any) -> Any
         if isinstance(unwrapped, dict):
             return cls(**unwrapped)
         raise ValueError(
-            f"expected {cls.__name__}, dict, or pydantic model, "
-            f"got {type(value).__name__}"
+            f"expected {cls.__name__}, dict, or pydantic model, got {type(value).__name__}"
         )
 
     return core_schema.no_info_plain_validator_function(
@@ -151,12 +162,8 @@ class RotationPolicy:
                 f"kind must be one of {sorted(_ROTATION_KINDS)}, got {self.kind!r}"
             )
         if self.kind in ("size", "interval"):
-            if isinstance(self.value, bool) or (
-                isinstance(self.value, int) and self.value <= 0
-            ):
-                raise ValidationError(
-                    "value must be positive for size or interval rotation"
-                )
+            if isinstance(self.value, bool) or (isinstance(self.value, int) and self.value <= 0):
+                raise ValidationError("value must be positive for size or interval rotation")
 
     def model_dump(self) -> dict[str, Any]:
         """Return a dict representation (pydantic-compat shim)."""
@@ -165,9 +172,7 @@ class RotationPolicy:
     @classmethod
     def model_validate(cls, data: Any) -> RotationPolicy:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
@@ -209,9 +214,7 @@ class RetentionPolicy:
     @classmethod
     def model_validate(cls, data: Any) -> RetentionPolicy:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
@@ -276,9 +279,7 @@ class CompressionPolicy:
     @classmethod
     def model_validate(cls, data: Any) -> CompressionPolicy:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
@@ -311,9 +312,7 @@ class PrettyJsonConfig:
 
     def __post_init__(self) -> None:
         if self.indent is not None and (
-            isinstance(self.indent, bool)
-            or not isinstance(self.indent, int)
-            or self.indent < 0
+            isinstance(self.indent, bool) or not isinstance(self.indent, int) or self.indent < 0
         ):
             raise ValidationError(f"indent must be a non-negative int or None, got {self.indent!r}")
         if self.separators is not None:
@@ -334,9 +333,7 @@ class PrettyJsonConfig:
     @classmethod
     def model_validate(cls, data: Any) -> PrettyJsonConfig:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
@@ -367,9 +364,7 @@ def _coerce_compression(
         return value
     if isinstance(value, dict):
         return CompressionPolicy(**value)
-    raise ValidationError(
-        f"compression must be CompressionPolicy, dict, or None, got {value!r}"
-    )
+    raise ValidationError(f"compression must be CompressionPolicy, dict, or None, got {value!r}")
 
 
 def _coerce_pretty_json(
@@ -379,9 +374,7 @@ def _coerce_pretty_json(
         return value
     if isinstance(value, dict):
         return PrettyJsonConfig(**value)
-    raise ValidationError(
-        f"pretty_json must be PrettyJsonConfig, dict, or None, got {value!r}"
-    )
+    raise ValidationError(f"pretty_json must be PrettyJsonConfig, dict, or None, got {value!r}")
 
 
 @dataclass
@@ -432,9 +425,7 @@ class SinkConfig:
         object.__setattr__(self, "compression", _coerce_compression(self.compression))
         object.__setattr__(self, "pretty_json", _coerce_pretty_json(self.pretty_json))
         if self.mode not in ("append", "overwrite"):
-            raise ValidationError(
-                f"mode must be 'append' or 'overwrite', got {self.mode!r}"
-            )
+            raise ValidationError(f"mode must be 'append' or 'overwrite', got {self.mode!r}")
 
     def model_dump(self) -> dict[str, Any]:
         """Return a dict representation (pydantic-compat shim)."""
@@ -443,9 +434,7 @@ class SinkConfig:
     @classmethod
     def model_validate(cls, data: Any) -> SinkConfig:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:
@@ -486,17 +475,12 @@ class LoggerConfig:
             elif isinstance(item, dict):
                 coerced.append(SinkConfig(**item))
             else:
-                raise ValidationError(
-                    "sinks must be a list of SinkConfig or dict, "
-                    f"got {item!r}"
-                )
+                raise ValidationError(f"sinks must be a list of SinkConfig or dict, got {item!r}")
         object.__setattr__(self, "sinks", coerced)
         if isinstance(self.disabled, (list, tuple)):
             object.__setattr__(self, "disabled", set(self.disabled))
         if not isinstance(self.disabled, set):
-            raise ValidationError(
-                f"disabled must be a set of str, got {self.disabled!r}"
-            )
+            raise ValidationError(f"disabled must be a set of str, got {self.disabled!r}")
 
     def model_dump(self) -> dict[str, Any]:
         """Return a dict representation (pydantic-compat shim)."""
@@ -505,9 +489,7 @@ class LoggerConfig:
     @classmethod
     def model_validate(cls, data: Any) -> LoggerConfig:
         """Build from a dict or pydantic model (pydantic-compat shim)."""
-        if not isinstance(data, dict):
-            data = _unwrap_pydantic_model(data)
-        return cls(**data)
+        return cls(**_ensure_mapping(data, what=cls.__name__))
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> Any:

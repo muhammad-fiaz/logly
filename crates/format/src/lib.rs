@@ -155,11 +155,11 @@ fn parse_format_spec(spec: &str) -> (char, usize, char) {
 
     match (first, second_opt) {
         // fill_char + align: e.g. "*^" or " >"
-        (_, Some(b'<' | b'>' | b'^'))
+        (_, Some(align_byte @ (b'<' | b'>' | b'^')))
             if first != b'<' && first != b'>' && first != b'^' && !first.is_ascii_digit() =>
         {
             fill_char = first as char;
-            align = second_opt.unwrap() as char;
+            align = align_byte as char;
             rest = &spec[2..];
         }
         // align + width: e.g. "<8", ">10"

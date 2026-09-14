@@ -286,10 +286,12 @@ impl Sink for FileSink {
             *guard = Some(f);
         }
 
-        // Write the line first so rotation archives contain the triggering data
+        // Write the line first so rotation archives contain the triggering data.
+        // Flush errors are propagated: a failed flush means the record may
+        // not reach disk, and the caller must be able to observe that.
         if let Some(ref mut f) = *guard {
             writeln!(f, "{line}")?;
-            let _ = f.flush();
+            f.flush()?;
         }
 
         // Check rotation after writing
@@ -347,7 +349,9 @@ impl Sink for FileSink {
 /// # Backpressure
 ///
 /// Uses drop-newest backpressure: when the queue is full, new records
-/// are dropped rather than blocking the caller.
+/// are dropped rather than blocking the caller. The drop is reported to
+/// the caller as a [`LoglyError::Concurrency`] error; other sinks still
+/// receive the record because dispatch continues past sink errors.
 pub struct EnqueueSink {
     inner: Arc<dyn Sink>,
     worker: concurrency::BackgroundWorker<LogRecord>,
@@ -357,7 +361,8 @@ impl EnqueueSink {
     /// Wraps a sink in an enqueue background worker.
     ///
     /// Creates a background thread with a queue capacity of 1000 records.
-    /// Records that arrive when the queue is full are silently dropped.
+    /// Records that arrive when the queue is full are dropped and reported
+    /// as a [`LoglyError::Concurrency`] error instead of blocking.
     #[must_use]
     pub fn new(inner: Arc<dyn Sink>) -> Self {
         let inner_clone = Arc::clone(&inner);

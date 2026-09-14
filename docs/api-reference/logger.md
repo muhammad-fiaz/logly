@@ -23,10 +23,10 @@ logger.log("CUSTOM", "Message at custom level")
 ```
 
 **Parameters:**
-- `level` (`str`): The log level name (e.g., `"INFO"`, `"ERROR"`)
-- `message` (`str`): The log message
-- `*args`: Format string arguments
-- `**kwargs`: Additional context fields
+- `level` (`str | int`): Level name (e.g., `"INFO"`) or numeric priority (e.g., `20`)
+- `message` (`object`): Format string or message (supports `str.format()` placeholders)
+- `*args`: Positional format arguments
+- `**kwargs`: Keyword format arguments
 
 **Returns:** `dict[str, object] | None` - record dict if `opt(record=True)`, else `None`
 
@@ -145,7 +145,7 @@ logger.audit("User performed action")
 
 ### add(sink, **kwargs)
 
-Add a new sink to the logger. Returns a sink ID string.
+Add a new sink to the logger. Returns an integer sink ID.
 
 ```python
 sink_id = logger.add("app.log", level="INFO", rotation="daily")
@@ -156,29 +156,29 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `sink` | `str \| Path \| Callable \| object` | | File path, callable, or sink object |
-| `level` | `str` | `"INFO"` | Minimum log level for this sink |
-| `format` | `str \| None` | `None` | Custom format string |
-| `rotation` | `str \| int \| None` | `None` | Rotation policy (e.g., `"daily"`, `"10 MB"`) |
-| `retention` | `str \| int \| None` | `None` | Retention policy (e.g., `"30 days"`) |
-| `compression` | `str \| None` | `None` | Compression codec (e.g., `"gzip"`, `"zip"`) |
+| `level` | `str \| int` | `"DEBUG"` | Minimum log level for this sink |
+| `format` | `str \| Callable \| None` | built-in default | Custom format string or formatter callable |
+| `rotation` | `str \| int \| object \| None` | `None` | Rotation policy (e.g., `"daily"`, `"10 MB"`) |
+| `retention` | `str \| int \| object \| None` | `None` | Retention policy (e.g., `"30 days"`, `7`) |
+| `compression` | `str \| object \| None` | `None` | Compression codec (e.g., `"gzip"`, `"zip"`) |
 | `enqueue` | `bool` | `False` | Use queue-based async worker |
-| `colorize` | `bool \| None` | `None` | Enable ANSI color output |
-| `backtrace` | `bool` | `False` | Include backtrace on exceptions |
+| `colorize` | `bool \| None` | `None` | Enable ANSI color output (`None` auto-detects) |
+| `backtrace` | `bool` | `True` | Include backtrace on exceptions |
 | `diagnose` | `bool` | `False` | Include variable values on exceptions |
-| `filter` | `Callable \| None` | `None` | Custom filter function |
+| `filter` | `str \| Callable \| Mapping \| None` | `None` | Prefix string, filter callable, or extra-field mapping |
 | `serialize` | `bool` | `False` | Output as JSON |
-| `pretty_json` | `dict \| PrettyJsonConfig \| None` | `None` | JSON formatting options |
+| `pretty_json` | `bool \| PrettyJsonConfig \| None` | `None` | `True` or JSON formatting options |
 | `patch` | `Callable \| None` | `None` | Patch function for all records |
 | `encoding` | `str` | `"utf-8"` | File encoding |
 | `delay` | `bool` | `False` | Delay file opening until first write |
-| `context` | `Callable \| None` | `None` | Context variable factory |
+| `context` | `str \| BaseContext \| None` | `None` | Multiprocessing context for queue-based sinks |
 | `catch` | `bool` | `True` | Catch sink errors silently |
-| `mode` | `str` | `"append"` | File mode: `"append"` or `"overwrite"` |
-| `buffering` | `int` | `-1` | File buffering level |
+| `mode` | `str` | `"a"` | File mode: `"a"` (append) or `"w"` (overwrite) |
+| `buffering` | `int` | `1` | File buffering level |
 | `loop` | `AbstractEventLoop \| None` | `None` | Event loop for async sinks |
 | `opener` | `Callable \| None` | `None` | Custom file opener |
 
-**Returns:** `str` - sink ID for use with `remove()`
+**Returns:** `int` - sink ID for use with `remove()` / `reinstall()`
 
 **Built-in Sink Objects:**
 
@@ -205,12 +205,13 @@ logger.add(sink, level="INFO")
 
 ---
 
-### remove(sink_id)
+### remove(handler_id=None)
 
-Remove a sink by its ID.
+Remove a sink by its ID, or all sinks when omitted.
 
 ```python
 logger.remove(sink_id)
+logger.remove()  # remove all sinks
 ```
 
 ---
@@ -264,19 +265,20 @@ logger.level("AUDIT", no=35, color="<green><bold>", icon="🔒")
 
 ---
 
-### reinstall()
+### reinstall(handler_id=None)
 
-Re-add all previously configured sinks. Useful after context changes.
+Remove and re-add sinks with their original configuration. Useful to reset file handlers after external rotation.
 
 ```python
 logger.reinstall()
+logger.reinstall(sink_id)  # reinstall one sink
 ```
 
 ---
 
-### enable(*module_names)
+### enable(name)
 
-Enable logging for specific modules.
+Enable log emission for a logger name previously passed to `disable`.
 
 ```python
 logger.enable("myapp")
@@ -284,9 +286,9 @@ logger.enable("myapp")
 
 ---
 
-### disable(*module_names)
+### disable(name)
 
-Disable logging for specific modules.
+Disable log emission for a logger name. Matching `log()` calls (including structured logging) are silently discarded.
 
 ```python
 logger.disable("myapp")
@@ -343,24 +345,24 @@ logger.opt(backtrace=True).info("Error context")
 # Diagnose - include variable values on exception
 logger.opt(diagnose=True).info("Debug context")
 
-# Capture - capture context from specified keys
-logger.opt(capture=["user_id"]).info("User action")
+# Capture - disable caller file/line/function capture for speed
+logger.opt(capture=False).info("Hot path")
 ```
 
 **Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `exception` | `bool \| type \| tuple` | `None` | Include exception info |
+| `exception` | `BaseException \| bool \| None` | `None` | Exception instance or `True` to capture the active one |
 | `record` | `bool` | `False` | Return record dict |
 | `lazy` | `bool` | `False` | Defer string formatting |
-| `colors` | `bool` | `False` | Enable ANSI color |
-| `raw` | `bool` | `False` | Skip format processing |
-| `depth` | `int` | `0` | Caller frame depth |
-| `capture` | `list[str] \| None` | `None` | Keys to capture from context |
-| `backtrace` | `bool \| None` | `None` | Override backtrace setting |
-| `diagnose` | `bool \| None` | `None` | Override diagnose setting |
-| `ansi` | `bool \| None` | `None` | Alias for colors |
+| `colors` | `bool` | `False` | Enable ANSI color codes in output |
+| `raw` | `bool` | `False` | Skip format string interpolation |
+| `depth` | `int` | `0` | Additional stack frames to skip for caller info |
+| `capture` | `bool` | `True` | Capture caller file/line/function info |
+| `backtrace` | `bool` | `True` | Include backtrace in exception output |
+| `diagnose` | `bool` | `False` | Include diagnostic info in exceptions |
+| `ansi` | `bool` | `False` | Treat message as ANSI-formatted (implies `colors`) |
 
 ---
 
@@ -440,53 +442,79 @@ with logger.catch(reraise=True):
 | `reraise` | `bool` | `False` | Re-raise after logging |
 | `onerror` | `Callable \| None` | `None` | Callback on exception |
 | `exclude` | `type \| tuple \| None` | `None` | Exception types to exclude (re-raise) |
-| `default` | `Any` | `sentinel` | Default return value on exception |
+| `default` | `Any` | `None` | Default return value on exception (decorator mode) |
+
+## Lifecycle Methods
+
+### start(*args, **kwargs)
+
+Compatibility hook for application startup code. Accepts arbitrary arguments and performs no work; queued sinks start their workers when registered.
+
+```python
+logger.start()
+```
+
+### stop()
+
+Flush sinks and stop logger-managed background workers. Equivalent to `complete()`.
+
+```python
+logger.stop()
+```
+
+### warn(message, *args, **kwargs)
+
+Alias for `warning`.
+
+### exception(message, *args, exc_info=True, **kwargs)
+
+Log at `ERROR` level, attaching the currently active exception when present.
 
 ## Parse Method
 
 ### parse(path, pattern=None, *, cast=None, chunk=65536, encoding="utf-8")
 
-Parse log files using regex patterns. This is a **static method**.
+Parse log files using regex patterns. This is a **static method** returning a generator — iterate it or wrap with `list()`.
 
 ```python
 # Parse all log lines
-entries = logger.parse("app.log")
+entries = list(logger.parse("app.log"))
 
 # Custom pattern
-entries = logger.parse(
+entries = list(logger.parse(
     "app.log",
     pattern=r"(?P<time>\d{4}-\d{2}-\d{2}) (?P<level>\w+) (?P<message>.+)",
-)
+))
 
-# With type casting
-entries = logger.parse(
+# With type casting (values are callables, e.g. int)
+entries = list(logger.parse(
     "app.log",
     pattern=r"(?P<time>\S+) (?P<level>\w+) (?P<message>.+)",
-    cast={"time": "datetime", "level": "int"},
-)
+    cast={"level": int},
+))
 ```
 
 **Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `path` | `str \| Path` | | Log file path |
-| `pattern` | `str \| None` | `None` | Regex pattern with named groups |
-| `cast` | `dict \| None` | `None` | Type casting rules |
-| `chunk` | `int` | `65536` | Read chunk size |
+| `path` | `str \| Path` | | Log file path (missing files yield nothing) |
+| `pattern` | `str \| Pattern \| None` | `None` | Regex pattern with named groups |
+| `cast` | `dict[str, Callable] \| None` | `None` | Per-group casting functions (bad values keep the raw string) |
+| `chunk` | `int` | `65536` | Read block size in bytes |
 | `encoding` | `str` | `"utf-8"` | File encoding |
 
-**Returns:** `list[dict]` - parsed log entries
+**Returns:** `Generator[dict, None, None]` - parsed log entries, one dict per matched line
 
 ## Properties
 
 ### levels
 
-Get the current level registry.
+List of registered level names in severity order.
 
 ```python
-for level_name, level_no, color in logger.levels:
-    print(f"{level_name}: {level_no}")
+for level_name in logger.levels:
+    print(level_name)
 ```
 
 ## Builtin Levels

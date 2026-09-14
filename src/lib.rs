@@ -62,25 +62,22 @@ fn record_to_py_dict<'py>(
     #[expect(clippy::cast_precision_loss)]
     let secs = duration.as_secs() as f64 + f64::from(duration.subsec_nanos()) / 1e9;
 
-    // Build datetime object from timestamp
-    let datetime = if let Ok(dt) = PyDateTime::from_timestamp(py, secs, None) {
-        dt
+    // Build datetime object from timestamp. Every step here is fallible
+    // (interpreter state, out-of-range values), and this runs on the logging
+    // hot path for formatter/filter/patch callbacks, so never panic: fall
+    // back to the raw epoch float if datetime construction fails.
+    if let Ok(dt) = PyDateTime::from_timestamp(py, secs, None) {
+        let _ = record_dict.set_item("time", dt);
+    } else if let Ok(datetime_mod) = py.import("datetime")
+        && let Ok(dt_cls) = datetime_mod.getattr("datetime")
+        && let Ok(utcfromtimestamp) = dt_cls.getattr("utcfromtimestamp")
+        && let Ok(fallback) = utcfromtimestamp.call1((secs,))
+        && let Ok(fallback_dt) = fallback.cast_into::<pyo3::types::PyDateTime>()
+    {
+        let _ = record_dict.set_item("time", fallback_dt);
     } else {
-        // Fallback: use utcfromtimestamp if timezone-aware fails
-        let datetime_mod = py.import("datetime").unwrap();
-        let utcfromtimestamp = datetime_mod
-            .getattr("datetime")
-            .unwrap()
-            .getattr("utcfromtimestamp")
-            .unwrap();
-        utcfromtimestamp
-            .call1((secs,))
-            .unwrap()
-            .cast_into::<pyo3::types::PyDateTime>()
-            .unwrap()
-    };
-
-    let _ = record_dict.set_item("time", datetime);
+        let _ = record_dict.set_item("time", secs);
+    }
 
     // Build timedelta for elapsed time
     #[allow(clippy::cast_possible_truncation)]
@@ -239,10 +236,18 @@ impl sink::Sink for PyObjectSink {
         };
         Python::attach(|py| {
             let py_sink = self.sink.bind(py);
+            // Python sink failures are reported on stderr but never raised:
+            // a logging call must not crash the application because one
+            // custom sink misbehaved. The record is still considered
+            // delivered so dispatch continues to the remaining sinks.
             if py_sink.is_callable() {
-                let _ = py_sink.call1((line,));
+                if let Err(error) = py_sink.call1((line,)) {
+                    eprintln!("logly: python sink raised {error}");
+                }
             } else if let Ok(write_meth) = py_sink.getattr("write") {
-                let _ = write_meth.call1((line,));
+                if let Err(error) = write_meth.call1((line,)) {
+                    eprintln!("logly: python sink raised {error}");
+                }
             }
             Ok(())
         })
@@ -251,8 +256,10 @@ impl sink::Sink for PyObjectSink {
     fn flush(&self) -> Result<(), LoglyError> {
         Python::attach(|py| {
             let py_sink = self.sink.bind(py);
-            if let Ok(flush_meth) = py_sink.getattr("flush") {
-                let _ = flush_meth.call0();
+            if let Ok(flush_meth) = py_sink.getattr("flush")
+                && let Err(error) = flush_meth.call0()
+            {
+                eprintln!("logly: python sink flush raised {error}");
             }
             Ok(())
         })
@@ -286,14 +293,24 @@ struct PyObjectFilter {
 
 impl filter::Filter for PyObjectFilter {
     fn accept(&self, record: &record::LogRecord) -> bool {
+        // Fail-closed by design (a broken filter must not flood sinks),
+        // but never silent: report the failure on stderr like Python's
+        // logging.Handler.handleError does.
         Python::attach(|py| {
             let record_dict = record_to_py_dict(py, record, None);
-            if let Ok(res) = self.callable.bind(py).call1((record_dict,))
-                && let Ok(accept) = res.extract::<bool>()
-            {
-                return Ok::<bool, LoglyError>(accept);
+            match self.callable.bind(py).call1((record_dict,)) {
+                Ok(res) => match res.extract::<bool>() {
+                    Ok(accept) => Ok::<bool, LoglyError>(accept),
+                    Err(error) => {
+                        eprintln!("logly: filter returned non-bool value: {error}");
+                        Ok::<bool, LoglyError>(false)
+                    }
+                },
+                Err(error) => {
+                    eprintln!("logly: filter raised {error}");
+                    Ok::<bool, LoglyError>(false)
+                }
             }
-            Ok::<bool, LoglyError>(false)
         })
         .unwrap_or(false)
     }
@@ -898,11 +915,16 @@ impl PyLogger {
         }
 
         py.detach(|| {
-            self.engine
+            let engine = self
+                .engine
                 .lock()
-                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
-                .dispatch(&record)
-                .map_err(to_py_error)
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?;
+            // Honor enable/disable like LoggerEngine::log does. When no
+            // explicit name was given the record carries this logger's name.
+            if engine.is_disabled(&record.name) {
+                return Ok(());
+            }
+            engine.dispatch(&record).map_err(to_py_error)
         })
     }
 
@@ -1096,14 +1118,20 @@ impl PyHttpJsonSink {
         })
     }
 
-    fn write(&self, line: &str) -> PyResult<()> {
-        self.inner
-            .write(line)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn write(&self, py: Python<'_>, line: &str) -> PyResult<()> {
+        // Release the GIL around blocking HTTP I/O so one slow collector
+        // cannot stall every other Python thread.
+        py.detach(|| {
+            self.inner
+                .write(line)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
-    fn flush(&self) {
-        self.inner.flush();
+    fn flush(&self, py: Python<'_>) {
+        py.detach(|| {
+            self.inner.flush();
+        });
     }
 }
 
@@ -1145,16 +1173,20 @@ impl PyBatchHttpJsonSink {
         })
     }
 
-    fn write(&self, line: &str) -> PyResult<()> {
-        self.inner
-            .write(line)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn write(&self, py: Python<'_>, line: &str) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .write(line)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
-    fn flush(&self) -> PyResult<()> {
-        self.inner
-            .flush()
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn flush(&self, py: Python<'_>) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .flush()
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
     fn buffer_len(&self) -> usize {
@@ -1183,22 +1215,28 @@ impl PyTcpSink {
         }
     }
 
-    fn connect(&self) -> PyResult<()> {
-        self.inner
-            .connect()
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn connect(&self, py: Python<'_>) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .connect()
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
-    fn write(&self, line: &str) -> PyResult<()> {
-        self.inner
-            .write(line)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn write(&self, py: Python<'_>, line: &str) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .write(line)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
-    fn flush(&self) -> PyResult<()> {
-        self.inner
-            .flush()
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn flush(&self, py: Python<'_>) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .flush()
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 }
 
@@ -1222,10 +1260,12 @@ impl PyUdpSink {
         }
     }
 
-    fn write(&self, line: &str) -> PyResult<()> {
-        self.inner
-            .write(line)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn write(&self, py: Python<'_>, line: &str) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .write(line)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 }
 
@@ -1293,16 +1333,20 @@ impl PySyslogSink {
         })
     }
 
-    fn write(&self, line: &str) -> PyResult<()> {
-        self.inner
-            .write(line)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn write(&self, py: Python<'_>, line: &str) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .write(line)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 
-    fn flush(&self) -> PyResult<()> {
-        self.inner
-            .flush()
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+    fn flush(&self, py: Python<'_>) -> PyResult<()> {
+        py.detach(|| {
+            self.inner
+                .flush()
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        })
     }
 }
 
