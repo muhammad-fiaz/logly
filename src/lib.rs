@@ -244,10 +244,10 @@ impl sink::Sink for PyObjectSink {
                 if let Err(error) = py_sink.call1((line,)) {
                     eprintln!("logly: python sink raised {error}");
                 }
-            } else if let Ok(write_meth) = py_sink.getattr("write") {
-                if let Err(error) = write_meth.call1((line,)) {
-                    eprintln!("logly: python sink raised {error}");
-                }
+            } else if let Ok(write_meth) = py_sink.getattr("write")
+                && let Err(error) = write_meth.call1((line,))
+            {
+                eprintln!("logly: python sink raised {error}");
             }
             Ok(())
         })
