@@ -641,6 +641,100 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
     }
 
+    fn truncate_half(path: &Path) {
+        let raw = fs::read(path).unwrap();
+        assert!(raw.len() > 64, "fixture too small to truncate");
+        fs::write(path, &raw[..raw.len() / 2]).unwrap();
+    }
+
+    #[test]
+    #[allow(clippy::cast_possible_truncation)]
+    fn truncated_archives_are_detected() {
+        let dir = test_dir("truncated");
+        // Deterministic pseudo-random payload: incompressible enough that
+        // every truncation point destroys decodability. The low byte is
+        // taken deliberately, hence the truncation cast above.
+        let payload: Vec<u8> = (0..20_000u32)
+            .map(|i| (i.wrapping_mul(2_654_435_761) >> 8) as u8)
+            .collect();
+        let cases = [
+            (CompressionCodec::Gzip, "t.log"),
+            (CompressionCodec::Bz2, "t2.log"),
+            (CompressionCodec::Xz, "t3.log"),
+            (CompressionCodec::Zip, "t4.log"),
+            (CompressionCodec::Zstd, "t5.log"),
+        ];
+        for (codec, name) in cases {
+            let path = create_test_file(&dir, name, &payload);
+            let compressed = compress_file(&path, &codec).unwrap();
+            truncate_half(&compressed);
+            let raw = fs::read(&compressed).unwrap();
+            let intact = match codec {
+                CompressionCodec::Gzip => {
+                    let mut decoder = flate2::read::GzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Bz2 => {
+                    let mut decoder = bzip2::read::BzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Xz => {
+                    let mut decoder = xz2::read::XzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Zip => (|| {
+                    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&raw)).ok()?;
+                    let mut entry = archive.by_index(0).ok()?;
+                    let mut out = Vec::new();
+                    entry.read_to_end(&mut out).ok()?;
+                    Some(out == payload)
+                })()
+                .unwrap_or(false),
+                CompressionCodec::Zstd => {
+                    zstd::decode_all(&raw[..]).is_ok_and(|out| out == payload)
+                }
+                CompressionCodec::None => unreachable!("test matrix excludes None"),
+            };
+            assert!(!intact, "{codec:?} must reject a truncated archive");
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn directory_source_fails_without_artifact() {
+        let dir = test_dir("dir_source");
+        let result = compress_file(&dir, &CompressionCodec::Gzip);
+        assert!(result.is_err());
+        assert!(
+            dir.read_dir().unwrap().next().is_none(),
+            "no artifact may remain after failure"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn blocked_destination_fails_and_keeps_source() {
+        let dir = test_dir("blocked_dest");
+        let path = create_test_file(&dir, "blocked.log", b"precious log data");
+        // Occupy the exact output path with a directory so creation fails.
+        fs::create_dir(dir.join("blocked.log.gz")).unwrap();
+        let result = compress_file(&path, &CompressionCodec::Gzip);
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            b"precious log data",
+            "source must survive failed compression"
+        );
+        assert!(
+            !dir.join("blocked.log.gz.part").exists(),
+            "staged file must be cleaned up"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
     fn decompress_gzip(path: &Path) -> LoglyResult<Vec<u8>> {
         let file = std::fs::File::open(path)
             .map_err(|e| LoglyError::Compression(format!("failed to open gzip: {e}")))?;
