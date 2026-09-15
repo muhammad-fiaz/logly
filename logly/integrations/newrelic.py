@@ -124,20 +124,14 @@ class NewRelicSink:
         Returns:
             New Relic severity string.
         """
-        upper = message.upper()
-        if "FATAL" in upper or "CRITICAL" in upper:
-            return "CRITICAL"
-        if "ERROR" in upper or "FAIL" in upper:
-            return "ERROR"
-        if "WARNING" in upper or "WARN" in upper:
-            return "WARNING"
-        if "NOTICE" in upper:
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
+        if canonical in ("NOTICE", "SUCCESS"):
             return "INFO"
-        if "SUCCESS" in upper:
-            return "INFO"
-        if "DEBUG" in upper or "TRACE" in upper:
+        if canonical == "TRACE":
             return "DEBUG"
-        return "INFO"
+        return canonical
 
     def flush(self) -> None:
         """No-op for New Relic sink."""

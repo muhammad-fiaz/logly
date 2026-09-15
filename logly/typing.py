@@ -22,6 +22,9 @@ FormatterCallable: TypeAlias = Callable[[dict[str, object]], str]
 FilterCallable: TypeAlias = Callable[[dict[str, object]], bool]
 """Type alias for custom filter callables that accept a record dict and return a bool."""
 
+PatchCallable: TypeAlias = Callable[[dict[str, object]], None]
+"""Type alias for record patcher callables that mutate the record dict in place."""
+
 
 class WriteSink(Protocol):
     """Protocol for custom write-style sinks.

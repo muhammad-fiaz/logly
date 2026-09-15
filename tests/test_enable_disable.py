@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from logly import logger
+from logly import Logger, logger
 
 
 class TestEnableDisable:
@@ -52,3 +52,63 @@ class TestEnableDisable:
         # After re-enabling, logging should work
         native.log("INFO", "re-enabled message")
         assert True  # disable/enable roundtrip succeeded
+
+
+class TestDisableExactNameSemantics:
+    """Names match exactly in both the Python fast-path and native engine."""
+
+    def _named(self, base_logger: Logger, name: str) -> Logger:
+        clone = base_logger._clone()
+        clone._name = name
+        return clone
+
+    def test_exact_disabled_name_is_silenced(self) -> None:
+        base = Logger()
+        messages: list[str] = []
+        sink_id = base.add(lambda m: messages.append(m), level="DEBUG", format="{message}")
+        try:
+            base.disable("myapp")
+            self._named(base, "myapp").info("exact disabled")
+            assert messages == []
+        finally:
+            base.enable("myapp")
+            base.remove(sink_id)
+
+    def test_nested_name_is_not_silenced(self) -> None:
+        base = Logger()
+        messages: list[str] = []
+        sink_id = base.add(lambda m: messages.append(m), level="DEBUG", format="{message}")
+        try:
+            base.disable("myapp")
+            self._named(base, "myapp.database").info("child emits")
+            assert len(messages) == 1
+            assert "child emits" in messages[0]
+        finally:
+            base.enable("myapp")
+            base.remove(sink_id)
+
+    def test_enable_restores_exact_name(self) -> None:
+        base = Logger()
+        messages: list[str] = []
+        sink_id = base.add(lambda m: messages.append(m), level="DEBUG", format="{message}")
+        try:
+            base.disable("myapp")
+            base.enable("myapp")
+            self._named(base, "myapp").info("restored")
+            assert len(messages) == 1
+        finally:
+            base.remove(sink_id)
+
+    def test_configure_activation_uses_exact_names(self) -> None:
+        base = Logger()
+        messages: list[str] = []
+        sink_id = base.add(lambda m: messages.append(m), level="DEBUG", format="{message}")
+        try:
+            base.configure(activation=[("myapp.debug", False)])
+            self._named(base, "myapp.debug").info("off")
+            self._named(base, "myapp").info("on")
+            assert len(messages) == 1
+            assert "on" in messages[0]
+        finally:
+            base.enable("myapp.debug")
+            base.remove(sink_id)

@@ -10,7 +10,7 @@ This section provides detailed API documentation for all Logly modules and class
 ## Core
 
 - [Logger API](logger) — The main `Logger` class and module-level `logger` instance
-- [Config Models](models) — Pydantic configuration models for sinks, rotation, retention, and compression
+- [Config Models](models) — Stdlib dataclass configuration models for sinks, rotation, retention, and compression
 
 ## Errors
 

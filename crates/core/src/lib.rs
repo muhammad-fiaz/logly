@@ -178,6 +178,17 @@ impl LoggerEngine {
         self.dispatch(&record)
     }
 
+    /// Returns a snapshot of the currently registered sinks.
+    ///
+    /// Each entry holds an `Arc`, so a sink removed concurrently stays alive
+    /// until the in-flight dispatch or flush finishes. Snapshot first, then
+    /// call [`deliver`](Self::deliver)/[`flush_all`](Self::flush_all) without
+    /// holding any engine lock across slow sink I/O.
+    #[must_use]
+    pub fn sink_snapshot(&self) -> Vec<Arc<dyn Sink>> {
+        self.sinks.values().cloned().collect()
+    }
+
     /// Dispatches a pre-built [`LogRecord`] to all registered sinks.
     ///
     /// Each sink's [`Sink::handle`] method is called with the record.
@@ -195,8 +206,27 @@ impl LoggerEngine {
     ///
     /// Returns the first [`LoglyError`] reported by any sink, if any.
     pub fn dispatch(&self, record: &LogRecord) -> LoglyResult<()> {
+        Self::deliver(&self.sink_snapshot(), record)
+    }
+
+    /// Delivers one record to an explicit sink snapshot.
+    ///
+    /// Same attempt-all/first-error policy as [`dispatch`](Self::dispatch),
+    /// but operates on a caller-provided snapshot so no engine lock is held
+    /// while sinks perform blocking I/O or invoke callbacks.
+    ///
+    /// # Arguments
+    ///
+    /// * `sinks` — Snapshot previously taken via
+    ///   [`sink_snapshot`](Self::sink_snapshot).
+    /// * `record` — The log record to dispatch.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first [`LoglyError`] reported by any sink, if any.
+    pub fn deliver(sinks: &[Arc<dyn Sink>], record: &LogRecord) -> LoglyResult<()> {
         let mut first_error: Option<LoglyError> = None;
-        for sink in self.sinks.values() {
+        for sink in sinks {
             if let Err(error) = sink.handle(record) {
                 first_error.get_or_insert(error);
             }
@@ -217,8 +247,26 @@ impl LoggerEngine {
     ///
     /// Returns the first [`LoglyError`] reported by any sink, if any.
     pub fn complete(&self) -> LoglyResult<()> {
+        Self::flush_all(&self.sink_snapshot())
+    }
+
+    /// Flushes an explicit sink snapshot.
+    ///
+    /// Same attempt-all/first-error policy as [`complete`](Self::complete),
+    /// but operates on a caller-provided snapshot so no engine lock is held
+    /// while sinks flush blocking destinations.
+    ///
+    /// # Arguments
+    ///
+    /// * `sinks` — Snapshot previously taken via
+    ///   [`sink_snapshot`](Self::sink_snapshot).
+    ///
+    /// # Errors
+    ///
+    /// Returns the first [`LoglyError`] reported by any sink, if any.
+    pub fn flush_all(sinks: &[Arc<dyn Sink>]) -> LoglyResult<()> {
         let mut first_error: Option<LoglyError> = None;
-        for sink in self.sinks.values() {
+        for sink in sinks {
             if let Err(error) = sink.flush() {
                 first_error.get_or_insert(error);
             }

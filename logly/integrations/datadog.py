@@ -21,15 +21,6 @@ import json
 import urllib.request
 from typing import Any
 
-_IMPORT_MSG = (  # pragma: no cover
-    "datadog is required for Logly Datadog integration.\n"
-    "Install with one of:\n"
-    "  uv add logly[datadog]       # recommended\n"
-    "  pip install logly[datadog]\n"
-    "  uv add datadog\n"
-    "  pip install datadog"
-)  # pragma: no cover
-
 __all__ = ["DatadogSink"]
 
 
@@ -138,18 +129,16 @@ class DatadogSink:
         Returns:
             Datadog status string.
         """
-        upper = message.upper()
-        if "FATAL" in upper or "CRITICAL" in upper:
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
+        if canonical == "CRITICAL":
             return "critical"
-        if "ERROR" in upper or "FAIL" in upper:
+        if canonical == "ERROR":
             return "error"
-        if "WARNING" in upper or "WARN" in upper:
+        if canonical == "WARNING":
             return "warning"
-        if "NOTICE" in upper:
-            return "info"
-        if "SUCCESS" in upper:
-            return "info"
-        if "DEBUG" in upper or "TRACE" in upper:
+        if canonical in ("DEBUG", "TRACE"):
             return "debug"
         return "info"
 

@@ -40,7 +40,7 @@ compression, structured output, and framework integrations.
 | **Rich console** | Yes | Yes | No | Manual |
 | **OpenTelemetry** | Yes | Custom sink | Processor based | Manual |
 | **Prometheus** | Yes | Custom sink | No | Manual |
-| **Pydantic config** | Yes | No | No | No |
+| **Dataclass config** | Yes | No | No | No |
 | **Type stubs** | Yes | Partial | Yes | No |
 | **Zero unsafe Rust** | Yes | N/A | N/A | N/A |
 

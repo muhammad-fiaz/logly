@@ -142,20 +142,18 @@ class AzureMonitorSink:
         Returns:
             OTel ``SeverityNumber`` attribute name.
         """
-        upper = message.upper()
-        if "FATAL" in upper or "CRITICAL" in upper:
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
+        if canonical == "CRITICAL":
             return "FATAL"
-        if "ERROR" in upper or "FAIL" in upper:
+        if canonical == "ERROR":
             return "ERROR"
-        if "WARNING" in upper or "WARN" in upper:
+        if canonical == "WARNING":
             return "WARN"
-        if "NOTICE" in upper:
+        if canonical in ("NOTICE", "SUCCESS", "INFO"):
             return "INFO"
-        if "SUCCESS" in upper:
-            return "INFO"
-        if "DEBUG" in upper or "TRACE" in upper:
-            return "TRACE"
-        return "INFO"
+        return "TRACE"
 
     def flush(self) -> None:
         """Flush pending log records."""

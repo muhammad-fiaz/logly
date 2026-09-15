@@ -171,10 +171,9 @@ pip install "logly[slack]"                   # Slack webhooks (urllib by default
 
 # Utilities
 pip install "logly[compression]"             # Zstandard compression
-pip install "logly[pydantic]"                # Optional: nest logly.models in your pydantic BaseModels
 
 # Everything
-pip install "logly[all]"                     # all of the above (includes pydantic)
+pip install "logly[all]"                     # all of the above
 ```
 
 > Several integrations (`datadog`, `seq`, `logstash`, `graylog`, `loki`, `email`, `http`, `telemetry`, `stdlib`, `propagate`) use only Python stdlib and require no extra dependencies. `discord`/`slack` work with stdlib `urllib` by default; their extras (`aiohttp`, `slack-sdk`) are optional.
@@ -237,10 +236,9 @@ uv add "logly[slack]"
 
 # Utilities
 uv add "logly[compression]"
-uv add "logly[pydantic]"  # Optional: nest logly.models in your pydantic BaseModels
 
 # Everything
-uv add "logly[all]"  # includes pydantic
+uv add "logly[all]"
 ```
 
 </details>

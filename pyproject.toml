@@ -114,13 +114,7 @@ typer = [
 compression = [
     "zstandard>=0.25.0",
 ]
-# Optional in 0.2.3+: Logly core uses stdlib dataclasses (no pydantic required).
-# Install with `uv add logly[pydantic]` / `pip install "logly[pydantic]"` to use
-# logly.models inside your own pydantic BaseModels (via __get_pydantic_core_schema__)
-# and pydantic.TypeAdapter validation. No Logly feature requires it.
-pydantic = [
-    "pydantic>=2.0",
-]
+# Logly core uses stdlib dataclasses; there are no validation-framework dependencies.
 tqdm = [
     "tqdm>=4.0",
 ]
@@ -164,7 +158,6 @@ all = [
     "rq>=1.10",
     "click>=8.0",
     "typer>=0.9",
-    "pydantic>=2.0",
     "tqdm>=4.0",
     "zstandard>=0.25.0",
     "boto3>=1.28",

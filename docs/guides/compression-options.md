@@ -18,6 +18,10 @@ Logly supports multiple compression codecs for compressing rotated log files. Co
 | xz | `"xz"` | `"lzma"`, `"tar.xz"` | `.xz` | Stable |
 | zstd | `"zstd"` | N/A | `.zst` | Stable |
 
+## Compression levels
+
+Compression codecs use engine-tuned default levels (`gzip` default, `bzip2` default, `xz` level 6, `zstd` level 0/default). There is intentionally no per-sink level option: `add()` accepts only the codec name, so configuration stays a validated codec string end to end.
+
 ## gzip
 
 The most widely supported compression format. Good balance of speed and compression ratio.

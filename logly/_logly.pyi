@@ -20,6 +20,7 @@ else:
     from typing_extensions import Self
 
 from logly.models import PrettyJsonConfig
+from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
 
 __version__: str
 """Current version of the logly package."""
@@ -125,17 +126,21 @@ class _Logger:
         """
         ...
     def enable(self, name: str) -> None:
-        """Enable logging for a logger name pattern.
+        """Enable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to enable (e.g. ``"app"``).
+            name: Logger name to enable (e.g. ``"app"``).
         """
         ...
     def disable(self, name: str) -> None:
-        """Disable logging for a logger name pattern.
+        """Disable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to disable (e.g. ``"app"``).
+            name: Logger name to disable (e.g. ``"app"``).
         """
         ...
     def log(self, level: str, message: str) -> None:
@@ -286,7 +291,7 @@ class Logger:
         *,
         name: str = "logly",
         bound: Mapping[str, object] | None = None,
-        patchers: tuple[Callable[[dict[str, object]], None], ...] = (),
+        patchers: tuple[PatchCallable, ...] = (),
         options: Any | None = None,
         sink_configs: dict[int, tuple[object, dict[str, object]]] | None = None,
     ) -> None: ...
@@ -294,8 +299,8 @@ class Logger:
         self,
         sink: object = "stderr",
         *,
-        level: str | int = "DEBUG",
-        format: str | Callable[[dict[str, object]], str] | None = None,
+        level: LevelType = "DEBUG",
+        format: str | FormatterCallable | None = None,
         rotation: str | int | object | None = None,
         retention: int | str | object | None = None,
         compression: str | object | None = None,
@@ -303,10 +308,10 @@ class Logger:
         colorize: bool | None = None,
         backtrace: bool = True,
         diagnose: bool = False,
-        filter: str | Callable[[dict[str, object]], bool] | Mapping[str, str | bool] | None = None,
+        filter: str | FilterCallable | Mapping[str, str | bool] | None = None,
         serialize: bool = False,
         pretty_json: bool | PrettyJsonConfig | None = None,
-        patch: Callable[[dict[str, object]], None] | None = None,
+        patch: PatchCallable | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
@@ -394,6 +399,12 @@ class Logger:
 
         Should be called before process exit when using ``enqueue=True``
         sinks to ensure all pending messages are flushed.
+        """
+        ...
+    def flush(self) -> None:
+        """Flush all sinks, ensuring buffered records are written.
+
+        Equivalent to :meth:`complete`; safe to call multiple times.
         """
         ...
     def reinstall(self, handler_id: int | None = None) -> None:
@@ -531,7 +542,7 @@ class Logger:
             # request_id is NOT attached
         """
         ...
-    def patch(self, patcher: Callable[[dict[str, object]], None]) -> Self:
+    def patch(self, patcher: PatchCallable) -> Self:
         """Add a patcher callable to modify log records.
 
         Patchers are called for each log record before dispatch, allowing
@@ -585,10 +596,12 @@ class Logger:
         """
         ...
     def enable(self, name: str) -> None:
-        """Enable logging for a logger name pattern.
+        """Enable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to enable (e.g. ``"app"``).
+            name: Logger name to enable (e.g. ``"app"``).
 
         Example::
 
@@ -597,16 +610,17 @@ class Logger:
         """
         ...
     def disable(self, name: str) -> None:
-        """Disable logging for a logger name pattern.
+        """Disable logging for a logger name.
 
-        All log calls with this name prefix are silently discarded.
+        Names match exactly: only loggers named exactly ``name`` are
+        silently discarded.
 
         Args:
-            name: Logger name prefix to disable (e.g. ``"app"``).
+            name: Logger name to disable (e.g. ``"app"``).
 
         Example::
 
-            logger.disable("app")  # All "app.*" logs are silenced
+            logger.disable("app")  # Only "app" logs are silenced
         """
         ...
     def configure(
@@ -615,10 +629,10 @@ class Logger:
         handlers: list[dict[str, object]] | None = None,
         levels: list[dict[str, object]] | None = None,
         extra: dict[str, object] | None = None,
-        patcher: Callable[[dict[str, object]], None] | None = None,
+        patcher: PatchCallable | None = None,
         activation: list[tuple[str, bool]] | None = None,
     ) -> None:
-        """Bulk-configure the logger, replacing existing settings.
+        """Bulk-configure the logger, updating existing settings.
 
         Args:
             handlers: List of sink configurations (same format as :meth:`add`).
@@ -639,7 +653,7 @@ class Logger:
         """
         ...
     def log(
-        self, level: str | int, message: object, *args: object, **kwargs: object
+        self, level: LevelType, message: object, *args: object, **kwargs: object
     ) -> dict[str, object] | None:
         """Log a message at a named or numeric level.
 
@@ -795,8 +809,8 @@ class Logger:
             logger.add("app.log")  # Writes to /var/log/myapp/app.log
         """
         ...
+    @staticmethod
     def parse(
-        self,
         path: str | Path,
         pattern: str | re.Pattern[str] | None = None,
         *,

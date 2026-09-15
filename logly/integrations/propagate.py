@@ -69,19 +69,17 @@ class PropagateHandler(logging.Handler):
             message: The formatted log line from Logly.
         """
         # Determine stdlib level from Logly level prefix
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
         level = logging.INFO
-        upper = message.upper()
-        if "TRACE" in upper or "DEBUG" in upper:
+        if canonical in ("TRACE", "DEBUG"):
             level = logging.DEBUG
-        elif "NOTICE" in upper:
-            level = logging.INFO
-        elif "SUCCESS" in upper:
-            level = logging.INFO
-        elif "WARNING" in upper or "WARN" in upper:
+        elif canonical == "WARNING":
             level = logging.WARNING
-        elif "ERROR" in upper or "FAIL" in upper:
+        elif canonical == "ERROR":
             level = logging.ERROR
-        elif "CRITICAL" in upper or "FATAL" in upper:
+        elif canonical == "CRITICAL":
             level = logging.CRITICAL
 
         self._logger.log(level, message.rstrip())

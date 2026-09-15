@@ -22,6 +22,38 @@ def strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text)
 
 
+def detect_canonical_level(message: str) -> str:
+    """Infer a canonical level name from a formatted log message.
+
+    Checks level tokens in severity-priority order so a message containing
+    multiple tokens (e.g. ``"CRITICAL ... ERROR ..."``) resolves to the
+    most severe one.
+
+    Args:
+        message: The formatted log message string.
+
+    Returns:
+        One of ``"CRITICAL"``, ``"ERROR"``, ``"WARNING"``, ``"NOTICE"``,
+        ``"SUCCESS"``, ``"TRACE"``, ``"DEBUG"``, or ``"INFO"``.
+    """
+    upper = message.upper()
+    if "FATAL" in upper or "CRITICAL" in upper:
+        return "CRITICAL"
+    if "ERROR" in upper or "FAIL" in upper:
+        return "ERROR"
+    if "WARNING" in upper or "WARN" in upper:
+        return "WARNING"
+    if "NOTICE" in upper:
+        return "NOTICE"
+    if "SUCCESS" in upper:
+        return "SUCCESS"
+    if "TRACE" in upper:
+        return "TRACE"
+    if "DEBUG" in upper:
+        return "DEBUG"
+    return "INFO"
+
+
 def cli_echo(message: Any = None, *, err: bool = False) -> None:
     """Route CLI ``echo`` output through Logly (shared by click/typer).
 

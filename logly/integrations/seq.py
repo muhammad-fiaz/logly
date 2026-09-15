@@ -28,14 +28,6 @@ import json
 import urllib.request
 from typing import Any
 
-_IMPORT_MSG = (  # pragma: no cover
-    "No extra dependencies required for Logly Seq integration.\n"
-    "Uses only Python standard library modules (urllib, json).\n"
-    "Install with one of:\n"
-    "  uv add logly       # recommended\n"
-    "  pip install logly"
-)  # pragma: no cover
-
 __all__ = ["SeqSink"]
 
 _SEVERITY_MAP: dict[str, str] = {
@@ -142,11 +134,9 @@ class SeqSink:
         Returns:
             Seq severity string.
         """
-        upper = message.upper()
-        for logly_name, seq_name in _SEVERITY_MAP.items():
-            if logly_name in upper:
-                return seq_name
-        return "Information"
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        return _SEVERITY_MAP.get(detect_canonical_level(message), "Information")
 
     def _send_event(self, event: dict[str, Any]) -> None:
         """Send a single event to the Seq raw ingest endpoint.

@@ -28,7 +28,7 @@ logger.configure(
 | `levels` | `list[dict] \| None` | Custom levels to register. Each dict has `name`, `no`, `color`. |
 | `extra` | `dict \| None` | Default extra context fields added to all records. |
 | `patcher` | `Callable \| None` | Function applied to every log record before dispatch. |
-| `activation` | `list[tuple[str, bool]] \| None` | Enable/disable logger names by pattern. |
+| `activation` | `list[tuple[str, bool]] \| None` | Enable/disable logger names by exact name. |
 
 ## Handlers
 
@@ -115,14 +115,14 @@ logger.info("This has hostname and pid automatically")
 
 ## Activation
 
-Enable or disable logger names by pattern:
+Enable or disable logger names by exact name:
 
 ```python
 logger.configure(
     activation=[
-        ("myapp.*", True),  # Enable myapp.*
-        ("debug.*", False),  # Disable debug.*
-        ("third_party.*", False),  # Disable noisy third-party loggers
+        ("myapp", True),  # Enable myapp
+        ("myapp.debug", False),  # Disable myapp.debug
+        ("third_party", False),  # Disable noisy third-party logger
     ],
 )
 ```

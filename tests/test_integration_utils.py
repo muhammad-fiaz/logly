@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from logly.integrations._utils import strip_ansi
+from logly.integrations._utils import detect_canonical_level, strip_ansi
 
 
 class TestStripAnsi:
@@ -53,3 +53,32 @@ class TestStripAnsi:
     def test_text_without_escape(self) -> None:
         text = "hello world 123"
         assert strip_ansi(text) == text
+
+
+class TestDetectCanonicalLevel:
+    def test_critical_priority(self) -> None:
+        assert detect_canonical_level("CRITICAL failure") == "CRITICAL"
+        assert detect_canonical_level("fatal error") == "CRITICAL"
+
+    def test_error_priority(self) -> None:
+        assert detect_canonical_level("ERROR boom") == "ERROR"
+        assert detect_canonical_level("operation failed") == "ERROR"
+
+    def test_warning(self) -> None:
+        assert detect_canonical_level("WARNING slow") == "WARNING"
+        assert detect_canonical_level("warn: deprecated") == "WARNING"
+
+    def test_notice_success(self) -> None:
+        assert detect_canonical_level("NOTICE served") == "NOTICE"
+        assert detect_canonical_level("SUCCESS done") == "SUCCESS"
+
+    def test_trace_debug(self) -> None:
+        assert detect_canonical_level("TRACE enter") == "TRACE"
+        assert detect_canonical_level("DEBUG detail") == "DEBUG"
+
+    def test_default_info(self) -> None:
+        assert detect_canonical_level("hello world") == "INFO"
+
+    def test_most_severe_wins(self) -> None:
+        assert detect_canonical_level("CRITICAL ... ERROR ...") == "CRITICAL"
+        assert detect_canonical_level("ERROR ... WARNING ...") == "ERROR"

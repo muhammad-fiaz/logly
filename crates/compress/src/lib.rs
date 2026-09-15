@@ -38,7 +38,6 @@ use bzip2::write::BzEncoder;
 use error::{LoglyError, LoglyResult};
 use flate2::Compression;
 use flate2::write::GzEncoder;
-use std::io::{Read, Write};
 use std::path::Path;
 use xz2::write::XzEncoder;
 use zstd::Encoder as ZstdEncoder;
@@ -117,6 +116,63 @@ pub fn compress_file(path: &Path, codec: &CompressionCodec) -> LoglyResult<std::
     }
 }
 
+/// Compress `path` into a sibling file with extension `file_ext`.
+///
+/// The payload is written to a temporary `.part` file first. Only after the
+/// writer succeeds and the staged output is synced and closed is it
+/// atomically renamed to its final name, so a crash or error can never leave
+/// a truncated archive masquerading as a complete one (staged files are
+/// removed best-effort on failure). Handles are dropped before the rename
+/// because Windows refuses to rename open files. A failed call never
+/// modifies or deletes `path`.
+///
+/// # Errors
+///
+/// Returns [`LoglyError::Compression`] when any step fails.
+fn write_compressed_artifact(
+    path: &Path,
+    file_ext: &str,
+    write_payload: impl FnOnce(&mut std::fs::File, &mut std::fs::File) -> LoglyResult<()>,
+) -> LoglyResult<std::path::PathBuf> {
+    let output = path.with_extension(format!(
+        "{}.{}",
+        path.extension().unwrap_or_default().to_string_lossy(),
+        file_ext
+    ));
+    let mut tmp_name = output.as_os_str().to_owned();
+    tmp_name.push(".part");
+    let tmp = std::path::PathBuf::from(tmp_name);
+
+    let result = (|| {
+        let mut input = std::fs::File::open(path).map_err(|e| {
+            LoglyError::Compression(format!("failed to open {}: {e}", path.display()))
+        })?;
+        let mut staged = std::fs::File::create(&tmp).map_err(|e| {
+            LoglyError::Compression(format!("failed to create {}: {e}", tmp.display()))
+        })?;
+        write_payload(&mut input, &mut staged)?;
+        staged.sync_all().map_err(|e| {
+            LoglyError::Compression(format!("failed to sync {}: {e}", tmp.display()))
+        })?;
+        Ok::<(), LoglyError>(())
+    })();
+    // `input` and `staged` are dropped here, before any rename.
+
+    match result {
+        Ok(()) => {
+            std::fs::rename(&tmp, &output).map_err(|e| {
+                let _ = std::fs::remove_file(&tmp);
+                LoglyError::Compression(format!("failed to finalize {}: {e}", output.display()))
+            })?;
+            Ok(output)
+        }
+        Err(error) => {
+            let _ = std::fs::remove_file(&tmp);
+            Err(error)
+        }
+    }
+}
+
 /// Deletes old compressed archives matching a base name pattern.
 ///
 /// Scans the directory for files whose names start with `base_name` and have
@@ -155,9 +211,11 @@ pub fn cleanup_old_archives(
         for entry in entries.flatten() {
             let file_name = entry.file_name();
             let name = file_name.to_string_lossy();
-            if name.starts_with(base_name) {
-                let is_compressed = extensions.iter().any(|ext| name.ends_with(ext));
-                if is_compressed || (name.contains('.') && name != base_name) {
+            if let Some(remainder) = name.strip_prefix(base_name) {
+                let is_compressed = extensions
+                    .iter()
+                    .any(|ext| remainder.ends_with(&format!(".{ext}")));
+                if is_compressed || is_rotated_suffix(remainder) {
                     candidates.push(entry.path());
                 }
             }
@@ -202,142 +260,110 @@ pub fn cleanup_old_archives(
     Ok(())
 }
 
+/// Returns `true` if `remainder` (the part of a filename after `base_name`)
+/// is a rotation suffix: a dot followed by the 10-digit rotation timestamp,
+/// optionally followed by a numeric counter (e.g. `.1789476036` or
+/// `.1789476036.2`).
+///
+/// Anything else (e.g. `back` in `app.logback`, or `.config`) belongs to an
+/// unrelated file that retention must never delete.
+fn is_rotated_suffix(remainder: &str) -> bool {
+    let dotted = remainder.strip_prefix('.').unwrap_or("");
+    let (stamp, rest) = match dotted.split_once('.') {
+        Some((stamp, rest)) => (stamp, Some(rest)),
+        None => (dotted, None),
+    };
+    if stamp.len() != 10 || !stamp.bytes().all(|b| b.is_ascii_digit()) {
+        return false;
+    }
+    match rest {
+        None => true,
+        Some(counter) => !counter.is_empty() && counter.bytes().all(|b| b.is_ascii_digit()),
+    }
+}
+
 fn compress_gzip(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.gz",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
-    let mut input = std::fs::File::open(path)
-        .map_err(|e| LoglyError::Compression(format!("failed to open {}: {e}", path.display())))?;
-
-    let mut out_file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-
-    let mut encoder = GzEncoder::new(&mut out_file, Compression::default());
-    std::io::copy(&mut input, &mut encoder).map_err(|e| {
-        LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-    })?;
-    encoder
-        .finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish gzip compression: {e}")))?;
-
-    Ok(output)
+    write_compressed_artifact(path, "gz", |input, staged| {
+        let mut encoder = GzEncoder::new(staged, Compression::default());
+        std::io::copy(input, &mut encoder).map_err(|e| {
+            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+        })?;
+        encoder.finish().map_err(|e| {
+            LoglyError::Compression(format!("failed to finish gzip compression: {e}"))
+        })?;
+        Ok(())
+    })
 }
 
 fn compress_zip(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.zip",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
     let file_name = path
         .file_name()
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned();
 
-    let mut input_data = Vec::new();
-    std::fs::File::open(path)
-        .and_then(|mut f| f.read_to_end(&mut input_data))
-        .map_err(|e| LoglyError::Compression(format!("failed to read {}: {e}", path.display())))?;
-
-    let out_file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-
-    let mut zip = zip::ZipWriter::new(out_file);
-    let options = zip::write::SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
-    zip.start_file(&file_name, options)
-        .map_err(|e| LoglyError::Compression(format!("failed to start zip entry: {e}")))?;
-    zip.write_all(&input_data)
-        .map_err(|e| LoglyError::Compression(format!("failed to write zip entry: {e}")))?;
-    zip.finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish zip archive: {e}")))?;
-
-    Ok(output)
+    // Stream the input into the entry instead of buffering the whole file:
+    // `ZipWriter` implements `Write` once the entry is started, and only the
+    // central directory (written at `finish`) requires seeking.
+    write_compressed_artifact(path, "zip", |input, staged| {
+        let mut zip = zip::ZipWriter::new(staged);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        zip.start_file(&file_name, options)
+            .map_err(|e| LoglyError::Compression(format!("failed to start zip entry: {e}")))?;
+        std::io::copy(input, &mut zip)
+            .map_err(|e| LoglyError::Compression(format!("failed to write zip entry: {e}")))?;
+        zip.finish()
+            .map_err(|e| LoglyError::Compression(format!("failed to finish zip archive: {e}")))?;
+        Ok(())
+    })
 }
 
 fn compress_bz2(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.bz2",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
-    let mut input = std::fs::File::open(path)
-        .map_err(|e| LoglyError::Compression(format!("failed to open {}: {e}", path.display())))?;
-
-    let mut out_file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-
-    let mut encoder = BzEncoder::new(&mut out_file, BzCompression::default());
-    std::io::copy(&mut input, &mut encoder).map_err(|e| {
-        LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-    })?;
-    encoder
-        .finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish bz2 compression: {e}")))?;
-
-    Ok(output)
+    write_compressed_artifact(path, "bz2", |input, staged| {
+        let mut encoder = BzEncoder::new(staged, BzCompression::default());
+        std::io::copy(input, &mut encoder).map_err(|e| {
+            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+        })?;
+        encoder.finish().map_err(|e| {
+            LoglyError::Compression(format!("failed to finish bz2 compression: {e}"))
+        })?;
+        Ok(())
+    })
 }
 
 fn compress_xz(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.xz",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
-    let mut input = std::fs::File::open(path)
-        .map_err(|e| LoglyError::Compression(format!("failed to open {}: {e}", path.display())))?;
-
-    let mut out_file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-
-    let mut encoder = XzEncoder::new(&mut out_file, 6);
-    std::io::copy(&mut input, &mut encoder).map_err(|e| {
-        LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-    })?;
-    encoder
-        .finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish xz compression: {e}")))?;
-
-    Ok(output)
+    write_compressed_artifact(path, "xz", |input, staged| {
+        let mut encoder = XzEncoder::new(staged, 6);
+        std::io::copy(input, &mut encoder).map_err(|e| {
+            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+        })?;
+        encoder.finish().map_err(|e| {
+            LoglyError::Compression(format!("failed to finish xz compression: {e}"))
+        })?;
+        Ok(())
+    })
 }
 
 fn compress_zstd(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    let output = path.with_extension(format!(
-        "{}.zst",
-        path.extension().unwrap_or_default().to_string_lossy()
-    ));
-
-    let mut input = std::fs::File::open(path)
-        .map_err(|e| LoglyError::Compression(format!("failed to open {}: {e}", path.display())))?;
-
-    let mut out_file = std::fs::File::create(&output).map_err(|e| {
-        LoglyError::Compression(format!("failed to create {}: {e}", output.display()))
-    })?;
-
-    let mut encoder = ZstdEncoder::new(&mut out_file, 0)
-        .map_err(|e| LoglyError::Compression(format!("failed to create zstd encoder: {e}")))?;
-    std::io::copy(&mut input, &mut encoder).map_err(|e| {
-        LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-    })?;
-    encoder
-        .finish()
-        .map_err(|e| LoglyError::Compression(format!("failed to finish zstd compression: {e}")))?;
-
-    Ok(output)
+    write_compressed_artifact(path, "zst", |input, staged| {
+        let mut encoder = ZstdEncoder::new(staged, 0)
+            .map_err(|e| LoglyError::Compression(format!("failed to create zstd encoder: {e}")))?;
+        std::io::copy(input, &mut encoder).map_err(|e| {
+            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+        })?;
+        encoder.finish().map_err(|e| {
+            LoglyError::Compression(format!("failed to finish zstd compression: {e}"))
+        })?;
+        Ok(())
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
-    use std::io::BufReader;
+    use std::io::{BufReader, Read};
 
     fn test_dir(suffix: &str) -> std::path::PathBuf {
         let dir = std::env::temp_dir().join(format!("logly_compress_test_{suffix}"));
@@ -533,6 +559,85 @@ mod tests {
             !path.exists(),
             "file should have been deleted by age cleanup"
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rotated_suffix_matches_only_rotation_names() {
+        assert!(is_rotated_suffix(".1789476036"));
+        assert!(is_rotated_suffix(".1789476036.2"));
+        assert!(!is_rotated_suffix(""));
+        assert!(!is_rotated_suffix("back"));
+        assert!(!is_rotated_suffix(".config"));
+        assert!(!is_rotated_suffix(".123456789"));
+        assert!(!is_rotated_suffix(".12345678901"));
+        assert!(!is_rotated_suffix(".1789476036."));
+        assert!(!is_rotated_suffix(".1789476036.x"));
+    }
+
+    #[test]
+    fn cleanup_keeps_unrelated_files() {
+        let dir = test_dir("cleanup_unrelated");
+        for name in [
+            "app.logback",
+            "app.log.tmp",
+            "app.log.gz.backup",
+            "app.log.123",
+            "app.log.123456789",
+            "notes.txt",
+        ] {
+            create_test_file(&dir, name, b"do not delete");
+        }
+        create_test_file(&dir, "app.log.1789476036.gz", b"archive");
+        cleanup_old_archives(&dir, "app.log", Some(0), None).unwrap();
+        for name in [
+            "app.logback",
+            "app.log.tmp",
+            "app.log.gz.backup",
+            "app.log.123",
+            "app.log.123456789",
+            "notes.txt",
+        ] {
+            assert!(dir.join(name).exists(), "{name} must be preserved");
+        }
+        assert!(
+            !dir.join("app.log.1789476036.gz").exists(),
+            "managed archive must be pruned"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn staged_part_files_are_never_managed() {
+        let dir = test_dir("cleanup_part");
+        create_test_file(&dir, "app.log.1789476036.gz.part", b"partial");
+        cleanup_old_archives(&dir, "app.log", Some(0), None).unwrap();
+        assert!(dir.join("app.log.1789476036.gz.part").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn failed_compression_keeps_source_and_reports() {
+        let dir = test_dir("compress_missing");
+        let missing = dir.join("does-not-exist.log");
+        let result = compress_file(&missing, &CompressionCodec::Gzip);
+        assert!(result.is_err());
+        assert!(
+            dir.read_dir().unwrap().next().is_none(),
+            "no artifact may remain after failure"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn staged_artifact_is_renamed_to_final_name() {
+        let dir = test_dir("compress_staged");
+        let path = create_test_file(&dir, "staged_test.log", b"staged payload");
+        let compressed = compress_file(&path, &CompressionCodec::Gzip).unwrap();
+        assert!(compressed.to_string_lossy().ends_with(".gz"));
+        assert!(!compressed.to_string_lossy().ends_with(".part"));
+        assert!(dir.join("staged_test.log.gz").exists());
+        assert!(path.exists(), "source must survive successful compression");
         let _ = fs::remove_dir_all(&dir);
     }
 

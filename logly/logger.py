@@ -50,6 +50,7 @@ from logly._logly import (
     resolve_level_name,
 )
 from logly.models import PrettyJsonConfig
+from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
 
 _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", default=None)
 _logly_level_tls: threading.local = threading.local()
@@ -141,6 +142,45 @@ def _current_context() -> dict[str, object]:
     return dict(_context.get() or {})
 
 
+def _diagnose_suffix(exc: BaseException, *, max_frames: int = 16, max_vars: int = 12) -> str | None:
+    """Build a bounded diagnostic suffix listing frame locals per traceback frame.
+
+    Every value is rendered with a guarded, truncated ``repr`` so exotic
+    objects cannot break or bloat logging. Returns ``None`` when no frame
+    information is available.
+    """
+    lines: list[str] = ["--- Diagnostic context ---"]
+    tb = exc.__traceback__
+    count = 0
+    while tb is not None and count < max_frames:
+        frame = tb.tb_frame
+        try:
+            items = list(frame.f_locals.items())[:max_vars]
+            rendered_vars = ", ".join(
+                f"{key}={_safe_repr(value)}" for key, value in items if not key.startswith("__")
+            )
+        except Exception:
+            rendered_vars = "<unavailable>"
+        lines.append(
+            f"{frame.f_code.co_filename}:{tb.tb_lineno} in {frame.f_code.co_name}"
+            + (f" | {rendered_vars}" if rendered_vars else "")
+        )
+        count += 1
+        tb = tb.tb_next
+    return "\n".join(lines) if count else None
+
+
+def _safe_repr(value: object, limit: int = 200) -> str:
+    """Return a truncated ``repr`` that never raises."""
+    try:
+        text = repr(value)
+    except Exception:
+        return "<unrepresentable>"
+    if len(text) > limit:
+        return text[:limit] + "…"
+    return text
+
+
 @dataclass
 class _Options:
     """Per-call logging options.
@@ -186,7 +226,7 @@ class Logger:
         *,
         name: str = "logly",
         bound: Mapping[str, object] | None = None,
-        patchers: tuple[Callable[[dict[str, object]], None], ...] = (),
+        patchers: tuple[PatchCallable, ...] = (),
         options: _Options | None = None,
         sink_configs: dict[int, tuple[object, dict[str, object]]] | None = None,
     ) -> None:
@@ -225,8 +265,8 @@ class Logger:
         self,
         sink: object = sys.stderr,
         *,
-        level: str | int = "DEBUG",
-        format: str | Callable[[dict[str, object]], str] | None = None,
+        level: LevelType = "DEBUG",
+        format: str | FormatterCallable | None = None,
         rotation: str | int | object | None = None,
         retention: int | str | object | None = None,
         compression: str | object | None = None,
@@ -234,10 +274,10 @@ class Logger:
         colorize: bool | None = None,
         backtrace: bool = True,
         diagnose: bool = False,
-        filter: str | Callable[[dict[str, object]], bool] | Mapping[str, str | bool] | None = None,
+        filter: str | FilterCallable | Mapping[str, str | bool] | None = None,
         serialize: bool = False,
         pretty_json: bool | PrettyJsonConfig | None = None,
-        patch: Callable[[dict[str, object]], None] | None = None,
+        patch: PatchCallable | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
@@ -276,8 +316,10 @@ class Logger:
             enqueue: If ``True``, dispatch through a background worker.
             colorize: ANSI color override. ``None`` = auto-detect,
                 ``True`` = force on, ``False`` = force off.
-            backtrace: If ``True``, include backtrace on exceptions.
-            diagnose: If ``True``, include diagnostic info on exceptions.
+            backtrace: Accepted for compatibility; exception detail is
+                controlled per message via ``opt(exception=..., backtrace=...)``.
+            diagnose: Accepted for compatibility; reserved for per-message
+                diagnostic detail via ``opt(exception=..., diagnose=...)``.
             filter: Filter rule. Can be a string (prefix), callable, or
                 mapping of extra field values.
             serialize: If ``True``, output as JSON.
@@ -461,6 +503,12 @@ class Logger:
             logger.remove(sink_id)
         """
         self._native.remove(handler_id)
+        # Keep the Python-side mirror in sync so exception-visibility checks
+        # (see log()) only consider still-active sinks.
+        if handler_id is None:
+            self._sink_configs.clear()
+        else:
+            self._sink_configs.pop(handler_id, None)
 
     def complete(self) -> None:
         """Wait for the end of enqueued messages and asynchronous tasks.
@@ -486,6 +534,21 @@ class Logger:
                 loop.call_soon_threadsafe(loop.stop)
             if thread is not None:
                 thread.join(timeout=5.0)
+
+    def flush(self) -> None:
+        """Flush all sinks, ensuring buffered records are written.
+
+        Equivalent to :meth:`complete`: drains ``enqueue=True`` background
+        queues and awaits pending async-sink tasks. Safe to call multiple
+        times.
+
+        Example::
+
+            logger.add("app.log", enqueue=True)
+            logger.info("hello")
+            logger.flush()
+        """
+        self.complete()
 
     def catch(
         self,
@@ -648,7 +711,7 @@ class Logger:
         resolved.mkdir(parents=True, exist_ok=True)
         Logger._root_dir = resolved
 
-    def patch(self, patcher: Callable[[dict[str, object]], None]) -> Self:
+    def patch(self, patcher: PatchCallable) -> Self:
         """Return a logger view that applies a patcher to all records.
 
         The patcher callable receives the record dict and can modify it
@@ -712,10 +775,13 @@ class Logger:
         return Level(name=name_str, no=priority, color=color_opt, icon=icon_opt)
 
     def enable(self, name: str) -> None:
-        """Enable log emission for a logger name pattern.
+        """Enable log emission for a logger name.
+
+        Names match exactly: enabling ``"myapp"`` re-enables only loggers
+        named exactly ``"myapp"``.
 
         Args:
-            name: Logger name or pattern to enable.
+            name: Logger name to enable.
 
         Example::
 
@@ -725,13 +791,16 @@ class Logger:
         self._disabled.discard(name)
 
     def disable(self, name: str) -> None:
-        """Disable log emission for a logger name pattern.
+        """Disable log emission for a logger name.
 
-        Disabled names skip formatting and dispatch entirely in
-        :meth:`log`, and are also enforced by the native engine.
+        Names match exactly: disabling ``"myapp"`` silences only loggers
+        named exactly ``"myapp"``. Disabled names skip formatting and
+        dispatch entirely in :meth:`log`, and are also enforced by the
+        native engine, so a disabled log call performs no formatting,
+        frame inspection, FFI crossing, or sink dispatch.
 
         Args:
-            name: Logger name or pattern to disable.
+            name: Logger name to disable.
 
         Example::
 
@@ -746,15 +815,16 @@ class Logger:
         handlers: list[dict[str, Any]] | None = None,
         levels: list[dict[str, object]] | None = None,
         extra: dict[str, object] | None = None,
-        patcher: Callable[[dict[str, object]], None] | None = None,
+        patcher: PatchCallable | None = None,
         activation: list[tuple[str, bool]] | None = None,
     ) -> None:
-        """Replace the current logging configuration.
+        """Update the current logging configuration.
 
         All parameters are optional. If ``handlers`` is provided, existing
         handlers are removed and replaced. ``levels`` registers custom levels.
-        ``extra`` binds default extra context. ``patcher`` is applied to all
-        records. ``activation`` enables/disables loggers by name pattern.
+        ``extra`` is merged into the bound default extra context.
+        ``patcher`` is appended to the record patchers.
+        ``activation`` enables/disables loggers by exact logger name.
 
         Args:
             handlers: List of handler config dicts (each with ``sink`` key).
@@ -812,19 +882,20 @@ class Logger:
             logger.reinstall(sink_id)  # Reset the file handler
         """
         if handler_id is not None:
-            config = self._sink_configs.get(handler_id)
-            self._native.remove(handler_id)
+            config = self._sink_configs.pop(handler_id, None)
+            try:
+                self._native.remove(handler_id)
+            except Exception:
+                pass
             if config is not None:
                 sink, kwargs = config
-                new_id = self.add(sink, **kwargs)  # type: ignore[arg-type]
-                self._sink_configs.pop(handler_id, None)
-                self._sink_configs[new_id] = config
+                self.add(sink, **kwargs)  # type: ignore[arg-type]
         else:
             all_configs = dict(self._sink_configs)
             self._native.remove()
             self._sink_configs.clear()
             for _old_id, (sink, kwargs) in all_configs.items():
-                new_id = self.add(sink, **kwargs)  # type: ignore[arg-type]
+                self.add(sink, **kwargs)  # type: ignore[arg-type]
 
     @staticmethod
     def parse(
@@ -905,7 +976,7 @@ class Logger:
         self.complete()
 
     def log(
-        self, level: str | int, message: object, *args: object, **kwargs: object
+        self, level: LevelType, message: object, *args: object, **kwargs: object
     ) -> dict[str, object] | None:
         """Log a message at a named or numeric level.
 
@@ -968,21 +1039,36 @@ class Logger:
         extra_map: dict[str, object] = {k: v for k, v in self._bound.items()}
         extra_map.update({k: v for k, v in _current_context().items()})
 
-        exc_text = None
+        exc_text: str | None = None
         exc_tuple: tuple[object, object, str] | None = None
-        if self._options.exception is not None:
-            exc_text = format_exception_text(self._options.exception, self._options.backtrace)
-            exc_obj = self._options.exception
-            if isinstance(exc_obj, BaseException):
+        exc_opt: BaseException | bool | None = self._options.exception
+        # opt(exception=True) captures the currently handled exception.
+        # When no exception is active, no exception text is attached
+        # (instead of emitting a literal "exception=True" placeholder).
+        if exc_opt is True:
+            active_exc = sys.exc_info()[1]
+            exc_opt = active_exc if active_exc is not None else None
+        if exc_opt is not None and exc_opt is not False:
+            exc_text = format_exception_text(exc_opt, self._options.backtrace)
+            # Guard against the legacy native placeholder for bare `True`
+            # (no active exception). It carries no traceback and must never
+            # be appended to the dispatched message.
+            if exc_text == "exception=True":
+                exc_text = None
+            if isinstance(exc_opt, BaseException):
                 import traceback as _traceback
 
                 exc_tuple = (
-                    type(exc_obj),
-                    exc_obj,
+                    type(exc_opt),
+                    exc_opt,
                     "".join(
-                        _traceback.format_exception(type(exc_obj), exc_obj, exc_obj.__traceback__)
+                        _traceback.format_exception(type(exc_opt), exc_opt, exc_opt.__traceback__)
                     ),
                 )
+                if self._options.diagnose and exc_opt.__traceback__ is not None:
+                    diag = _diagnose_suffix(exc_opt)
+                    if diag:
+                        exc_text = f"{exc_text.rstrip()}\n{diag}" if exc_text else diag
 
         file_val: str | None = None
         line_val: int | None = None
@@ -995,18 +1081,24 @@ class Logger:
             frame = _inspect.currentframe()
             if frame is not None:
                 cap_frame: types.FrameType | None = frame.f_back
-                if cap_frame is not None and cap_frame.f_code.co_name in {
+                internal_frames = {
                     "trace",
                     "debug",
                     "info",
                     "notice",
                     "success",
                     "warning",
+                    "warn",
                     "error",
+                    "exception",
                     "fail",
                     "critical",
                     "fatal",
-                }:
+                    "audit",
+                    "__exit__",
+                    "_catch_wrapper",
+                }
+                while cap_frame is not None and cap_frame.f_code.co_name in internal_frames:
                     cap_frame = cap_frame.f_back
                 for _ in range(self._options.depth):
                     if cap_frame is not None:
@@ -1050,6 +1142,68 @@ class Logger:
         patched_extra = record_dict.get("extra", extra_map)
         if isinstance(patched_extra, dict):
             extra_map = {k: v for k, v in patched_extra.items()}
+        patched_file = record_dict.get("file", file_val)
+        if isinstance(patched_file, Path):
+            patched_file = str(patched_file)
+        if isinstance(patched_file, str) and patched_file:
+            file_val = patched_file
+        patched_line = record_dict.get("line", line_val)
+        if isinstance(patched_line, bool):
+            pass
+        elif isinstance(patched_line, int) and patched_line >= 0:
+            line_val = patched_line
+        patched_func = record_dict.get("function", func_val)
+        if isinstance(patched_func, str) and patched_func:
+            func_val = patched_func
+        patched_module = record_dict.get("module", module_val)
+        if isinstance(patched_module, str) and patched_module:
+            module_val = patched_module
+        patched_thread = record_dict.get("thread", thread_name)
+        if isinstance(patched_thread, str) and patched_thread:
+            thread_name = patched_thread
+        patched_process = record_dict.get("process", process_id)
+        if isinstance(patched_process, bool):
+            pass
+        elif isinstance(patched_process, int) and patched_process >= 0:
+            process_id = patched_process
+
+        # Ensure the traceback is visible even when the sink format does not
+        # contain an `{exception}` token (e.g. the default format). The native
+        # `exception` field is still populated so `{exception}` templates and
+        # JSON serializers keep working. To avoid duplicating the traceback
+        # for sinks that already render `{exception}` (or serialize as JSON),
+        # only fold it into the message when at least one known sink would
+        # otherwise drop it. The future Rust-side auto-append additionally
+        # skips text already present in the message (see
+        # TemplateFormatter::format).
+        if exc_text:
+            stripped = exc_text.strip()
+            if stripped and stripped != "exception=True" and stripped not in rendered:
+                needs_fallback = True
+                if self._sink_configs:
+                    needs_fallback = False
+                    for _sink, cfg in self._sink_configs.values():
+                        fmt = cfg.get("format")
+                        serialize = bool(cfg.get("serialize"))
+                        if serialize:
+                            continue
+                        if isinstance(fmt, str):
+                            if "{exception" not in fmt:
+                                needs_fallback = True
+                                break
+                        else:
+                            # Callable format or None (default template without
+                            # `{exception}`): conservatively assume it drops
+                            # the traceback so it stays visible.
+                            needs_fallback = True
+                            break
+                if needs_fallback:
+                    # Strip trailing newlines: sinks add exactly one newline,
+                    # so keeping the native trailing `\n` would blank-line
+                    # console/file outputs (writeln) while remaining harmless
+                    # for callback sinks (which dedupe trailing newlines).
+                    exc_clean = exc_text.rstrip("\n")
+                    rendered = f"{rendered}\n{exc_clean}" if rendered else exc_clean
 
         # Convert extra values to strings for Rust-side storage
         extra_str_map: dict[str, str] = {k: str(v) for k, v in extra_map.items()}
@@ -1164,18 +1318,38 @@ class Logger:
     ) -> None:
         """Log a message at ERROR level with exception info.
 
-        Automatically captures the current exception if one is active.
+        Automatically captures the current exception if one is active,
+        including its full traceback (equivalent to
+        ``logger.opt(exception=True).error(...)``).
 
         Args:
             message: Log message (supports ``str.format()`` placeholders).
             *args: Positional arguments for format string substitution.
             exc_info: Whether to include exception info (default ``True``).
+                When ``False``, logs a plain ERROR message without traceback.
             **kwargs: Keyword arguments for format string substitution.
         """
-        _ = exc_info
+        if self._name in self._disabled:
+            return
+        if not exc_info:
+            self.log("ERROR", message, *args, **kwargs)
+            return
         exc = sys.exc_info()[1]
         if exc is not None:
-            self.opt(exception=exc).log("ERROR", message, *args, **kwargs)
+            view = self._clone()
+            view._options = _Options(
+                exception=exc,
+                lazy=self._options.lazy,
+                raw=self._options.raw,
+                record=self._options.record,
+                depth=self._options.depth,
+                colors=self._options.colors,
+                ansi=self._options.ansi,
+                capture=self._options.capture,
+                backtrace=self._options.backtrace,
+                diagnose=self._options.diagnose,
+            )
+            view.log("ERROR", message, *args, **kwargs)
         else:
             self.log("ERROR", message, *args, **kwargs)
 
@@ -1239,7 +1413,7 @@ class Logger:
             bound=self._bound,
             patchers=self._patchers,
             options=self._options,
-            sink_configs=self._sink_configs,
+            sink_configs=dict(self._sink_configs),
         )
         clone._start_time = self._start_time
         clone._disabled = set(self._disabled)
@@ -1345,12 +1519,17 @@ class _CatchContext:
                 return False
             if not isinstance(exc, self._exception_type):
                 return False
-            if self._onerror is not None:
-                self._onerror(exc)
-            self._logger.opt(exception=exc).log(
-                self._level,
-                "An error has been caught",
-            )
+            # Log first so the original exception and its traceback are
+            # preserved even when `onerror` is NoReturn (e.g. sys.exit) or
+            # itself raises. See https://github.com/muhammad-fiaz/logly/issues/136
+            try:
+                self._logger.opt(exception=exc).log(
+                    self._level,
+                    "An error has been caught",
+                )
+            finally:
+                if self._onerror is not None:
+                    self._onerror(exc)
             return not self._reraise
         return False
 
@@ -1367,12 +1546,12 @@ class _CatchContext:
         import functools
 
         @functools.wraps(func)
-        def wrapper(*args: object, **inner_kwargs: object) -> object:
+        def _catch_wrapper(*args: object, **inner_kwargs: object) -> object:
             with self:
                 return func(*args, **inner_kwargs)
             return self._default  # type: ignore[unreachable]
 
-        return wrapper
+        return _catch_wrapper
 
 
 logger = Logger()
