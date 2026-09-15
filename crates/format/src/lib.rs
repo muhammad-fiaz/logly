@@ -391,11 +391,27 @@ fn format_template(template: &str, record: &LogRecord, timestamp_format: &str) -
 
 impl Formatter for TemplateFormatter {
     fn format(&self, record: &LogRecord) -> LoglyResult<String> {
-        Ok(format_template(
-            &self.template,
-            record,
-            &self.timestamp_format,
-        ))
+        let mut output = format_template(&self.template, record, &self.timestamp_format);
+        // An attached exception must always be visible, even when the
+        // template does not contain an `{exception}` token
+        // (e.g. the default format). See issues #135 and #136.
+        // Skipped when the template already renders `{exception}`, when the
+        // payload is the legacy `"exception=True"` placeholder, or when the
+        // message already carries the traceback (Python-side fallback in
+        // `Logger.log` folds it into the message for pre-0.2.4 engines).
+        if let Some(ref exc) = record.exception {
+            let trimmed = exc.trim();
+            if !trimmed.is_empty()
+                && trimmed != "exception=True"
+                && !self.template.contains("{exception")
+                && !output.contains(trimmed)
+                && !record.message.contains(trimmed)
+            {
+                output.push('\n');
+                output.push_str(trimmed);
+            }
+        }
+        Ok(output)
     }
 }
 

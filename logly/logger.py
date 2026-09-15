@@ -461,6 +461,12 @@ class Logger:
             logger.remove(sink_id)
         """
         self._native.remove(handler_id)
+        # Keep the Python-side mirror in sync so exception-visibility checks
+        # (see log()) only consider still-active sinks.
+        if handler_id is None:
+            self._sink_configs.clear()
+        else:
+            self._sink_configs.pop(handler_id, None)
 
     def complete(self) -> None:
         """Wait for the end of enqueued messages and asynchronous tasks.
@@ -968,19 +974,30 @@ class Logger:
         extra_map: dict[str, object] = {k: v for k, v in self._bound.items()}
         extra_map.update({k: v for k, v in _current_context().items()})
 
-        exc_text = None
+        exc_text: str | None = None
         exc_tuple: tuple[object, object, str] | None = None
-        if self._options.exception is not None:
-            exc_text = format_exception_text(self._options.exception, self._options.backtrace)
-            exc_obj = self._options.exception
-            if isinstance(exc_obj, BaseException):
+        exc_opt: BaseException | bool | None = self._options.exception
+        # opt(exception=True) captures the currently handled exception.
+        # When no exception is active, no exception text is attached
+        # (instead of emitting a literal "exception=True" placeholder).
+        if exc_opt is True:
+            active_exc = sys.exc_info()[1]
+            exc_opt = active_exc if active_exc is not None else None
+        if exc_opt is not None and exc_opt is not False:
+            exc_text = format_exception_text(exc_opt, self._options.backtrace)
+            # Guard against the legacy native placeholder for bare `True`
+            # (no active exception). It carries no traceback and must never
+            # be appended to the dispatched message.
+            if exc_text == "exception=True":
+                exc_text = None
+            if isinstance(exc_opt, BaseException):
                 import traceback as _traceback
 
                 exc_tuple = (
-                    type(exc_obj),
-                    exc_obj,
+                    type(exc_opt),
+                    exc_opt,
                     "".join(
-                        _traceback.format_exception(type(exc_obj), exc_obj, exc_obj.__traceback__)
+                        _traceback.format_exception(type(exc_opt), exc_opt, exc_opt.__traceback__)
                     ),
                 )
 
@@ -1002,10 +1019,14 @@ class Logger:
                     "notice",
                     "success",
                     "warning",
+                    "warn",
                     "error",
+                    "exception",
                     "fail",
                     "critical",
                     "fatal",
+                    "audit",
+                    "__exit__",
                 }:
                     cap_frame = cap_frame.f_back
                 for _ in range(self._options.depth):
@@ -1050,6 +1071,44 @@ class Logger:
         patched_extra = record_dict.get("extra", extra_map)
         if isinstance(patched_extra, dict):
             extra_map = {k: v for k, v in patched_extra.items()}
+
+        # Ensure the traceback is visible even when the sink format does not
+        # contain an `{exception}` token (e.g. the default format). The native
+        # `exception` field is still populated so `{exception}` templates and
+        # JSON serializers keep working. To avoid duplicating the traceback
+        # for sinks that already render `{exception}` (or serialize as JSON),
+        # only fold it into the message when at least one known sink would
+        # otherwise drop it. The future Rust-side auto-append additionally
+        # skips text already present in the message (see
+        # TemplateFormatter::format).
+        if exc_text:
+            stripped = exc_text.strip()
+            if stripped and stripped != "exception=True" and stripped not in rendered:
+                needs_fallback = True
+                if self._sink_configs:
+                    needs_fallback = False
+                    for _sink, cfg in self._sink_configs.values():
+                        fmt = cfg.get("format")
+                        serialize = bool(cfg.get("serialize"))
+                        if serialize:
+                            continue
+                        if isinstance(fmt, str):
+                            if "{exception" not in fmt:
+                                needs_fallback = True
+                                break
+                        else:
+                            # Callable format or None (default template without
+                            # `{exception}`): conservatively assume it drops
+                            # the traceback so it stays visible.
+                            needs_fallback = True
+                            break
+                if needs_fallback:
+                    # Strip trailing newlines: sinks add exactly one newline,
+                    # so keeping the native trailing `\n` would blank-line
+                    # console/file outputs (writeln) while remaining harmless
+                    # for callback sinks (which dedupe trailing newlines).
+                    exc_clean = exc_text.rstrip("\n")
+                    rendered = f"{rendered}\n{exc_clean}" if rendered else exc_clean
 
         # Convert extra values to strings for Rust-side storage
         extra_str_map: dict[str, str] = {k: str(v) for k, v in extra_map.items()}
@@ -1164,15 +1223,20 @@ class Logger:
     ) -> None:
         """Log a message at ERROR level with exception info.
 
-        Automatically captures the current exception if one is active.
+        Automatically captures the current exception if one is active,
+        including its full traceback (equivalent to
+        ``logger.opt(exception=True).error(...)``).
 
         Args:
             message: Log message (supports ``str.format()`` placeholders).
             *args: Positional arguments for format string substitution.
             exc_info: Whether to include exception info (default ``True``).
+                When ``False``, logs a plain ERROR message without traceback.
             **kwargs: Keyword arguments for format string substitution.
         """
-        _ = exc_info
+        if not exc_info:
+            self.log("ERROR", message, *args, **kwargs)
+            return
         exc = sys.exc_info()[1]
         if exc is not None:
             self.opt(exception=exc).log("ERROR", message, *args, **kwargs)
@@ -1345,12 +1409,17 @@ class _CatchContext:
                 return False
             if not isinstance(exc, self._exception_type):
                 return False
-            if self._onerror is not None:
-                self._onerror(exc)
-            self._logger.opt(exception=exc).log(
-                self._level,
-                "An error has been caught",
-            )
+            # Log first so the original exception and its traceback are
+            # preserved even when `onerror` is NoReturn (e.g. sys.exit) or
+            # itself raises. See https://github.com/muhammad-fiaz/logly/issues/136
+            try:
+                self._logger.opt(exception=exc).log(
+                    self._level,
+                    "An error has been caught",
+                )
+            finally:
+                if self._onerror is not None:
+                    self._onerror(exc)
             return not self._reraise
         return False
 
