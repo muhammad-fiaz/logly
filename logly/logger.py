@@ -276,8 +276,10 @@ class Logger:
             enqueue: If ``True``, dispatch through a background worker.
             colorize: ANSI color override. ``None`` = auto-detect,
                 ``True`` = force on, ``False`` = force off.
-            backtrace: If ``True``, include backtrace on exceptions.
-            diagnose: If ``True``, include diagnostic info on exceptions.
+            backtrace: Accepted for compatibility; exception detail is
+                controlled per message via ``opt(exception=..., backtrace=...)``.
+            diagnose: Accepted for compatibility; reserved for per-message
+                diagnostic detail via ``opt(exception=..., diagnose=...)``.
             filter: Filter rule. Can be a string (prefix), callable, or
                 mapping of extra field values.
             serialize: If ``True``, output as JSON.
@@ -755,12 +757,13 @@ class Logger:
         patcher: Callable[[dict[str, object]], None] | None = None,
         activation: list[tuple[str, bool]] | None = None,
     ) -> None:
-        """Replace the current logging configuration.
+        """Update the current logging configuration.
 
         All parameters are optional. If ``handlers`` is provided, existing
         handlers are removed and replaced. ``levels`` registers custom levels.
-        ``extra`` binds default extra context. ``patcher`` is applied to all
-        records. ``activation`` enables/disables loggers by name pattern.
+        ``extra`` is merged into the bound default extra context.
+        ``patcher`` is appended to the record patchers.
+        ``activation`` enables/disables loggers by name pattern.
 
         Args:
             handlers: List of handler config dicts (each with ``sink`` key).
@@ -818,19 +821,20 @@ class Logger:
             logger.reinstall(sink_id)  # Reset the file handler
         """
         if handler_id is not None:
-            config = self._sink_configs.get(handler_id)
-            self._native.remove(handler_id)
+            config = self._sink_configs.pop(handler_id, None)
+            try:
+                self._native.remove(handler_id)
+            except Exception:
+                pass
             if config is not None:
                 sink, kwargs = config
-                new_id = self.add(sink, **kwargs)  # type: ignore[arg-type]
-                self._sink_configs.pop(handler_id, None)
-                self._sink_configs[new_id] = config
+                self.add(sink, **kwargs)  # type: ignore[arg-type]
         else:
             all_configs = dict(self._sink_configs)
             self._native.remove()
             self._sink_configs.clear()
             for _old_id, (sink, kwargs) in all_configs.items():
-                new_id = self.add(sink, **kwargs)  # type: ignore[arg-type]
+                self.add(sink, **kwargs)  # type: ignore[arg-type]
 
     @staticmethod
     def parse(
@@ -1012,7 +1016,7 @@ class Logger:
             frame = _inspect.currentframe()
             if frame is not None:
                 cap_frame: types.FrameType | None = frame.f_back
-                if cap_frame is not None and cap_frame.f_code.co_name in {
+                internal_frames = {
                     "trace",
                     "debug",
                     "info",
@@ -1027,7 +1031,9 @@ class Logger:
                     "fatal",
                     "audit",
                     "__exit__",
-                }:
+                    "_catch_wrapper",
+                }
+                while cap_frame is not None and cap_frame.f_code.co_name in internal_frames:
                     cap_frame = cap_frame.f_back
                 for _ in range(self._options.depth):
                     if cap_frame is not None:
@@ -1071,6 +1077,30 @@ class Logger:
         patched_extra = record_dict.get("extra", extra_map)
         if isinstance(patched_extra, dict):
             extra_map = {k: v for k, v in patched_extra.items()}
+        patched_file = record_dict.get("file", file_val)
+        if isinstance(patched_file, Path):
+            patched_file = str(patched_file)
+        if isinstance(patched_file, str) and patched_file:
+            file_val = patched_file
+        patched_line = record_dict.get("line", line_val)
+        if isinstance(patched_line, bool):
+            pass
+        elif isinstance(patched_line, int) and patched_line >= 0:
+            line_val = patched_line
+        patched_func = record_dict.get("function", func_val)
+        if isinstance(patched_func, str) and patched_func:
+            func_val = patched_func
+        patched_module = record_dict.get("module", module_val)
+        if isinstance(patched_module, str) and patched_module:
+            module_val = patched_module
+        patched_thread = record_dict.get("thread", thread_name)
+        if isinstance(patched_thread, str) and patched_thread:
+            thread_name = patched_thread
+        patched_process = record_dict.get("process", process_id)
+        if isinstance(patched_process, bool):
+            pass
+        elif isinstance(patched_process, int) and patched_process >= 0:
+            process_id = patched_process
 
         # Ensure the traceback is visible even when the sink format does not
         # contain an `{exception}` token (e.g. the default format). The native
@@ -1234,12 +1264,27 @@ class Logger:
                 When ``False``, logs a plain ERROR message without traceback.
             **kwargs: Keyword arguments for format string substitution.
         """
+        if self._name in self._disabled:
+            return
         if not exc_info:
             self.log("ERROR", message, *args, **kwargs)
             return
         exc = sys.exc_info()[1]
         if exc is not None:
-            self.opt(exception=exc).log("ERROR", message, *args, **kwargs)
+            view = self._clone()
+            view._options = _Options(
+                exception=exc,
+                lazy=self._options.lazy,
+                raw=self._options.raw,
+                record=self._options.record,
+                depth=self._options.depth,
+                colors=self._options.colors,
+                ansi=self._options.ansi,
+                capture=self._options.capture,
+                backtrace=self._options.backtrace,
+                diagnose=self._options.diagnose,
+            )
+            view.log("ERROR", message, *args, **kwargs)
         else:
             self.log("ERROR", message, *args, **kwargs)
 
@@ -1303,7 +1348,7 @@ class Logger:
             bound=self._bound,
             patchers=self._patchers,
             options=self._options,
-            sink_configs=self._sink_configs,
+            sink_configs=dict(self._sink_configs),
         )
         clone._start_time = self._start_time
         clone._disabled = set(self._disabled)
@@ -1436,12 +1481,12 @@ class _CatchContext:
         import functools
 
         @functools.wraps(func)
-        def wrapper(*args: object, **inner_kwargs: object) -> object:
+        def _catch_wrapper(*args: object, **inner_kwargs: object) -> object:
             with self:
                 return func(*args, **inner_kwargs)
             return self._default  # type: ignore[unreachable]
 
-        return wrapper
+        return _catch_wrapper
 
 
 logger = Logger()

@@ -795,8 +795,8 @@ class Logger:
             logger.add("app.log")  # Writes to /var/log/myapp/app.log
         """
         ...
+    @staticmethod
     def parse(
-        self,
         path: str | Path,
         pattern: str | re.Pattern[str] | None = None,
         *,

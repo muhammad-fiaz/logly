@@ -115,20 +115,18 @@ class OTelLogSink:
         except (ImportError, AttributeError):
             return 9
 
-        upper = message.upper()
-        if "FATAL" in upper or "CRITICAL" in upper:
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
+        if canonical == "CRITICAL":
             return SeverityNumber.FATAL.value
-        if "ERROR" in upper or "FAIL" in upper:
+        if canonical == "ERROR":
             return SeverityNumber.ERROR.value
-        if "WARNING" in upper or "WARN" in upper:
+        if canonical == "WARNING":
             return SeverityNumber.WARN.value
-        if "NOTICE" in upper:
-            return SeverityNumber.INFO.value
-        if "SUCCESS" in upper:
-            return SeverityNumber.INFO.value
-        if "TRACE" in upper:
+        if canonical == "TRACE":
             return SeverityNumber.TRACE.value
-        if "DEBUG" in upper:
+        if canonical == "DEBUG":
             return SeverityNumber.DEBUG.value
         return SeverityNumber.INFO.value
 

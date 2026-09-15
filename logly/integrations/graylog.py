@@ -31,14 +31,6 @@ import time
 import zlib
 from typing import Any
 
-_IMPORT_MSG = (  # pragma: no cover
-    "No extra dependencies required for Logly Graylog integration.\n"
-    "Uses only Python standard library modules (socket, json, zlib).\n"
-    "Install with one of:\n"
-    "  uv add logly       # recommended\n"
-    "  pip install logly"
-)  # pragma: no cover
-
 __all__ = ["GraylogSink"]
 
 _GELF_LEVEL_MAP: dict[str, int] = {
@@ -217,20 +209,12 @@ class GraylogSink:
         Returns:
             Level name string.
         """
-        upper = message.upper()
-        if "FATAL" in upper or "CRITICAL" in upper:
-            return "CRITICAL"
-        if "ERROR" in upper or "FAIL" in upper:
-            return "ERROR"
-        if "WARNING" in upper or "WARN" in upper:
-            return "WARNING"
-        if "NOTICE" in upper:
-            return "NOTICE"
-        if "SUCCESS" in upper:
-            return "SUCCESS"
-        if "DEBUG" in upper or "TRACE" in upper:
+        from logly.integrations._utils import detect_canonical_level  # noqa: PLC0415
+
+        canonical = detect_canonical_level(message)
+        if canonical == "TRACE":
             return "DEBUG"
-        return "INFO"
+        return canonical
 
     def flush(self) -> None:
         """Flush pending data (no-op for Graylog handler)."""
