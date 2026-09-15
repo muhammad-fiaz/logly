@@ -160,7 +160,7 @@ logly/
 ├── src/                # PyO3 bindings
 ├── logly/              # Python package
 │   ├── logger.py      # Main Logger class
-│   ├── models.py      # Pydantic config models
+│   ├── models.py      # Stdlib dataclass config models
 │   ├── exceptions.py  # Exception hierarchy
 │   ├── integrations/  # FastAPI, Django, stdlib, Rich, telemetry
 │   └── _logly.pyi    # Type stubs

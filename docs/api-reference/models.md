@@ -5,9 +5,7 @@ description: Stdlib dataclass models for Logly configuration
 
 # Configuration Models
 
-Logly uses stdlib dataclasses with targeted runtime validation for type-safe configuration (no Pydantic required). Import them from `logly.models`:
-
-> Core installs stay light: `pip install logly` pulls zero validation dependencies. Only install `uv add logly[pydantic]` if you want to nest these models inside your own pydantic `BaseModel` or validate them with `pydantic.TypeAdapter` — the dataclasses expose `__get_pydantic_core_schema__` and accept pydantic instances in `model_validate()` when pydantic is present.
+Logly uses stdlib dataclasses with targeted runtime validation for type-safe configuration. There are no validation-framework dependencies. Import them from `logly.models`:
 
 ```python
 from logly.models import (
@@ -243,34 +241,21 @@ config = LoggerConfig(
 
 ---
 
-## Optional Pydantic interop (`logly[pydantic]`)
-
-```bash
-uv add logly[pydantic]  # or: pip install "logly[pydantic]"
-```
+## Native serialization
 
 ```python
-from pydantic import BaseModel, TypeAdapter
+from logly.models import SinkConfig
 
-from logly.models import SinkConfig, is_pydantic_available
+config = SinkConfig(level="INFO")
 
-assert is_pydantic_available()
+# Serialize to a plain dict
+data = config.to_dict()
+assert data["level"] == "INFO"
 
-# Validate a Logly model with pydantic
-adapter = TypeAdapter(SinkConfig)
-config = adapter.validate_python({"level": "INFO"})
-assert config.level == "INFO"
-
-# Nest Logly models inside your own BaseModel
-class AppConfig(BaseModel):
-    sink: SinkConfig
-
-app = AppConfig.model_validate({"sink": {"level": "DEBUG"}})
-assert app.sink.level == "DEBUG"
-
-# model_validate also unwraps pydantic instances
-config2 = SinkConfig.model_validate(app.sink)
+# Build back from a plain mapping (validated)
+restored = SinkConfig.from_dict({"level": "DEBUG"})
+assert restored.level == "DEBUG"
 ```
 
 Validation errors raise `logly.models.ValidationError` (a `ValueError`
-subclass), so `except ValueError` keeps working with and without pydantic.
+subclass), so `except ValueError` keeps working.

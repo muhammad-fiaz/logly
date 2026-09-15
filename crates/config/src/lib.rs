@@ -1,6 +1,6 @@
 //! Serialization-friendly configuration value types.
 //!
-//! These are the canonical Rust-side config shapes that the Python Pydantic
+//! These are the canonical Rust-side config shapes that the Python dataclass
 //! models mirror/validate before crossing the `PyO3` boundary. Every field is
 //! explicit and documented so that defaults are never hidden.
 //!

@@ -10,7 +10,6 @@ from logly.models import (
     RotationPolicy,
     SinkConfig,
     ValidationError,
-    is_pydantic_available,
 )
 
 
@@ -72,31 +71,77 @@ def test_pretty_json_config() -> None:
     assert config.sort_keys is True
 
 
-def test_model_dump_compat() -> None:
+def test_to_dict_from_dict_roundtrip() -> None:
     config = SinkConfig(level="WARNING")
-    dumped = config.model_dump()
+    dumped = config.to_dict()
     assert dumped["level"] == "WARNING"
-    assert SinkConfig.model_validate(dumped).level == "WARNING"
+    assert SinkConfig.from_dict(dumped).level == "WARNING"
 
 
-def test_is_pydantic_available_returns_bool() -> None:
-    assert isinstance(is_pydantic_available(), bool)
+def test_from_dict_rejects_non_mapping() -> None:
+    with pytest.raises(ValidationError):
+        SinkConfig.from_dict(["not", "a", "dict"])  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        RotationPolicy.from_dict("size")  # type: ignore[arg-type]
 
 
-def test_pydantic_type_adapter() -> None:
-    pydantic = pytest.importorskip("pydantic")
-    adapter = pydantic.TypeAdapter(SinkConfig)
-    assert adapter.validate_python({"level": "INFO"}).level == "INFO"
-    with pytest.raises(ValueError):
-        adapter.validate_python({"rotation": {"kind": "size", "value": 0}})
+def test_from_dict_rejects_invalid_values() -> None:
+    with pytest.raises(ValidationError):
+        RotationPolicy.from_dict({"kind": "size", "value": 0})
+    with pytest.raises(ValidationError):
+        RetentionPolicy.from_dict({"count": -2})
 
 
-def test_pydantic_nested_model() -> None:
-    pydantic = pytest.importorskip("pydantic")
+def test_nested_from_dict_coercion() -> None:
+    config = SinkConfig.from_dict(
+        {
+            "level": "DEBUG",
+            "rotation": {"kind": "size", "value": 1024},
+            "retention": {"count": 5},
+            "compression": {"codec": "gzip"},
+        }
+    )
+    assert isinstance(config.rotation, RotationPolicy)
+    assert config.rotation.kind == "size"
+    assert isinstance(config.retention, RetentionPolicy)
+    assert config.retention.count == 5
+    assert isinstance(config.compression, CompressionPolicy)
+    assert config.compression.codec == "gzip"
 
-    class AppConfig(pydantic.BaseModel):  # type: ignore[name-defined]
-        sink: SinkConfig
 
-    app = AppConfig.model_validate({"sink": {"level": "DEBUG"}})
-    assert app.sink.level == "DEBUG"
-    assert SinkConfig.model_validate(app.sink).level == "DEBUG"
+def test_logger_config_from_dict() -> None:
+    config = LoggerConfig.from_dict(
+        {"sinks": [{"level": "ERROR", "serialize": True}], "disabled": ["noisy"]}
+    )
+    assert len(config.sinks) == 1
+    assert config.sinks[0].level == "ERROR"
+    assert config.disabled == {"noisy"}
+
+
+def test_no_pydantic_dependency() -> None:
+    """Logly configuration must not require, import, or detect Pydantic."""
+    import subprocess
+    import sys
+
+    probe = (
+        "import sys, logly, logly.models;"
+        "assert 'pydantic' not in sys.modules, 'pydantic imported';"
+        "assert 'pydantic_core' not in sys.modules, 'pydantic_core imported';"
+        "assert not hasattr(logly.models, 'is_pydantic_available')"
+    )
+    subprocess.run([sys.executable, "-c", probe], check=True)
+
+    import logly.models as models_module
+
+    for name in (
+        "RotationPolicy",
+        "RetentionPolicy",
+        "CompressionPolicy",
+        "PrettyJsonConfig",
+        "SinkConfig",
+        "LoggerConfig",
+    ):
+        cls = getattr(models_module, name)
+        assert not hasattr(cls, "__get_pydantic_core_schema__")
+        assert not hasattr(cls, "model_validate")
+        assert not hasattr(cls, "model_dump")

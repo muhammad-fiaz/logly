@@ -1,7 +1,7 @@
 """Regression tests from the production-readiness audit.
 
 Covers: disabled structured logging, dispatch continuing past a failing
-sink, model_validate input errors, chunked file parsing, unicode / large /
+sink, from_dict input errors, chunked file parsing, unicode / large /
 empty messages, failing Python sinks never raising, and disabled-logging
 throughput smoke.
 """
@@ -62,9 +62,9 @@ def test_failing_python_sink_never_raises() -> None:
     logger.complete()
 
 
-def test_model_validate_rejects_non_mapping() -> None:
+def test_from_dict_rejects_non_mapping() -> None:
     with pytest.raises(ValidationError):
-        SinkConfig.model_validate(["not", "a", "dict"])  # type: ignore[arg-type]
+        SinkConfig.from_dict(["not", "a", "dict"])  # type: ignore[arg-type]
 
 
 def test_parse_honors_chunk_size(tmp_path) -> None:  # type: ignore[no-untyped-def]
