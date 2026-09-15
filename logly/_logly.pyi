@@ -20,6 +20,7 @@ else:
     from typing_extensions import Self
 
 from logly.models import PrettyJsonConfig
+from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
 
 __version__: str
 """Current version of the logly package."""
@@ -290,7 +291,7 @@ class Logger:
         *,
         name: str = "logly",
         bound: Mapping[str, object] | None = None,
-        patchers: tuple[Callable[[dict[str, object]], None], ...] = (),
+        patchers: tuple[PatchCallable, ...] = (),
         options: Any | None = None,
         sink_configs: dict[int, tuple[object, dict[str, object]]] | None = None,
     ) -> None: ...
@@ -298,8 +299,8 @@ class Logger:
         self,
         sink: object = "stderr",
         *,
-        level: str | int = "DEBUG",
-        format: str | Callable[[dict[str, object]], str] | None = None,
+        level: LevelType = "DEBUG",
+        format: str | FormatterCallable | None = None,
         rotation: str | int | object | None = None,
         retention: int | str | object | None = None,
         compression: str | object | None = None,
@@ -307,10 +308,10 @@ class Logger:
         colorize: bool | None = None,
         backtrace: bool = True,
         diagnose: bool = False,
-        filter: str | Callable[[dict[str, object]], bool] | Mapping[str, str | bool] | None = None,
+        filter: str | FilterCallable | Mapping[str, str | bool] | None = None,
         serialize: bool = False,
         pretty_json: bool | PrettyJsonConfig | None = None,
-        patch: Callable[[dict[str, object]], None] | None = None,
+        patch: PatchCallable | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
@@ -541,7 +542,7 @@ class Logger:
             # request_id is NOT attached
         """
         ...
-    def patch(self, patcher: Callable[[dict[str, object]], None]) -> Self:
+    def patch(self, patcher: PatchCallable) -> Self:
         """Add a patcher callable to modify log records.
 
         Patchers are called for each log record before dispatch, allowing
@@ -628,10 +629,10 @@ class Logger:
         handlers: list[dict[str, object]] | None = None,
         levels: list[dict[str, object]] | None = None,
         extra: dict[str, object] | None = None,
-        patcher: Callable[[dict[str, object]], None] | None = None,
+        patcher: PatchCallable | None = None,
         activation: list[tuple[str, bool]] | None = None,
     ) -> None:
-        """Bulk-configure the logger, replacing existing settings.
+        """Bulk-configure the logger, updating existing settings.
 
         Args:
             handlers: List of sink configurations (same format as :meth:`add`).
@@ -652,7 +653,7 @@ class Logger:
         """
         ...
     def log(
-        self, level: str | int, message: object, *args: object, **kwargs: object
+        self, level: LevelType, message: object, *args: object, **kwargs: object
     ) -> dict[str, object] | None:
         """Log a message at a named or numeric level.
 

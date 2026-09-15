@@ -50,6 +50,7 @@ from logly._logly import (
     resolve_level_name,
 )
 from logly.models import PrettyJsonConfig
+from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
 
 _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", default=None)
 _logly_level_tls: threading.local = threading.local()
@@ -225,7 +226,7 @@ class Logger:
         *,
         name: str = "logly",
         bound: Mapping[str, object] | None = None,
-        patchers: tuple[Callable[[dict[str, object]], None], ...] = (),
+        patchers: tuple[PatchCallable, ...] = (),
         options: _Options | None = None,
         sink_configs: dict[int, tuple[object, dict[str, object]]] | None = None,
     ) -> None:
@@ -264,8 +265,8 @@ class Logger:
         self,
         sink: object = sys.stderr,
         *,
-        level: str | int = "DEBUG",
-        format: str | Callable[[dict[str, object]], str] | None = None,
+        level: LevelType = "DEBUG",
+        format: str | FormatterCallable | None = None,
         rotation: str | int | object | None = None,
         retention: int | str | object | None = None,
         compression: str | object | None = None,
@@ -273,10 +274,10 @@ class Logger:
         colorize: bool | None = None,
         backtrace: bool = True,
         diagnose: bool = False,
-        filter: str | Callable[[dict[str, object]], bool] | Mapping[str, str | bool] | None = None,
+        filter: str | FilterCallable | Mapping[str, str | bool] | None = None,
         serialize: bool = False,
         pretty_json: bool | PrettyJsonConfig | None = None,
-        patch: Callable[[dict[str, object]], None] | None = None,
+        patch: PatchCallable | None = None,
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
@@ -710,7 +711,7 @@ class Logger:
         resolved.mkdir(parents=True, exist_ok=True)
         Logger._root_dir = resolved
 
-    def patch(self, patcher: Callable[[dict[str, object]], None]) -> Self:
+    def patch(self, patcher: PatchCallable) -> Self:
         """Return a logger view that applies a patcher to all records.
 
         The patcher callable receives the record dict and can modify it
@@ -814,7 +815,7 @@ class Logger:
         handlers: list[dict[str, Any]] | None = None,
         levels: list[dict[str, object]] | None = None,
         extra: dict[str, object] | None = None,
-        patcher: Callable[[dict[str, object]], None] | None = None,
+        patcher: PatchCallable | None = None,
         activation: list[tuple[str, bool]] | None = None,
     ) -> None:
         """Update the current logging configuration.
@@ -975,7 +976,7 @@ class Logger:
         self.complete()
 
     def log(
-        self, level: str | int, message: object, *args: object, **kwargs: object
+        self, level: LevelType, message: object, *args: object, **kwargs: object
     ) -> dict[str, object] | None:
         """Log a message at a named or numeric level.
 
