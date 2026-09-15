@@ -400,6 +400,12 @@ class Logger:
         sinks to ensure all pending messages are flushed.
         """
         ...
+    def flush(self) -> None:
+        """Flush all sinks, ensuring buffered records are written.
+
+        Equivalent to :meth:`complete`; safe to call multiple times.
+        """
+        ...
     def reinstall(self, handler_id: int | None = None) -> None:
         """Remove and re-add a sink with its original configuration.
 

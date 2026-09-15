@@ -306,6 +306,16 @@ logger.complete()
 
 ---
 
+### flush()
+
+Flush all sinks, ensuring buffered records are written. Equivalent to `complete()`; safe to call multiple times.
+
+```python
+logger.flush()
+```
+
+---
+
 ### root_dir(path)
 
 Set the root directory for relative file paths.
@@ -343,7 +353,7 @@ logger.opt(depth=2).info("Called from caller")
 logger.opt(backtrace=True).info("Error context")
 
 # Diagnose - include variable values on exception
-logger.opt(diagnose=True).info("Debug context")
+logger.opt(exception=True, diagnose=True).error("Debug context")
 
 # Capture - disable caller file/line/function capture for speed
 logger.opt(capture=False).info("Hot path")

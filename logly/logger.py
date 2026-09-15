@@ -141,6 +141,45 @@ def _current_context() -> dict[str, object]:
     return dict(_context.get() or {})
 
 
+def _diagnose_suffix(exc: BaseException, *, max_frames: int = 16, max_vars: int = 12) -> str | None:
+    """Build a bounded diagnostic suffix listing frame locals per traceback frame.
+
+    Every value is rendered with a guarded, truncated ``repr`` so exotic
+    objects cannot break or bloat logging. Returns ``None`` when no frame
+    information is available.
+    """
+    lines: list[str] = ["--- Diagnostic context ---"]
+    tb = exc.__traceback__
+    count = 0
+    while tb is not None and count < max_frames:
+        frame = tb.tb_frame
+        try:
+            items = list(frame.f_locals.items())[:max_vars]
+            rendered_vars = ", ".join(
+                f"{key}={_safe_repr(value)}" for key, value in items if not key.startswith("__")
+            )
+        except Exception:
+            rendered_vars = "<unavailable>"
+        lines.append(
+            f"{frame.f_code.co_filename}:{tb.tb_lineno} in {frame.f_code.co_name}"
+            + (f" | {rendered_vars}" if rendered_vars else "")
+        )
+        count += 1
+        tb = tb.tb_next
+    return "\n".join(lines) if count else None
+
+
+def _safe_repr(value: object, limit: int = 200) -> str:
+    """Return a truncated ``repr`` that never raises."""
+    try:
+        text = repr(value)
+    except Exception:
+        return "<unrepresentable>"
+    if len(text) > limit:
+        return text[:limit] + "…"
+    return text
+
+
 @dataclass
 class _Options:
     """Per-call logging options.
@@ -494,6 +533,21 @@ class Logger:
                 loop.call_soon_threadsafe(loop.stop)
             if thread is not None:
                 thread.join(timeout=5.0)
+
+    def flush(self) -> None:
+        """Flush all sinks, ensuring buffered records are written.
+
+        Equivalent to :meth:`complete`: drains ``enqueue=True`` background
+        queues and awaits pending async-sink tasks. Safe to call multiple
+        times.
+
+        Example::
+
+            logger.add("app.log", enqueue=True)
+            logger.info("hello")
+            logger.flush()
+        """
+        self.complete()
 
     def catch(
         self,
@@ -1010,6 +1064,10 @@ class Logger:
                         _traceback.format_exception(type(exc_opt), exc_opt, exc_opt.__traceback__)
                     ),
                 )
+                if self._options.diagnose and exc_opt.__traceback__ is not None:
+                    diag = _diagnose_suffix(exc_opt)
+                    if diag:
+                        exc_text = f"{exc_text.rstrip()}\n{diag}" if exc_text else diag
 
         file_val: str | None = None
         line_val: int | None = None
