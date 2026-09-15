@@ -814,13 +814,16 @@ impl PyLogger {
     }
 
     fn complete(&self, py: Python<'_>) -> PyResult<()> {
-        py.detach(|| {
+        // Snapshot under a short lock, then flush outside it: sinks may
+        // perform blocking file/network I/O that must not serialize all
+        // logging behind the engine mutex.
+        let sinks = py.detach(|| {
             self.engine
                 .lock()
-                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
-                .complete()
-                .map_err(to_py_error)
-        })
+                .map(|engine| engine.sink_snapshot())
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))
+        })?;
+        py.detach(|| engine::LoggerEngine::flush_all(&sinks).map_err(to_py_error))
     }
 
     fn enable(&self, name: &str) -> PyResult<()> {
@@ -841,12 +844,24 @@ impl PyLogger {
 
     #[pyo3(name = "log")]
     fn log_message(&self, py: Python<'_>, level: &str, message: &str) -> PyResult<()> {
-        py.detach(|| {
+        // Mirror LoggerEngine::log without holding the engine mutex across
+        // dispatch: resolve the level, snapshot state under a short lock,
+        // then build and deliver the record lock-free.
+        let lvl = levels::level(level).map_err(to_py_error)?;
+        let (disabled, sinks) = py.detach(|| {
             self.engine
                 .lock()
-                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?
-                .log(&self.name, level, message)
-                .map_err(to_py_error)
+                .map(|engine| (engine.is_disabled(&self.name), engine.sink_snapshot()))
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))
+        })?;
+        if disabled {
+            return Ok(());
+        }
+        py.detach(|| {
+            let record = record::LogRecord::builder(lvl, message)
+                .name(self.name.clone())
+                .build();
+            engine::LoggerEngine::deliver(&sinks, &record).map_err(to_py_error)
         })
     }
 
@@ -914,18 +929,21 @@ impl PyLogger {
             record.exception = Some(exc);
         }
 
-        py.detach(|| {
-            let engine = self
-                .engine
+        // Snapshot under a short lock, then dispatch outside it: sinks may
+        // perform blocking file/network/compression I/O and invoke Python
+        // callbacks, none of which may serialize behind the engine mutex.
+        // Honor enable/disable like LoggerEngine::log does. When no
+        // explicit name was given the record carries this logger's name.
+        let (disabled, sinks) = py.detach(|| {
+            self.engine
                 .lock()
-                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))?;
-            // Honor enable/disable like LoggerEngine::log does. When no
-            // explicit name was given the record carries this logger's name.
-            if engine.is_disabled(&record.name) {
-                return Ok(());
-            }
-            engine.dispatch(&record).map_err(to_py_error)
-        })
+                .map(|engine| (engine.is_disabled(&record.name), engine.sink_snapshot()))
+                .map_err(|_| PyRuntimeError::new_err("logger lock is unavailable"))
+        })?;
+        if disabled {
+            return Ok(());
+        }
+        py.detach(|| engine::LoggerEngine::deliver(&sinks, &record).map_err(to_py_error))
     }
 
     fn trace(&self, py: Python<'_>, message: &str) -> PyResult<()> {

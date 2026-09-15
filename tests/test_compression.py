@@ -281,3 +281,39 @@ class TestCompression:
         logger.remove(sink_id)
         assert log_file.exists()
         assert len(list(tmp_path.glob("*.gz"))) <= 2
+
+    def test_retention_preserves_unrelated_files(self, tmp_path: Path) -> None:
+        """Retention must only manage rotation-suffix archives, nothing else."""
+        import os
+        import time
+
+        decoys = [
+            "app.logback",
+            "app.log.tmp",
+            "app.log.gz.backup",
+            "app.log.123",
+            "app.log.123456789",
+            "notes.txt",
+        ]
+        for name in decoys:
+            (tmp_path / name).write_text("do not delete", encoding="utf-8")
+        old = time.time() - 100000
+        for name in decoys:
+            os.utime(tmp_path / name, (old, old))
+
+        log_file = tmp_path / "app.log"
+        sink_id = logger.add(
+            str(log_file),
+            rotation="20 B",
+            retention=1,
+            compression="gzip",
+            level="DEBUG",
+        )
+        for _ in range(60):
+            logger.info("retention decoy payload")
+        logger.remove(sink_id)
+
+        assert log_file.exists()
+        assert len(list(tmp_path.glob("*.gz"))) <= 1
+        for name in decoys:
+            assert (tmp_path / name).read_text(encoding="utf-8") == "do not delete"
