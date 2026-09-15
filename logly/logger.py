@@ -720,10 +720,13 @@ class Logger:
         return Level(name=name_str, no=priority, color=color_opt, icon=icon_opt)
 
     def enable(self, name: str) -> None:
-        """Enable log emission for a logger name pattern.
+        """Enable log emission for a logger name.
+
+        Names match exactly: enabling ``"myapp"`` re-enables only loggers
+        named exactly ``"myapp"``.
 
         Args:
-            name: Logger name or pattern to enable.
+            name: Logger name to enable.
 
         Example::
 
@@ -733,13 +736,16 @@ class Logger:
         self._disabled.discard(name)
 
     def disable(self, name: str) -> None:
-        """Disable log emission for a logger name pattern.
+        """Disable log emission for a logger name.
 
-        Disabled names skip formatting and dispatch entirely in
-        :meth:`log`, and are also enforced by the native engine.
+        Names match exactly: disabling ``"myapp"`` silences only loggers
+        named exactly ``"myapp"``. Disabled names skip formatting and
+        dispatch entirely in :meth:`log`, and are also enforced by the
+        native engine, so a disabled log call performs no formatting,
+        frame inspection, FFI crossing, or sink dispatch.
 
         Args:
-            name: Logger name or pattern to disable.
+            name: Logger name to disable.
 
         Example::
 
@@ -763,7 +769,7 @@ class Logger:
         handlers are removed and replaced. ``levels`` registers custom levels.
         ``extra`` is merged into the bound default extra context.
         ``patcher`` is appended to the record patchers.
-        ``activation`` enables/disables loggers by name pattern.
+        ``activation`` enables/disables loggers by exact logger name.
 
         Args:
             handlers: List of handler config dicts (each with ``sink`` key).

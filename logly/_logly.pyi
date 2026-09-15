@@ -125,17 +125,21 @@ class _Logger:
         """
         ...
     def enable(self, name: str) -> None:
-        """Enable logging for a logger name pattern.
+        """Enable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to enable (e.g. ``"app"``).
+            name: Logger name to enable (e.g. ``"app"``).
         """
         ...
     def disable(self, name: str) -> None:
-        """Disable logging for a logger name pattern.
+        """Disable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to disable (e.g. ``"app"``).
+            name: Logger name to disable (e.g. ``"app"``).
         """
         ...
     def log(self, level: str, message: str) -> None:
@@ -585,10 +589,12 @@ class Logger:
         """
         ...
     def enable(self, name: str) -> None:
-        """Enable logging for a logger name pattern.
+        """Enable logging for a logger name.
+
+        Names match exactly.
 
         Args:
-            name: Logger name prefix to enable (e.g. ``"app"``).
+            name: Logger name to enable (e.g. ``"app"``).
 
         Example::
 
@@ -597,16 +603,17 @@ class Logger:
         """
         ...
     def disable(self, name: str) -> None:
-        """Disable logging for a logger name pattern.
+        """Disable logging for a logger name.
 
-        All log calls with this name prefix are silently discarded.
+        Names match exactly: only loggers named exactly ``name`` are
+        silently discarded.
 
         Args:
-            name: Logger name prefix to disable (e.g. ``"app"``).
+            name: Logger name to disable (e.g. ``"app"``).
 
         Example::
 
-            logger.disable("app")  # All "app.*" logs are silenced
+            logger.disable("app")  # Only "app" logs are silenced
         """
         ...
     def configure(
