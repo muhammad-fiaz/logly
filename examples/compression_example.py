@@ -1,4 +1,4 @@
-"""Compression example - gzip, zip, bz2, xz."""
+"""Compression example - gzip, zip, bz2, xz, zstd."""
 
 from logly import logger
 
@@ -23,6 +23,12 @@ logger.remove(sink_id)
 # Xz compression
 sink_id = logger.add("app.xz.log", compression="xz", rotation="daily")
 logger.info("Compressed with xz")
+logger.complete()
+logger.remove(sink_id)
+
+# Zstd compression with retention
+sink_id = logger.add("app.zst.log", compression="zstd", rotation="daily", retention=7)
+logger.info("Compressed with zstd")
 logger.complete()
 logger.remove(sink_id)
 

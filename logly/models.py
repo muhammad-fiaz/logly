@@ -166,6 +166,9 @@ class CompressionPolicy:
             - ``"tar.bz2"`` → ``"bz2"``
             - ``"tar.xz"`` → ``"xz"``
 
+        Compression levels are engine defaults chosen per codec; only the
+        codec name is configurable.
+
     Example::
 
         CompressionPolicy(codec="gzip")

@@ -157,6 +157,17 @@ docs/bun.lock
 *.log
 logs/
 
+# Compressed log archives produced by rotation tests/examples
+*.gz
+*.bz2
+*.xz
+*.zst
+*.zip
+
+# Tool caches
+.ruff_cache/
+.uv-cache/
+
 # Test artifacts
 test_output/
 test_results/

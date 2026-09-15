@@ -155,9 +155,11 @@ pub fn cleanup_old_archives(
         for entry in entries.flatten() {
             let file_name = entry.file_name();
             let name = file_name.to_string_lossy();
-            if name.starts_with(base_name) {
-                let is_compressed = extensions.iter().any(|ext| name.ends_with(ext));
-                if is_compressed || (name.contains('.') && name != base_name) {
+            if let Some(remainder) = name.strip_prefix(base_name) {
+                let is_compressed = extensions
+                    .iter()
+                    .any(|ext| remainder.ends_with(&format!(".{ext}")));
+                if is_compressed || is_rotated_suffix(remainder) {
                     candidates.push(entry.path());
                 }
             }
@@ -202,6 +204,28 @@ pub fn cleanup_old_archives(
     Ok(())
 }
 
+/// Returns `true` if `remainder` (the part of a filename after `base_name`)
+/// is a rotation suffix: a dot followed by the 10-digit rotation timestamp,
+/// optionally followed by a numeric counter (e.g. `.1789476036` or
+/// `.1789476036.2`).
+///
+/// Anything else (e.g. `back` in `app.logback`, or `.config`) belongs to an
+/// unrelated file that retention must never delete.
+fn is_rotated_suffix(remainder: &str) -> bool {
+    let dotted = remainder.strip_prefix('.').unwrap_or("");
+    let (stamp, rest) = match dotted.split_once('.') {
+        Some((stamp, rest)) => (stamp, Some(rest)),
+        None => (dotted, None),
+    };
+    if stamp.len() != 10 || !stamp.bytes().all(|b| b.is_ascii_digit()) {
+        return false;
+    }
+    match rest {
+        None => true,
+        Some(counter) => !counter.is_empty() && counter.bytes().all(|b| b.is_ascii_digit()),
+    }
+}
+
 fn compress_gzip(path: &Path) -> LoglyResult<std::path::PathBuf> {
     let output = path.with_extension(format!(
         "{}.gz",
@@ -238,9 +262,10 @@ fn compress_zip(path: &Path) -> LoglyResult<std::path::PathBuf> {
         .to_string_lossy()
         .into_owned();
 
-    let mut input_data = Vec::new();
-    std::fs::File::open(path)
-        .and_then(|mut f| f.read_to_end(&mut input_data))
+    // Stream the input into the entry instead of buffering the whole file:
+    // `ZipWriter` implements `Write` once the entry is started, and only the
+    // central directory (written at `finish`) requires seeking.
+    let mut input = std::fs::File::open(path)
         .map_err(|e| LoglyError::Compression(format!("failed to read {}: {e}", path.display())))?;
 
     let out_file = std::fs::File::create(&output).map_err(|e| {
@@ -252,7 +277,7 @@ fn compress_zip(path: &Path) -> LoglyResult<std::path::PathBuf> {
         .compression_method(zip::CompressionMethod::Deflated);
     zip.start_file(&file_name, options)
         .map_err(|e| LoglyError::Compression(format!("failed to start zip entry: {e}")))?;
-    zip.write_all(&input_data)
+    std::io::copy(&mut input, &mut zip)
         .map_err(|e| LoglyError::Compression(format!("failed to write zip entry: {e}")))?;
     zip.finish()
         .map_err(|e| LoglyError::Compression(format!("failed to finish zip archive: {e}")))?;
