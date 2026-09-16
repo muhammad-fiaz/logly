@@ -1,8 +1,8 @@
-"""Regression tests for issues #135 and #136.
+"""Regression tests for exception and catch handling.
 
-#135: logger.exception() must include the active exception traceback.
-#136: logger.catch() must log the caught exception before invoking onerror,
-    even when onerror exits (NoReturn) or raises.
+logger.exception() must include the active exception traceback.
+logger.catch() must log the caught exception before invoking onerror,
+even when onerror exits (NoReturn) or raises.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ def _capture(logger: Logger, fmt: str = "{level}:{message}") -> tuple[list[str],
     return messages, sink_id
 
 
-def test_exception_includes_traceback_issue_135() -> None:
+def test_exception_includes_traceback() -> None:
     logger = Logger()
     messages, sink_id = _capture(logger)
     try:
@@ -93,7 +93,7 @@ def test_exception_exc_info_false_omits_traceback() -> None:
     assert "ZeroDivisionError" not in messages[0]
 
 
-def test_catch_logs_before_onerror_exit_issue_136() -> None:
+def test_catch_logs_before_onerror_exit() -> None:
     logger = Logger()
     messages, sink_id = _capture(logger)
     try:
@@ -111,7 +111,7 @@ def test_catch_logs_before_onerror_exit_issue_136() -> None:
     assert "Traceback" in messages[0]
 
 
-def test_catch_logs_before_onerror_raises_issue_136() -> None:
+def test_catch_logs_before_onerror_raises() -> None:
     logger = Logger()
     messages, sink_id = _capture(logger)
 
