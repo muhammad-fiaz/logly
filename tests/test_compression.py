@@ -282,6 +282,30 @@ class TestCompression:
         assert log_file.exists()
         assert len(list(tmp_path.glob("*.gz"))) <= 2
 
+    def test_rapid_rotation_preserves_every_record(self, tmp_path: Path) -> None:
+        """Successive same-second rotations must not overwrite archives."""
+        import gzip
+
+        log_file = tmp_path / "rapid.log"
+        total = 300
+        sink_id = logger.add(
+            str(log_file),
+            rotation="1 KB",
+            compression="gzip",
+            level="DEBUG",
+            format="{message}",
+        )
+        for i in range(total):
+            logger.info("rapid-{:05d}", i)
+        logger.remove(sink_id)
+        archives = sorted(tmp_path.glob("*.gz"))
+        assert len(archives) >= 2
+        assert len({p.name for p in archives}) == len(archives)
+        combined = b"".join(gzip.decompress(p.read_bytes()) for p in archives)
+        combined += log_file.read_bytes()
+        found = sorted(int(m) for m in __import__("re").findall(rb"rapid-(\d+)", combined))
+        assert found == list(range(total))
+
     def test_retention_preserves_unrelated_files(self, tmp_path: Path) -> None:
         """Retention must only manage rotation-suffix archives, nothing else."""
         import os

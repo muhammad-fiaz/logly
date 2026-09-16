@@ -132,6 +132,7 @@ Every `add()` call accepts these options:
 | `enqueue` | `bool` | `False` | Background worker |
 | `encoding` | `str` | `"utf-8"` | File encoding |
 | `delay` | `bool` | `False` | Delay file opening |
+| `watch` | `bool` | `False` | Reopen the log file if deleted or replaced externally |
 | `catch` | `bool` | `True` | Catch sink errors |
 | `mode` | `str` | `"a"` | File mode (`"a"` or `"w"`) |
 | `backtrace` | `bool` | `True` | Enable backtrace on exceptions |

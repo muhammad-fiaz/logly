@@ -330,6 +330,29 @@ pub fn perform_rotation(path: &Path, _mode: OverwriteMode) -> LoglyResult<PathBu
 /// A [`PathBuf`] containing the rotated file path.
 #[must_use]
 pub fn generate_rotated_path(path: &Path) -> PathBuf {
+    generate_rotated_path_reserving(path, &[])
+}
+
+/// Generates a rotated file path that also avoids reserved sibling names.
+///
+/// Behaves like [`generate_rotated_path`], but a candidate is additionally
+/// rejected when `candidate` with any of the `reserved_extensions` appended
+/// (e.g. a compressed archive such as `app.log.<ts>.gz`) already exists.
+/// This keeps rapid successive rotations — which share the same
+/// second-resolution timestamp — from overwriting each other's archives
+/// after the uncompressed rotated file has been compressed and removed.
+///
+/// # Arguments
+///
+/// * `path` - The original file path to derive the rotated name from.
+/// * `reserved_extensions` - Sibling extensions (without leading dot, e.g.
+///   `"gz"`) that must not already exist for the returned candidate.
+///
+/// # Returns
+///
+/// A [`PathBuf`] containing the rotated file path.
+#[must_use]
+pub fn generate_rotated_path_reserving(path: &Path, reserved_extensions: &[&str]) -> PathBuf {
     let timestamp = chrono_timestamp();
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("log");
     let stem = path
@@ -339,11 +362,56 @@ pub fn generate_rotated_path(path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let mut rotated = parent.join(format!("{stem}.{ext}.{timestamp}"));
     let mut counter = 1u64;
-    while rotated.exists() {
+    while rotated.exists() || reserved_sibling_exists(&rotated, reserved_extensions) {
         rotated = parent.join(format!("{stem}.{ext}.{timestamp}.{counter}"));
         counter += 1;
     }
     rotated
+}
+
+/// Reports whether `candidate` with any reserved extension already exists.
+///
+/// Mirrors the archive naming used by the compression layer
+/// (`candidate` with its final extension replaced by
+/// `<final-ext>.<reserved>`).
+fn reserved_sibling_exists(candidate: &Path, reserved_extensions: &[&str]) -> bool {
+    let current = candidate
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or_default();
+    reserved_extensions.iter().any(|reserved| {
+        candidate
+            .with_extension(format!("{current}.{reserved}"))
+            .exists()
+    })
+}
+
+/// Performs a file rotation by renaming the current file, reserving sibling names.
+///
+/// Like [`perform_rotation`], but the rotated destination additionally
+/// avoids collisions with already-existing reserved siblings (see
+/// [`generate_rotated_path_reserving`]). Returns the actual path the file
+/// was moved to, so callers compress and clean up the file that was
+/// really created rather than a separately generated guess.
+///
+/// # Arguments
+///
+/// * `path` - The current log file to rotate.
+/// * `reserved_extensions` - Sibling extensions (without leading dot) that
+///   must not already exist for the rotated destination.
+///
+/// # Errors
+///
+/// Returns an error if the rename operation fails.
+pub fn perform_rotation_reserving(
+    path: &Path,
+    reserved_extensions: &[&str],
+) -> LoglyResult<PathBuf> {
+    let rotated = generate_rotated_path_reserving(path, reserved_extensions);
+    if path.exists() {
+        std::fs::rename(path, &rotated)?;
+    }
+    Ok(rotated)
 }
 
 /// Returns a timestamp string for rotation filenames.
@@ -729,5 +797,27 @@ mod tests {
     #[test]
     fn rotation_policy_default() {
         assert_eq!(RotationPolicy::default(), RotationPolicy::Never);
+    }
+
+    #[test]
+    fn reserving_skips_existing_compressed_sibling() {
+        let dir = std::env::temp_dir().join("logly_rotate_reserve");
+        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::create_dir_all(&dir);
+        let path = dir.join("test.log");
+
+        let first = generate_rotated_path(&path);
+        // Simulate a previous rotation whose archive is already published:
+        // the uncompressed rotated file is gone, only `first.gz` remains.
+        let mut archived = first.clone().into_os_string();
+        archived.push(".gz");
+        fs::write(Path::new(&archived), "archive").unwrap();
+
+        let second = generate_rotated_path_reserving(&path, &["gz"]);
+        assert_ne!(first, second);
+        // Without reservation the same stale name would be reused.
+        assert_eq!(generate_rotated_path(&path), first);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

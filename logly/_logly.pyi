@@ -418,13 +418,13 @@ class Logger:
         ...
     def catch(
         self,
-        exception: type[BaseException] | tuple[type[BaseException], ...] | None = ...,
+        exception: type[BaseException] | tuple[type[BaseException], ...] | None = Exception,
         *,
-        level: str = ...,
-        reraise: bool = ...,
-        onerror: Callable[[BaseException], None] | None = ...,
-        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = ...,
-        default: object = ...,
+        level: str = "ERROR",
+        reraise: bool = False,
+        onerror: Callable[[BaseException], None] | None = None,
+        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        default: object = None,
     ) -> _CatchContext:
         """Create an exception catching context manager or decorator.
 
@@ -963,15 +963,15 @@ class BatchHttpJsonSink:
         sink = BatchHttpJsonSink(
             url="https://logs.example.com/ingest",
             batch_size=100,
-            flush_interval=5.0,
-            headers={"Authorization": "Bearer token"},
+            flush_interval=5,
+            headers=[("Authorization", "Bearer token")],
         )
         logger.add(sink, level="INFO")
 
     Args:
         url: HTTP endpoint URL to post logs to.
         method: HTTP method (default ``"POST"``).
-        headers: Dict of HTTP headers.
+        headers: List of ``(name, value)`` header tuples.
         timeout: Request timeout in seconds (default ``30``).
         batch_size: Maximum records per batch (default ``100``).
         flush_interval: Maximum seconds between flushes (default ``5``).
@@ -982,10 +982,10 @@ class BatchHttpJsonSink:
         url: str,
         *,
         method: str = "POST",
-        headers: dict[str, str] | None = None,
+        headers: list[tuple[str, str]] | None = None,
         timeout: int = 30,
         batch_size: int = 100,
-        flush_interval: float = 5.0,
+        flush_interval: int = 5,
     ) -> None: ...
     def write(self, line: str) -> None:
         """Write a formatted log line to the batch buffer.
@@ -1337,7 +1337,7 @@ def colorize(text: str, color: str, colorize: bool = True) -> str:
     """
     ...
 
-def parse_rich_markup(text: str, colorize: bool = True) -> str:
+def parse_rich_markup(text: str, colorize: bool) -> str:
     """Parse Rich-style markup tags and return ANSI-escaped text.
 
     Supports both ``<tag>`` (angle-bracket) and ``[tag]`` (Rich-style) syntax.
