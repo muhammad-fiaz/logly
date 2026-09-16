@@ -144,3 +144,33 @@ logger.complete()
 ::: warning
 Always call `logger.complete()` before your process exits when using `enqueue=True`. Without it, queued messages may be lost.
 :::
+
+## Multiprocessing
+
+Child processes started with `spawn` (the default on Windows and macOS)
+should configure their own `Logger`: logging works normally there, including
+file rotation and compression.
+
+```python
+import multiprocessing as mp
+
+from logly import Logger
+
+
+def worker():
+    log = Logger()
+    log.add("app.log", level="INFO")
+    log.info("hello from child")
+    log.complete()
+
+
+if __name__ == "__main__":
+    mp.Process(target=worker).start()
+```
+
+::: warning
+Background (`enqueue=True`) workers are threads and do not survive `fork`:
+drain them with `logger.complete()` before forking, and re-add enqueue sinks
+in the child if needed. The `context` argument of `add()` is reserved and
+must be `None`.
+:::

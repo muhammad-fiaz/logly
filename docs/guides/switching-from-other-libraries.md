@@ -49,7 +49,7 @@ from logly.integrations.stdlib import InterceptHandler
 logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
 ```
 
-## From Structlog
+## From Processor-Based Logging
 
 Start with `bind()` and `contextualize()` for structured context:
 

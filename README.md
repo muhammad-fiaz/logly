@@ -414,7 +414,7 @@ asyncio.run(main())
 ```python
 from logly import logger, parse_rich_markup
 
-# Loguru-style angle bracket syntax
+# Angle-bracket syntax
 logger.info("<bold>Important</bold> message")
 logger.error("<red>Error:</red> something went wrong")
 logger.info("<bold, cyan>Combined styles</bold, cyan>")
@@ -435,7 +435,7 @@ from logly import BatchHttpJsonSink, logger
 sink = BatchHttpJsonSink(
     url="https://logs.example.com/ingest",
     batch_size=100,
-    flush_interval=5.0,
+    flush_interval=5,
     headers={"Authorization": "Bearer token"},
 )
 
@@ -532,7 +532,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgements
 
-Logly's Python API is inspired by Loguru and backed by an independent, from-scratch Rust implementation.
+Logly is backed by an independent, from-scratch Rust implementation with a Python-native API.
 
 ---
 

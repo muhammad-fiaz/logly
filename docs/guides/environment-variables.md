@@ -49,16 +49,15 @@ logger.info("This only goes to app.log")
 
 ## LOGLY_* Configuration Overrides
 
-These environment variables override default configuration values. The `LOGLY_` prefix is stripped and the remainder is lowercased.
+These environment variables configure the automatic stderr sink described
+above. Unrecognized values fall back to the defaults.
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `LOGLY_LEVEL` | Default log level | `LOGLY_LEVEL=WARNING` |
-| `LOGLY_FORMAT` | Default format string | `LOGLY_FORMAT="{level} \| {message}"` |
-| `LOGLY_COLORIZE` | Enable/disable colors | `LOGLY_COLORIZE=NO` |
-| `LOGLY_SERIALIZE` | Enable/disable JSON output | `LOGLY_SERIALIZE=YES` |
-| `LOGLY_BACKTRACE` | Enable/disable backtrace | `LOGLY_BACKTRACE=YES` |
-| `LOGLY_DIAGNOSE` | Enable/disable diagnose mode | `LOGLY_DIAGNOSE=YES` |
+| `LOGLY_LEVEL` | Sink log level (default `"DEBUG"`) | `LOGLY_LEVEL=WARNING` |
+| `LOGLY_FORMAT` | Sink format string | `LOGLY_FORMAT="{level} \| {message}"` |
+| `LOGLY_COLORIZE` | Enable/disable colors (`YES`/`NO`) | `LOGLY_COLORIZE=NO` |
+| `LOGLY_SERIALIZE` | Enable/disable JSON output (`YES`/`NO`) | `LOGLY_SERIALIZE=YES` |
 
 ### Usage
 

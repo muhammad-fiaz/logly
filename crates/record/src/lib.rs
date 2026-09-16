@@ -80,6 +80,11 @@ pub struct LogRecord {
     pub extra: BTreeMap<String, String>,
     /// Captured exception text, when attached.
     pub exception: Option<String>,
+    /// Seconds elapsed between logger creation and record creation.
+    ///
+    /// Populated by the logging engine; `None` for records built manually
+    /// without engine context.
+    pub elapsed_secs: Option<f64>,
 }
 
 impl LogRecord {
@@ -135,6 +140,7 @@ impl LogRecordBuilder {
                 process_id: std::process::id(),
                 extra: BTreeMap::new(),
                 exception: None,
+                elapsed_secs: None,
             },
         }
     }
@@ -286,6 +292,16 @@ mod tests {
         assert!(record.line.is_none());
         assert!(record.function.is_none());
         assert!(record.exception.is_none());
+        assert!(record.elapsed_secs.is_none());
+    }
+
+    #[test]
+    fn elapsed_secs_is_assignable() {
+        let mut record = LogRecord::builder(level("INFO").unwrap(), "m").build();
+        record.elapsed_secs = Some(1.5);
+        assert_eq!(record.elapsed_secs, Some(1.5));
+        let cloned = record.clone();
+        assert_eq!(cloned.elapsed_secs, Some(1.5));
     }
 
     #[test]

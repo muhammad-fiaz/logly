@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import re
 import sys
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping
 from pathlib import Path
 from types import TracebackType
-from typing import Any
+from typing import Any, TypeVar, overload
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -21,6 +21,8 @@ else:
 
 from logly.models import PrettyJsonConfig
 from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
+
+_CatchT = TypeVar("_CatchT")
 
 __version__: str
 """Current version of the logly package."""
@@ -37,6 +39,9 @@ class Level:
         color: ANSI color name or ``None``.
         icon: Icon/emoji string or ``None``.
 
+    Levels compare by numeric severity (``no``), with the name as a
+    deterministic tiebreak.
+
     Example::
 
         info = logger.level("INFO")
@@ -52,6 +57,10 @@ class Level:
     icon: str | None = None
 
     def __init__(self, name: str, no: int, color: str | None, icon: str | None = None) -> None: ...
+    def __lt__(self, other: Level) -> bool: ...
+    def __le__(self, other: Level) -> bool: ...
+    def __gt__(self, other: Level) -> bool: ...
+    def __ge__(self, other: Level) -> bool: ...
 
 class _Logger:
     """Native Rust logger engine (internal).
@@ -226,6 +235,13 @@ class _Logger:
             message: The log message text.
         """
         ...
+    def warn(self, message: str) -> None:
+        """Alias for :meth:`warning`.
+
+        Args:
+            message: The log message text.
+        """
+        ...
     def error(self, message: str) -> None:
         """Log at ERROR level (priority 50).
 
@@ -315,7 +331,7 @@ class Logger:
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
-        context: str | Any | None = None,
+        context: None = None,
         catch: bool = True,
         mode: str = "a",
         buffering: int = 1,
@@ -364,7 +380,7 @@ class Logger:
             patch: Callable to modify record dict before dispatch.
             encoding: File encoding for file-based sinks.
             delay: Delay file creation until first log message.
-            context: Context object for async sinks.
+            context: Must be ``None`` (reserved).
             catch: Catch and log sink errors instead of raising.
             mode: File open mode. ``"a"`` (default) appends, ``"w"`` overwrites.
             buffering: File buffering (1 = line-buffered, 0 = unbuffered).
@@ -425,12 +441,13 @@ class Logger:
         onerror: Callable[[BaseException], None] | None = None,
         exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
         default: object = None,
+        message: str | None = None,
     ) -> _CatchContext:
         """Create an exception catching context manager or decorator.
 
-        When used as a context manager, catches exceptions matching the
-        specified types and logs them. When used as a decorator, wraps
-        a function to catch exceptions.
+        When used as a context manager (sync or async), catches exceptions
+        matching the specified types and logs them. When used as a decorator,
+        wraps sync, async, generator, and async-generator functions.
 
         Args:
             exception: Exception type(s) to catch. ``None`` catches all.
@@ -439,6 +456,7 @@ class Logger:
             onerror: Callback invoked with the caught exception.
             exclude: Exception type(s) to re-raise without logging.
             default: Return value when exception is caught (decorator mode).
+            message: Custom message logged with the caught exception.
 
         Returns:
             A :class:`_CatchContext` usable as context manager or decorator.
@@ -865,8 +883,9 @@ class Logger:
 class _CatchContext:
     """Context manager and decorator for exception catching.
 
-    Created by :meth:`Logger.catch`. Can be used as either a context
-    manager or a function decorator.
+    Created by :meth:`Logger.catch`. Can be used as a sync or async context
+    manager, or as a decorator for sync, async, generator, and
+    async-generator functions.
 
     Example::
 
@@ -900,7 +919,40 @@ class _CatchContext:
             ``True`` if the exception was caught and handled.
         """
         ...
-    def __call__(self, func: Callable[..., object]) -> Callable[..., object]:
+    async def __aenter__(self) -> _CatchContext:
+        """Enter the exception catching context asynchronously."""
+        ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool:
+        """Exit the async exception catching context.
+
+        Args:
+            exc_type: Exception type if an exception occurred.
+            exc: Exception instance if an exception occurred.
+            tb: Traceback object if an exception occurred.
+
+        Returns:
+            ``True`` if the exception was caught and handled.
+        """
+        ...
+    @overload
+    def __call__(
+        self, func: Callable[..., Coroutine[Any, Any, _CatchT]]
+    ) -> Callable[..., Coroutine[Any, Any, _CatchT | None]]: ...
+    @overload
+    def __call__(
+        self, func: Callable[..., AsyncGenerator[_CatchT]]
+    ) -> Callable[..., AsyncGenerator[_CatchT]]: ...
+    @overload
+    def __call__(
+        self, func: Callable[..., Generator[_CatchT]]
+    ) -> Callable[..., Generator[_CatchT]]: ...
+    @overload
+    def __call__(self, func: Callable[..., _CatchT]) -> Callable[..., _CatchT | None]:
         """Wrap a function as an exception-catching decorator.
 
         Args:
@@ -1060,6 +1112,9 @@ class UdpSink:
         Args:
             line: The formatted log line to send.
         """
+        ...
+    def flush(self) -> None:
+        """Flush the sink (no-op; UDP delivery is fire-and-forget)."""
         ...
 
 class SyslogSink:

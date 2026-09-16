@@ -131,6 +131,9 @@ print(info.color)  # "bold_green"
 print(info.icon)  # "i"
 ```
 
+Registering an existing name replaces its color and icon (built-in
+priorities are fixed). Levels are never removed once registered.
+
 ## List All Registered Levels
 
 ```python
@@ -155,4 +158,8 @@ assert info.name == "INFO"
 assert info.no == 20
 assert info.color is None
 assert info.icon is None
+
+# Levels compare by numeric severity
+assert logger.level("DEBUG") < logger.level("ERROR")
+assert logger.level("INFO") <= logger.level("INFO")
 ```

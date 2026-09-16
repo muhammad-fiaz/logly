@@ -260,6 +260,18 @@ logger.opt(raw=True).info("raw message")
 logger.opt(raw=True).info("no trailing newline")
 ```
 
+## Template Strings (Python 3.14+)
+
+Template strings (`t"..."`) are rendered natively, honoring each
+interpolation's conversion and format specification:
+
+```python
+logger.info(t"total {40 + 2} items")
+logger.info(t"user {name!r} scored {score:.1f}")
+```
+
+A template string cannot be combined with additional format arguments.
+
 ## Format Examples
 
 ```python

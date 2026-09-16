@@ -137,7 +137,7 @@ Every `add()` call accepts these options:
 | `mode` | `str` | `"a"` | File mode (`"a"` or `"w"`) |
 | `backtrace` | `bool` | `True` | Enable backtrace on exceptions |
 | `diagnose` | `bool` | `False` | Enable diagnostic mode |
-| `context` | `str \| multiprocessing.context.BaseContext \| None` | `None` | Multiprocessing context |
+| `context` | `None` | `None` | Reserved; must be `None` (spawn children with their own `Logger`) |
 | `buffering` | `int` | `1` | File buffering |
 | `loop` | `asyncio.AbstractEventLoop \| None` | `None` | Event loop for async sinks |
 | `opener` | `Callable \| None` | `None` | Custom file opener |

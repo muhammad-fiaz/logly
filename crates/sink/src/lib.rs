@@ -158,10 +158,18 @@ impl Sink for ConsoleSink {
     }
 }
 
+/// Custom rotation condition for file sinks.
+///
+/// Receives the sink path and the current file size in bytes after a record
+/// is written. Returning `true` triggers a rotation. Checked only when the
+/// configured [`rotate::RotationPolicy`] does not already trigger.
+pub type RotationCheck = Arc<dyn Fn(&Path, u64) -> LoglyResult<bool> + Send + Sync>;
+
 /// File sink that appends formatted records to a path.
 ///
-/// Supports file rotation (by size, time, or schedule), retention policies,
-/// compression of rotated files, and lazy file opening (delay mode).
+/// Supports file rotation (by size, time, schedule, or custom condition),
+/// retention policies, compression of rotated files, and lazy file opening
+/// (delay mode).
 ///
 /// # Rotation
 ///
@@ -179,6 +187,7 @@ pub struct FileSink {
     filter: Box<dyn Filter>,
     append: bool,
     rotation: rotate::RotationPolicy,
+    rotation_check: Option<RotationCheck>,
     retention: config::RetentionPolicy,
     compression: compress::CompressionCodec,
     #[expect(
@@ -202,6 +211,8 @@ impl FileSink {
     /// * `filter` - Filter for accepting/rejecting records
     /// * `append` - Whether to append to existing files
     /// * `rotation` - Rotation policy
+    /// * `rotation_check` - Optional custom rotation condition, consulted
+    ///   when `rotation` does not trigger
     /// * `retention` - Retention policy for rotated files
     /// * `compression` - Compression codec for rotated files
     /// * `delay` - Defer file opening until first write
@@ -218,6 +229,7 @@ impl FileSink {
         filter: Box<dyn Filter>,
         append: bool,
         rotation: rotate::RotationPolicy,
+        rotation_check: Option<RotationCheck>,
         retention: config::RetentionPolicy,
         compression: compress::CompressionCodec,
         delay: bool,
@@ -245,6 +257,7 @@ impl FileSink {
             filter,
             append,
             rotation,
+            rotation_check,
             retention,
             compression,
             delay,
@@ -294,8 +307,22 @@ impl Sink for FileSink {
             f.flush()?;
         }
 
-        // Check rotation after writing
-        let action = rotate::check_rotation(&self.path, &self.rotation, line_bytes)?;
+        // Check rotation after writing. A custom condition is consulted
+        // only when the configured policy does not trigger; its errors
+        // propagate like rotation I/O errors so misbehaving conditions
+        // are observable instead of silently disabling rotation.
+        let mut action = rotate::check_rotation(&self.path, &self.rotation, line_bytes)?;
+        if matches!(action, rotate::RotationAction::None)
+            && let Some(check) = &self.rotation_check
+        {
+            let size = self.path.metadata().map_or(0, |m| m.len());
+            if check(&self.path, size)? {
+                action = rotate::RotationAction::RotateTo(rotate::generate_rotated_path_reserving(
+                    &self.path,
+                    &[],
+                ));
+            }
+        }
         if let rotate::RotationAction::RotateTo(_) = action {
             if let Some(f) = guard.take() {
                 drop(f);
@@ -598,6 +625,7 @@ mod tests {
             info_filter(),
             true,
             rotate::RotationPolicy::Never,
+            None,
             config::RetentionPolicy::default(),
             compress::CompressionCodec::None,
             false,
@@ -655,6 +683,7 @@ mod tests {
             info_filter(),
             true,
             rotate::RotationPolicy::SizeBytes(64),
+            None,
             config::RetentionPolicy::default(),
             compress::CompressionCodec::Gzip,
             false,
@@ -681,6 +710,63 @@ mod tests {
         assert!(
             archives.len() >= 2,
             "expected distinct archives for rapid rotations, found {archives:?}"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rotation_check_condition_triggers_rotation() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let dir = std::env::temp_dir().join("logly_sink_rotation_check");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("checked.log");
+
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_clone = Arc::clone(&calls);
+        let check: RotationCheck = Arc::new(move |_path: &Path, size: u64| {
+            calls_clone.fetch_add(1, Ordering::SeqCst);
+            Ok(size >= 20)
+        });
+
+        let sink = FileSink::open(
+            &path,
+            info_formatter(),
+            info_filter(),
+            true,
+            rotate::RotationPolicy::Never,
+            Some(check),
+            config::RetentionPolicy::default(),
+            compress::CompressionCodec::None,
+            false,
+            false,
+        )
+        .unwrap();
+        for i in 0..10 {
+            let record =
+                LogRecord::builder(LogLevel::new("INFO", 20, None), format!("message-{i}")).build();
+            sink.handle(&record).unwrap();
+        }
+        sink.flush().unwrap();
+
+        assert!(
+            calls.load(Ordering::SeqCst) >= 10,
+            "custom condition must be consulted for every record"
+        );
+        let rotated: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.extension()
+                    .is_some_and(|ext| ext != std::ffi::OsStr::new("log"))
+            })
+            .collect();
+        assert!(
+            !rotated.is_empty(),
+            "custom condition must have triggered rotation"
         );
 
         let _ = std::fs::remove_dir_all(&dir);

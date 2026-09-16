@@ -17,23 +17,26 @@ Usage::
 from __future__ import annotations
 
 import asyncio
+import atexit
 import concurrent.futures
+import datetime
 import inspect
+import io
 import logging
-import multiprocessing.context
 import os
 import re
 import sys
 import threading
 import time
 import types
-from collections.abc import Callable, Generator, Mapping
+import weakref
+from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
-from typing import Any
+from typing import Any, Literal, TypeGuard, TypeVar, cast, overload
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -52,8 +55,42 @@ from logly._logly import (
 from logly.models import PrettyJsonConfig
 from logly.typing import FilterCallable, FormatterCallable, LevelType, PatchCallable
 
+try:  # Python 3.14 template strings (PEP 750)
+    from string.templatelib import Template as _TemplateString
+except ImportError:  # pragma: no cover - Python < 3.14
+    _TemplateString = None  # type: ignore[assignment,misc]
+
+_CatchT = TypeVar("_CatchT")
+
 _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", default=None)
 _logly_level_tls: threading.local = threading.local()
+
+# Loggers owning background (`enqueue=True`) sinks, mapped to the pid that
+# created them. A single interpreter-shutdown hook drains them while the
+# interpreter is still alive: dropping a live worker during finalization can
+# deadlock against interpreter teardown, so every queued record is flushed
+# first. Entries vanish automatically when their logger is collected, and
+# the map is cleared in fork children (which must configure their own
+# sinks; a copied worker has no live thread behind it).
+_enqueue_registry: weakref.WeakKeyDictionary[Logger, int] = weakref.WeakKeyDictionary()
+
+
+def _drain_enqueue_loggers() -> None:
+    """Flush every registered background logger exactly once per process."""
+    current_pid = os.getpid()
+    for log, pid in list(_enqueue_registry.items()):
+        if pid != current_pid:
+            continue
+        try:
+            log.complete()
+        except Exception:
+            pass
+
+
+atexit.register(_drain_enqueue_loggers)
+
+if hasattr(os, "register_at_fork"):  # Unix only; absent on Windows
+    os.register_at_fork(after_in_child=_enqueue_registry.clear)
 
 
 def _is_async_callable(obj: object) -> bool:
@@ -104,12 +141,211 @@ def _is_async_callable(obj: object) -> bool:
     return False
 
 
+def _is_console_sink(sink: object) -> bool:
+    """Return whether ``sink`` addresses a standard console stream."""
+    return sink is sys.stderr or sink is sys.stdout or sink in ("stdout", "stderr")
+
+
+def _is_path_sink(sink: object) -> TypeGuard[str | Path]:
+    """Return whether ``sink`` addresses a file path (not console/object)."""
+    return isinstance(sink, (str, Path)) and not _is_console_sink(sink)
+
+
+class _BinaryStreamAdapter:
+    """Adapt a binary stream to the text sink protocol.
+
+    Encodes ``str`` messages with the configured encoding before writing.
+    Never takes ownership: it has no ``close`` method and never closes the
+    wrapped stream, so removing the sink leaves the caller's object usable.
+    """
+
+    def __init__(self, stream: io.BufferedIOBase, encoding: str) -> None:
+        self._stream = stream
+        self._encoding = encoding
+
+    def write(self, message: object) -> None:
+        payload: Any = message.encode(self._encoding) if isinstance(message, str) else message
+        self._stream.write(payload)
+
+    def flush(self) -> None:
+        self._stream.flush()
+
+
+def _render_template_string(message: object) -> str:
+    """Render a PEP 750 template string into plain text.
+
+    Applies each interpolation's conversion (``!s``/``!r``/``!a``) and format
+    specification, mirroring template-string semantics without evaluating
+    anything beyond what the template already captured.
+    """
+    template = cast(Any, message)
+    strings: tuple[str, ...] = template.strings
+    interpolations: tuple[Any, ...] = template.interpolations
+    parts: list[str] = [strings[0]]
+    for index, interpolation in enumerate(interpolations):
+        value: Any = interpolation.value
+        conversion = interpolation.conversion
+        spec = interpolation.format_spec or ""
+        if conversion == "r":
+            value = repr(value)
+        elif conversion == "a":
+            value = ascii(value)
+        elif conversion == "s":
+            value = str(value)
+        parts.append(format(value, spec))
+        parts.append(strings[index + 1])
+    return "".join(parts)
+
+
+def _validate_sink_args(
+    sink: object,
+    *,
+    level: LevelType,
+    format: str | FormatterCallable | None,
+    rotation: str | int | object | None,
+    retention: int | str | object | None,
+    compression: str | object | None,
+    mode: str,
+    buffering: int,
+    opener: Callable[..., object] | None,
+    encoding: str,
+    delay: bool,
+    watch: bool,
+    context: str | object | None,
+) -> None:
+    """Validate one sink configuration without side effects.
+
+    Raises:
+        ValueError: For invalid option values or unsupported combinations
+            (e.g. rotation on a non-file sink).
+        TypeError: For options of the wrong type.
+
+    Used by :meth:`Logger.add` and :meth:`Logger.configure` (which validates
+    every handler before mutating active state).
+    """
+    from logly._logly import (
+        parse_compression_str,
+        parse_retention_str,
+        parse_rotation_str,
+    )
+
+    if isinstance(level, bool) or not isinstance(level, (str, int)):
+        raise TypeError(f"level must be a level name or priority, got {level!r}")
+    if isinstance(level, int):
+        resolve_level_name(str(level))
+    else:
+        inspect_level(level)
+
+    if mode not in ("a", "w"):
+        raise ValueError(f'mode must be "a" or "w", got {mode!r}')
+
+    if format is not None and not isinstance(format, str) and not callable(format):
+        raise TypeError("format must be a template string, a callable, or None")
+
+    if isinstance(buffering, bool) or not isinstance(buffering, int):
+        raise TypeError(f"buffering must be an int, got {buffering!r}")
+    if opener is not None and not callable(opener):
+        raise TypeError("opener must be a callable or None")
+    if not isinstance(encoding, str):
+        raise TypeError(f"encoding must be a string, got {encoding!r}")
+
+    if context is not None:
+        raise TypeError(
+            "context must be None: cross-process queue sinks are not supported; "
+            "spawn child processes that configure their own Logger instead "
+            "(see the concurrency guide)"
+        )
+
+    if rotation is not None:
+        if isinstance(rotation, bool):
+            raise TypeError(f"invalid rotation policy: {rotation!r}")
+        elif isinstance(rotation, str):
+            parse_rotation_str(rotation)
+        elif isinstance(rotation, int):
+            if rotation < 0:
+                raise ValueError(f"rotation byte size must be >= 0, got {rotation}")
+        elif callable(rotation):
+            pass
+        elif hasattr(rotation, "kind"):
+            kind = rotation.kind
+            if kind not in ("never", "size", "interval", "clock", "weekday", "callable"):
+                raise ValueError(f"unknown rotation policy kind: {kind!r}")
+            if kind == "callable" and not callable(getattr(rotation, "value", None)):
+                raise ValueError("callable rotation policy value must be callable")
+        else:
+            raise TypeError(f"invalid rotation policy: {rotation!r}")
+
+    if retention is not None:
+        if isinstance(retention, bool):
+            raise TypeError(f"invalid retention policy: {retention!r}")
+        elif isinstance(retention, str):
+            parse_retention_str(retention)
+        elif isinstance(retention, int):
+            if retention < 0:
+                raise ValueError(f"retention count must be >= 0, got {retention}")
+        elif hasattr(retention, "count") or hasattr(retention, "seconds"):
+            pass
+        else:
+            raise TypeError(f"invalid retention policy: {retention!r}")
+
+    if compression is not None:
+        if isinstance(compression, str):
+            parse_compression_str(compression)
+        elif hasattr(compression, "codec"):
+            parse_compression_str(str(compression.codec))
+        else:
+            raise TypeError(f"invalid compression codec: {compression!r}")
+
+    if _is_path_sink(sink) and (opener is not None or buffering != 1 or encoding != "utf-8"):
+        # Such sinks are opened in Python (see Logger.add), which cannot
+        # rotate, retain, compress, delay, or watch.
+        if (
+            rotation is not None
+            or retention is not None
+            or compression is not None
+            or delay
+            or watch
+        ):
+            raise ValueError(
+                "opener, buffering, and encoding require a plain file sink "
+                "without rotation, retention, compression, delay, or watch"
+            )
+
+    if not _is_path_sink(sink):
+        if (
+            not _is_console_sink(sink)
+            and not callable(sink)
+            and not hasattr(sink, "write")
+            and not isinstance(sink, logging.Handler)
+        ):
+            raise TypeError(
+                "sink must be a file path, console stream name, text/binary stream, "
+                f"callable, coroutine, or logging handler, got {type(sink).__name__!r}"
+            )
+        if rotation is not None or retention is not None or compression is not None:
+            raise ValueError("rotation, retention, and compression require a file path sink")
+        if delay or watch:
+            raise ValueError("delay and watch require a file path sink")
+        if opener is not None:
+            raise ValueError("opener requires a file path sink")
+        if buffering != 1 or encoding != "utf-8":
+            if not isinstance(sink, (io.RawIOBase, io.BufferedIOBase)):
+                raise ValueError(
+                    "buffering and encoding only apply to file path and binary stream sinks"
+                )
+            if buffering != 1:
+                raise ValueError("buffering must be 1 for binary stream sinks")
+
+
 @dataclass(frozen=True, slots=True)
 class Level:
     """Represents a registered log level.
 
     Returned by ``logger.level("NAME")``. Contains the level name, numeric
     severity, optional ANSI color, and optional icon/emoji.
+
+    Levels compare by numeric severity (``no``), with the name as a
+    deterministic tiebreak, so ``logger.level("DEBUG") < logger.level("ERROR")``.
 
     Attributes:
         name: Level name (e.g. ``"INFO"``).
@@ -130,6 +366,29 @@ class Level:
     no: int
     color: str | None
     icon: str | None = None
+
+    def _severity_key(self) -> tuple[int, str]:
+        return (self.no, self.name)
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Level):
+            return NotImplemented
+        return self._severity_key() < other._severity_key()
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, Level):
+            return NotImplemented
+        return self._severity_key() <= other._severity_key()
+
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, Level):
+            return NotImplemented
+        return self._severity_key() > other._severity_key()
+
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, Level):
+            return NotImplemented
+        return self._severity_key() >= other._severity_key()
 
 
 def _current_context() -> dict[str, object]:
@@ -281,7 +540,7 @@ class Logger:
         encoding: str = "utf-8",
         delay: bool = False,
         watch: bool = False,
-        context: str | multiprocessing.context.BaseContext | None = None,
+        context: None = None,
         catch: bool = True,
         mode: str = "a",
         buffering: int = 1,
@@ -291,18 +550,22 @@ class Logger:
     ) -> int:
         """Add a logging sink.
 
-        The sink can be a file path (str/Path), a file-like object with
-        ``.write()``, a callable, a coroutine function, or a ``logging.Handler``.
+        The sink can be a file path (str/Path), a text or binary stream with
+        ``.write()`` (binary streams are adapted with ``encoding``), a
+        callable, a coroutine function, or a ``logging.Handler``.
 
         Args:
             sink: Destination for log messages. Can be:
                 - ``"stderr"`` or ``"stdout"`` for console output
                 - A file path string or ``Path`` object
-                - Any object with a ``.write()`` method
+                - A text stream with a ``.write()`` method
+                - A binary stream (adapted to text using ``encoding``)
                 - A callable ``Callable[[str], Any]``
                 - A coroutine function (async sink)
                 - A ``logging.Handler`` instance
             level: Minimum log level for this sink (default ``"DEBUG"``).
+                Accepts level names (``"INFO"``) or numeric priorities
+                (``20``), resolved exactly like :meth:`log` levels.
             format: Format template string or callable. Uses tokens like
                 ``{time}``, ``{level}``, ``{message}``, ``{file}``, ``{line}``,
                 ``{function}``, ``{extra[key]}``.
@@ -326,26 +589,63 @@ class Logger:
             pretty_json: Pretty JSON configuration (``True``, or
                 ``PrettyJsonConfig`` instance).
             patch: Callable that mutates the record dict before dispatch.
-            encoding: File encoding (default ``"utf-8"``).
+            encoding: File encoding (default ``"utf-8"``). A non-default
+                encoding (or ``opener``/``buffering``) opens the file in
+                Python instead of natively, so it cannot be combined with
+                ``rotation``, ``retention``, ``compression``, ``delay``, or
+                ``watch``.
             delay: If ``True``, delay file opening until first write.
             watch: If ``True``, reopen the log file if it is deleted or
                 replaced (useful with external log rotation tools).
-            context: Multiprocessing context for queue-based sinks.
+            context: Must be ``None``. Cross-process queue sinks are not
+                supported; spawn child processes that configure their own
+                ``Logger`` instead (see the concurrency guide).
             catch: If ``True``, catch sink errors silently.
             mode: File mode (``"a"`` for append, ``"w"`` for overwrite).
-            buffering: File buffering level.
+            buffering: File buffering level. Non-default values require a
+                file path sink without rotation and friends (see
+                ``encoding``).
             loop: Event loop for async sinks.
-            opener: Custom file opener.
+            opener: Custom file opener ``Callable[[str, int], int]``. Only
+                valid with a file path sink without rotation and friends
+                (see ``encoding``).
 
         Returns:
             Integer handler ID for use with :meth:`remove`.
+
+        Raises:
+            ValueError: For invalid option values or unsupported
+                combinations (e.g. rotation on a non-file sink, an unknown
+                ``mode``, or ``opener`` with rotation).
+            TypeError: For options of the wrong type.
 
         Example::
 
             logger.add("app.log", level="INFO", rotation="daily")
             logger.add("stderr", colorize=True)
         """
-        _ = (backtrace, diagnose, context, buffering, opener, kwargs)
+        _ = (backtrace, diagnose, kwargs)
+        # `backtrace`/`diagnose` are accepted for compatibility; exception
+        # detail is controlled per message via ``opt(exception=...,
+        # backtrace=..., diagnose=...)``.
+        _validate_sink_args(
+            sink,
+            level=level,
+            format=format,
+            rotation=rotation,
+            retention=retention,
+            compression=compression,
+            mode=mode,
+            buffering=buffering,
+            opener=opener,
+            encoding=encoding,
+            delay=delay,
+            watch=watch,
+            context=context,
+        )
+        # Integer levels resolve exactly like names; the native engine only
+        # resolves level names.
+        level_name = resolve_level_name(str(level)) if isinstance(level, int) else level
 
         if format is None:
             format = (
@@ -366,13 +666,6 @@ class Logger:
         # Detect logging.Handler — wrap it as a callable
         if isinstance(sink, logging.Handler):
             handler = sink
-            level_val = getattr(logging, "NOTSET", 0)
-            for lvl_name in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
-                if hasattr(logging, lvl_name):
-                    lvl_int = getattr(logging, lvl_name)
-                    if isinstance(lvl_int, int) and lvl_int <= handler.level:
-                        level_val = lvl_int
-            _ = level_val
 
             def _handler_sink(message: str) -> None:
                 lvl_no = getattr(_logly_level_tls, "level", 0)
@@ -430,11 +723,25 @@ class Logger:
 
             sink = _async_sink
 
+        # Detect binary streams — adapt them to text with the requested
+        # encoding so no message is silently dropped.
+        if (
+            not _is_console_sink(sink)
+            and not _is_path_sink(sink)
+            and hasattr(sink, "write")
+            and not callable(sink)
+        ):
+            if isinstance(sink, io.RawIOBase):
+                sink = _BinaryStreamAdapter(io.BufferedWriter(sink), encoding)
+            elif isinstance(sink, io.BufferedIOBase):
+                sink = _BinaryStreamAdapter(sink, encoding)
+
         # Detect Path
         rust_sink = sink
+        reinstall_sink: object = sink
         if isinstance(sink, Path):
             rust_sink = str(sink)
-        elif isinstance(sink, str) and not sink.startswith(("stdout", "stderr")):
+        elif isinstance(sink, str) and sink not in ("stdout", "stderr"):
             sink_path = Path(sink)
             if not sink_path.is_absolute() and Logger._root_dir is not None:
                 resolved = Logger._root_dir / sink_path
@@ -442,9 +749,33 @@ class Logger:
                 rust_sink = str(resolved)
                 sink = resolved
 
+        # A custom opener, non-default buffering, or non-UTF-8 encoding
+        # cannot be honored by the native file sink, so open the file here
+        # in Python and dispatch to it as a stream sink. Rotation and
+        # friends require the native file sink (enforced above).
+        if _is_path_sink(sink) and (opener is not None or buffering != 1 or encoding != "utf-8"):
+            target: Path = Path(sink) if isinstance(sink, str) else sink
+            if not target.is_absolute() and Logger._root_dir is not None:
+                target = Logger._root_dir / target
+            target.parent.mkdir(parents=True, exist_ok=True)
+            mode_char: Literal["w", "a"] = "w" if mode == "w" else "a"
+            file_opener = cast("Callable[[str, int], int] | None", opener)
+            sink = open(
+                target,
+                mode_char,
+                encoding=encoding,
+                buffering=buffering,
+                opener=file_opener,
+                # Raw newlines, exactly like the native file sink: formatted
+                # records already end with "\n" and must not gain "\r".
+                newline="\n",
+            )
+            rust_sink = sink
+            reinstall_sink = str(target)
+
         sink_id = self._native.add(
             rust_sink,
-            level=str(level),
+            level=level_name,
             format=format,
             colorize=colorize,
             serialize=serialize,
@@ -461,9 +792,14 @@ class Logger:
             patch=patch,
         )
 
+        if enqueue:
+            # Ensure background queues are drained during interpreter
+            # shutdown even if the application never calls complete().
+            _enqueue_registry[self] = os.getpid()
+
         # Store sink config for reinstall
         self._sink_configs[sink_id] = (
-            sink,
+            reinstall_sink,
             {
                 "level": level,
                 "format": format,
@@ -559,11 +895,14 @@ class Logger:
         onerror: Callable[[BaseException], None] | None = None,
         exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
         default: object = None,
+        message: str | None = None,
     ) -> _CatchContext:
         """Return a decorator/context manager that logs caught exceptions.
 
-        Works as both a context manager and a decorator. When an exception
-        occurs, it is logged at the specified level and optionally re-raised.
+        Works as a context manager, an async context manager, and a decorator
+        (sync, async, generator, and async-generator functions). When an
+        exception occurs, it is logged at the specified level and optionally
+        re-raised.
 
         Args:
             exception: Exception type(s) to catch. If ``None``, catches all
@@ -573,6 +912,8 @@ class Logger:
             onerror: Callback invoked with the caught exception.
             exclude: Exception type(s) to skip (re-raise without logging).
             default: Return value when used as decorator and exception occurs.
+            message: Custom message logged with the caught exception
+                (default ``"An error has been caught"``).
 
         Returns:
             A ``_CatchContext`` that works as decorator and context manager.
@@ -596,6 +937,7 @@ class Logger:
             exception_type=exception if exception is not None else Exception,
             exclude=exclude,
             default=default,
+            message=message,
         )
 
     def opt(
@@ -826,12 +1168,20 @@ class Logger:
         ``patcher`` is appended to the record patchers.
         ``activation`` enables/disables loggers by exact logger name.
 
+        Every handler is validated before any active sink is touched, so a
+        bad handler configuration raises without destroying the sinks that
+        are already installed.
+
         Args:
             handlers: List of handler config dicts (each with ``sink`` key).
             levels: List of level dicts with ``name``, ``no``, ``color``, ``icon``.
             extra: Default extra context to bind.
             patcher: Callable applied to all records before dispatch.
             activation: List of ``(name, enabled)`` tuples for logger activation.
+
+        Raises:
+            ValueError: If any handler configuration is invalid.
+            TypeError: If any handler option has the wrong type.
         """
         if levels is not None:
             for lvl in levels:
@@ -848,10 +1198,28 @@ class Logger:
                     )
 
         if handlers is not None:
-            self.remove()
+            prepared: list[tuple[object, dict[str, Any]]] = []
             for handler in handlers:
                 h = dict(handler)
                 sink = h.pop("sink", sys.stderr)
+                _validate_sink_args(
+                    sink,
+                    level=h.get("level", "DEBUG"),
+                    format=h.get("format"),
+                    rotation=h.get("rotation"),
+                    retention=h.get("retention"),
+                    compression=h.get("compression"),
+                    mode=h.get("mode", "a"),
+                    buffering=h.get("buffering", 1),
+                    opener=h.get("opener"),
+                    encoding=h.get("encoding", "utf-8"),
+                    delay=h.get("delay", False),
+                    watch=h.get("watch", False),
+                    context=h.get("context"),
+                )
+                prepared.append((sink, h))
+            self.remove()
+            for sink, h in prepared:
                 self.add(sink, **h)  # type: ignore[arg-type]
 
         if extra is not None:
@@ -985,6 +1353,11 @@ class Logger:
             logger.info("User {} logged in", username)
             logger.info("User {user} logged in", user=username)
 
+        On Python 3.14+, template strings (``t"..."``) are rendered
+        natively, honoring each interpolation's conversion and format
+        specification. A template string cannot be combined with additional
+        ``*args``/``**kwargs``.
+
         Returns:
             The record dict if ``opt(record=True)`` was used, otherwise None.
         """
@@ -994,7 +1367,18 @@ class Logger:
             return None
         level_name = resolve_level_name(str(level)) if isinstance(level, int) else str(level)
 
-        if self._options.raw:
+        template_type: Any = _TemplateString
+        if (
+            template_type is not None
+            and isinstance(message, template_type)
+            and not self._options.raw
+        ):
+            if args or kwargs:
+                raise ValueError(
+                    "template string messages cannot be combined with format arguments"
+                )
+            rendered = _render_template_string(message)
+        elif self._options.raw:
             rendered = str(message)
         else:
             effective_kwargs = dict(kwargs) if kwargs else {}
@@ -1131,6 +1515,9 @@ class Logger:
         record_dict["thread"] = thread_name
         record_dict["process"] = process_id
         record_dict["exception"] = exc_tuple
+        record_dict["elapsed"] = datetime.timedelta(
+            seconds=max(0.0, time.time() - self._start_time)
+        )
 
         for patcher in self._patchers:
             try:
@@ -1469,6 +1856,7 @@ class _CatchContext:
         exception_type: type[BaseException] | tuple[type[BaseException], ...] = Exception,
         exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
         default: object = None,
+        message: str | None = None,
     ) -> None:
         """Initialize the catch context.
 
@@ -1480,6 +1868,7 @@ class _CatchContext:
             exception_type: Exception type(s) to catch.
             exclude: Exception type(s) to exclude from catching.
             default: Default return value when used as decorator.
+            message: Custom message logged with the caught exception.
         """
         self._logger = logger
         self._reraise = reraise
@@ -1488,6 +1877,26 @@ class _CatchContext:
         self._exception_type = exception_type
         self._exclude = exclude
         self._default = default
+        self._message = message if message is not None else "An error has been caught"
+
+    def _matches(self, exc: BaseException) -> bool:
+        """Return whether ``exc`` should be caught and logged."""
+        if self._exclude is not None and isinstance(exc, self._exclude):
+            return False
+        return isinstance(exc, self._exception_type)
+
+    def _log_and_handle(self, exc: BaseException) -> None:
+        """Log ``exc`` first, then invoke ``onerror``.
+
+        Logging precedes the callback so the original exception and its
+        traceback are preserved even when ``onerror`` is NoReturn (e.g.
+        ``sys.exit``) or itself raises.
+        """
+        try:
+            self._logger.opt(exception=exc).log(self._level, self._message)
+        finally:
+            if self._onerror is not None:
+                self._onerror(exc)
 
     def __enter__(self) -> _CatchContext:
         """Enter the catch context.
@@ -1514,27 +1923,63 @@ class _CatchContext:
             ``True`` if the exception was caught and suppressed,
             ``False`` otherwise.
         """
-        if exc is not None:
-            if self._exclude is not None and isinstance(exc, self._exclude):
-                return False
-            if not isinstance(exc, self._exception_type):
-                return False
-            # Log first so the original exception and its traceback are
-            # preserved even when `onerror` is NoReturn (e.g. sys.exit) or
-            # itself raises. See https://github.com/muhammad-fiaz/logly/issues/136
-            try:
-                self._logger.opt(exception=exc).log(
-                    self._level,
-                    "An error has been caught",
-                )
-            finally:
-                if self._onerror is not None:
-                    self._onerror(exc)
+        if exc is not None and self._matches(exc):
+            self._log_and_handle(exc)
             return not self._reraise
         return False
 
+    async def __aenter__(self) -> _CatchContext:
+        """Enter the exception catching context asynchronously.
+
+        Returns:
+            This instance (for use in ``async with`` statements).
+        """
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool:
+        """Exit the async catching context, logging any caught exception.
+
+        Args:
+            exc_type: Exception type if an exception occurred.
+            exc: Exception instance if an exception occurred.
+            tb: Traceback object if an exception occurred.
+
+        Returns:
+            ``True`` if the exception was caught and handled.
+        """
+        _ = tb
+        if exc is not None and self._matches(exc):
+            self._log_and_handle(exc)
+            return not self._reraise
+        return False
+
+    @overload
+    def __call__(
+        self, func: Callable[..., Coroutine[Any, Any, _CatchT]]
+    ) -> Callable[..., Coroutine[Any, Any, _CatchT | None]]: ...
+    @overload
+    def __call__(
+        self, func: Callable[..., AsyncGenerator[_CatchT, None]]
+    ) -> Callable[..., AsyncGenerator[_CatchT, None]]: ...
+    @overload
+    def __call__(
+        self, func: Callable[..., Generator[_CatchT, None, None]]
+    ) -> Callable[..., Generator[_CatchT, None, None]]: ...
+    @overload
+    def __call__(self, func: Callable[..., _CatchT]) -> Callable[..., _CatchT | None]: ...
     def __call__(self, func: Callable[..., object]) -> Callable[..., object]:
         """Wrap a function as a decorator that catches and logs exceptions.
+
+        Supports synchronous functions, asynchronous functions, generators,
+        and asynchronous generators. For generators, exceptions raised while
+        iterating are caught; a caught exception ends iteration (the
+        ``default`` value only applies to plain and async functions, since a
+        default cannot be yielded without altering the data stream).
 
         Args:
             func: The function to wrap.
@@ -1545,6 +1990,55 @@ class _CatchContext:
         """
         import functools
 
+        if inspect.isasyncgenfunction(func):
+
+            @functools.wraps(func)
+            async def _catch_async_gen_wrapper(*args: object, **inner_kwargs: object) -> Any:
+                try:
+                    async for item in func(*args, **inner_kwargs):
+                        yield item
+                except BaseException as exc:
+                    if self._matches(exc):
+                        self._log_and_handle(exc)
+                        if self._reraise:
+                            raise
+                        return
+                    raise
+
+            return _catch_async_gen_wrapper  # type: ignore[return-value]
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def _catch_async_wrapper(*args: object, **inner_kwargs: object) -> object:
+                try:
+                    return await func(*args, **inner_kwargs)
+                except BaseException as exc:
+                    if self._matches(exc):
+                        self._log_and_handle(exc)
+                        if self._reraise:
+                            raise
+                        return self._default
+                    raise
+
+            return _catch_async_wrapper
+
+        if inspect.isgeneratorfunction(func):
+
+            @functools.wraps(func)
+            def _catch_gen_wrapper(*args: object, **inner_kwargs: object) -> Any:
+                try:
+                    yield from func(*args, **inner_kwargs)
+                except BaseException as exc:
+                    if self._matches(exc):
+                        self._log_and_handle(exc)
+                        if self._reraise:
+                            raise
+                        return
+                    raise
+
+            return _catch_gen_wrapper
+
         @functools.wraps(func)
         def _catch_wrapper(*args: object, **inner_kwargs: object) -> object:
             with self:
@@ -1554,9 +2048,38 @@ class _CatchContext:
         return _catch_wrapper
 
 
+def _env_flag(name: str) -> bool | None:
+    """Parse a boolean environment variable.
+
+    Returns ``True``/``False`` for recognized values and ``None`` when the
+    variable is unset or unrecognized.
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return None
+    normalized = raw.strip().lower()
+    if normalized in ("1", "true", "yes", "on"):
+        return True
+    if normalized in ("0", "false", "no", "off"):
+        return False
+    return None
+
+
 logger = Logger()
 
-# LOGLY_AUTOINIT support: set LOGLY_AUTOINIT=false to disable pre-configured sink
+# Environment configuration for the pre-configured stderr sink (see the
+# environment-variables guide). Everything is defensive: an unrecognized
+# value falls back to the default so a typo can never break interpreter
+# startup by failing the import.
 _autoinit = os.environ.get("LOGLY_AUTOINIT", "true").lower()
 if _autoinit not in ("false", "0", "no"):
-    logger.add(sys.stderr, level="DEBUG")
+    try:
+        logger.add(
+            sys.stderr,
+            level=os.environ.get("LOGLY_LEVEL", "DEBUG"),
+            format=os.environ.get("LOGLY_FORMAT"),
+            colorize=_env_flag("LOGLY_COLORIZE"),
+            serialize=_env_flag("LOGLY_SERIALIZE") or False,
+        )
+    except ValueError:
+        logger.add(sys.stderr, level="DEBUG")

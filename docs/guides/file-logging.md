@@ -26,6 +26,11 @@ logger.add("app.log", encoding="utf-8")
 logger.add("legacy.log", encoding="latin-1")
 ```
 
+Binary streams are adapted the same way: `logger.add(open("app.log", "w+b"))`
+decodes with `encoding` (default `"utf-8"`) without ever closing your object.
+Non-UTF-8 encodings cannot be combined with `rotation`, `retention`,
+`compression`, `delay`, or `watch`.
+
 ## File Modes
 
 ```python
@@ -44,13 +49,20 @@ Use the `opener` parameter to customize how files are opened (e.g., for custom p
 import os
 
 
-def custom_opener(path, mode):
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
-    return os.fdopen(fd, mode)
+def custom_opener(path, flags):
+    # An opener receives the path and os.open-style flags and returns a
+    # file descriptor.
+    return os.open(path, flags, 0o644)
 
 
 logger.add("app.log", opener=custom_opener)
 ```
+
+::: info
+A custom `opener`, non-default `buffering`, or non-UTF-8 `encoding` opens
+the file in Python, so it cannot be combined with `rotation`, `retention`,
+`compression`, `delay`, or `watch`, which require the native file sink.
+:::
 
 ## Delay Opening
 

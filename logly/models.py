@@ -72,9 +72,14 @@ class RotationPolicy:
             - ``"never"``: No rotation (default).
             - ``"size"``: Rotate when file reaches ``value`` bytes.
             - ``"interval"``: Rotate every ``value`` seconds.
-            - ``"clock"``: Rotate at clock-based intervals.
-            - ``"weekday"``: Rotate on specific weekdays.
-            - ``"callable"``: Use a custom rotation function.
+            - ``"clock"``: Rotate at a ``"HH:MM"`` time in ``value``.
+            - ``"weekday"``: Rotate on weekday ``value`` (0=Monday..6=Sunday
+              or a weekday name).
+            - ``"callable"``: Rotate when ``value(path, size_bytes)``
+              returns true. The callable receives the sink path and the
+              current file size in bytes and must return a boolean; it is
+              consulted after every write that the other strategies do not
+              rotate on.
 
         value: Strategy-dependent value (byte count, interval seconds, etc.).
 
@@ -82,6 +87,7 @@ class RotationPolicy:
 
         RotationPolicy(kind="size", value=10_000_000)  # 10 MB
         RotationPolicy(kind="interval", value=3600)  # 1 hour
+        RotationPolicy(kind="callable", value=lambda path, size: size > 10_000_000)
     """
 
     kind: Literal["never", "size", "interval", "clock", "weekday", "callable"] = "never"

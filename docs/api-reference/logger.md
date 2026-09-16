@@ -155,29 +155,29 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sink` | `str \| Path \| Callable \| object` | | File path, callable, or sink object |
-| `level` | `str \| int` | `"DEBUG"` | Minimum log level for this sink |
+| `sink` | `str \| Path \| Callable \| object` | | File path, text/binary stream, callable, or sink object |
+| `level` | `str \| int` | `"DEBUG"` | Minimum log level for this sink (names or priorities) |
 | `format` | `str \| Callable \| None` | built-in default | Custom format string or formatter callable |
-| `rotation` | `str \| int \| object \| None` | `None` | Rotation policy (e.g., `"daily"`, `"10 MB"`) |
-| `retention` | `str \| int \| object \| None` | `None` | Retention policy (e.g., `"30 days"`, `7`) |
-| `compression` | `str \| object \| None` | `None` | Compression codec (e.g., `"gzip"`, `"zip"`) |
-| `enqueue` | `bool` | `False` | Use queue-based async worker |
+| `rotation` | `str \| int \| Callable \| object \| None` | `None` | Rotation policy (`"daily"`, `"10 MB"`, byte count, callable, or policy object); file sinks only |
+| `retention` | `str \| int \| object \| None` | `None` | Retention policy (`"30 days"`, `7`); file sinks only |
+| `compression` | `str \| object \| None` | `None` | Compression codec (`"gzip"`, `"zip"`); file sinks only |
+| `enqueue` | `bool` | `False` | Use queue-based async worker (drained at shutdown) |
 | `colorize` | `bool \| None` | `None` | Enable ANSI color output (`None` auto-detects) |
-| `backtrace` | `bool` | `True` | Include backtrace on exceptions |
-| `diagnose` | `bool` | `False` | Include variable values on exceptions |
+| `backtrace` | `bool` | `True` | Accepted for compatibility; use per-message `opt(backtrace=...)` |
+| `diagnose` | `bool` | `False` | Accepted for compatibility; use per-message `opt(diagnose=...)` |
 | `filter` | `str \| Callable \| Mapping \| None` | `None` | Prefix string, filter callable, or extra-field mapping |
 | `serialize` | `bool` | `False` | Output as JSON |
 | `pretty_json` | `bool \| PrettyJsonConfig \| None` | `None` | `True` or JSON formatting options |
 | `patch` | `Callable \| None` | `None` | Patch function for all records |
-| `encoding` | `str` | `"utf-8"` | File encoding |
-| `delay` | `bool` | `False` | Delay file opening until first write |
-| `watch` | `bool` | `False` | Reopen the log file if deleted or replaced externally |
-| `context` | `str \| BaseContext \| None` | `None` | Multiprocessing context for queue-based sinks |
+| `encoding` | `str` | `"utf-8"` | File encoding (non-default opens in Python; no rotation) |
+| `delay` | `bool` | `False` | Delay file opening until first write; file sinks only |
+| `watch` | `bool` | `False` | Reopen the log file if deleted or replaced externally; file sinks only |
+| `context` | `None` | `None` | Reserved; must be `None` (spawn children with their own `Logger`) |
 | `catch` | `bool` | `True` | Catch sink errors silently |
 | `mode` | `str` | `"a"` | File mode: `"a"` (append) or `"w"` (overwrite) |
-| `buffering` | `int` | `1` | File buffering level |
+| `buffering` | `int` | `1` | File buffering level (non-default needs a plain file sink) |
 | `loop` | `AbstractEventLoop \| None` | `None` | Event loop for async sinks |
-| `opener` | `Callable \| None` | `None` | Custom file opener |
+| `opener` | `Callable \| None` | `None` | Custom file opener (plain file sinks only) |
 
 **Returns:** `int` - sink ID for use with `remove()` / `reinstall()`
 
@@ -419,9 +419,10 @@ with logger.contextualize(request_id="abc-123"):
 
 ## Exception Methods
 
-### catch(exception=Exception, level="ERROR", reraise=False, onerror=None, exclude=None, default=None)
+### catch(exception=Exception, level="ERROR", reraise=False, onerror=None, exclude=None, default=None, message=None)
 
-Context manager for automatic exception logging.
+Context manager (sync and async) for automatic exception logging. Also works
+as a decorator for sync, async, generator, and async-generator functions.
 
 ```python
 # Basic usage
@@ -454,6 +455,7 @@ with logger.catch(reraise=True):
 | `onerror` | `Callable \| None` | `None` | Callback on exception |
 | `exclude` | `type \| tuple \| None` | `None` | Exception types to exclude (re-raise) |
 | `default` | `Any` | `None` | Default return value on exception (decorator mode) |
+| `message` | `str \| None` | `None` | Custom message logged with the exception |
 
 ## Lifecycle Methods
 

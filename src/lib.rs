@@ -48,7 +48,6 @@ fn to_py_error(error: LoglyError) -> PyErr {
 fn record_to_py_dict<'py>(
     py: Python<'py>,
     record: &record::LogRecord,
-    start_time: Option<f64>,
 ) -> Bound<'py, pyo3::types::PyDict> {
     use pyo3::types::PyDateTime;
     use pyo3::types::PyDelta;
@@ -79,10 +78,9 @@ fn record_to_py_dict<'py>(
         let _ = record_dict.set_item("time", secs);
     }
 
-    // Build timedelta for elapsed time
+    // Build timedelta for elapsed time since logger creation.
     #[allow(clippy::cast_possible_truncation)]
-    if let Some(start) = start_time {
-        let elapsed_secs = secs - start;
+    if let Some(elapsed_secs) = record.elapsed_secs {
         let days = (elapsed_secs / 86400.0) as i32;
         let remaining = elapsed_secs - (f64::from(days) * 86400.0);
         let hours = (remaining / 3600.0) as i32;
@@ -273,7 +271,7 @@ struct PyObjectFormatter {
 impl format::Formatter for PyObjectFormatter {
     fn format(&self, record: &record::LogRecord) -> Result<String, error::LoglyError> {
         Python::attach(|py| {
-            let record_dict = record_to_py_dict(py, record, None);
+            let record_dict = record_to_py_dict(py, record);
             let res = self.callable.bind(py).call1((record_dict,)).map_err(|e| {
                 error::LoglyError::Formatter(format!("python custom formatter error: {e}"))
             })?;
@@ -297,7 +295,7 @@ impl filter::Filter for PyObjectFilter {
         // but never silent: report the failure on stderr like Python's
         // logging.Handler.handleError does.
         Python::attach(|py| {
-            let record_dict = record_to_py_dict(py, record, None);
+            let record_dict = record_to_py_dict(py, record);
             match self.callable.bind(py).call1((record_dict,)) {
                 Ok(res) => match res.extract::<bool>() {
                     Ok(accept) => Ok::<bool, LoglyError>(accept),
@@ -325,7 +323,7 @@ impl sink::Sink for PatchedSink {
     fn handle(&self, record: &record::LogRecord) -> Result<(), LoglyError> {
         let mut patched_record = record.clone();
         Python::attach(|py| {
-            let record_dict = record_to_py_dict(py, &patched_record, None);
+            let record_dict = record_to_py_dict(py, &patched_record);
             self.patch
                 .bind(py)
                 .call1((&record_dict,))
@@ -384,89 +382,193 @@ fn resolve_filter(
     }
 }
 
-fn resolve_rotation_policy_py(rot_obj: &Bound<'_, PyAny>) -> PyResult<rotate::RotationPolicy> {
+/// Resolved rotation configuration: the native policy plus an optional
+/// custom rotation condition.
+///
+/// The condition, when present, is consulted after every write to a file
+/// sink whenever the policy itself does not trigger. It receives the sink
+/// path and the current file size in bytes and must return a boolean.
+type ResolvedRotation = (rotate::RotationPolicy, Option<Py<PyAny>>);
+
+/// Parses a quantity-prefixed duration word into seconds.
+///
+/// Handles forms like `"12 hours"` or `"30 minutes"` given the already
+/// lowercased input, the unit suffixes to match, and the multiplier.
+fn parse_duration_word(
+    cleaned: &str,
+    singular: &str,
+    plural: &str,
+    multiplier: u64,
+) -> Option<u64> {
+    if cleaned.ends_with(singular) || cleaned.ends_with(plural) {
+        let value = cleaned
+            .split_whitespace()
+            .next()
+            .unwrap_or("0")
+            .parse::<u64>()
+            .unwrap_or(0);
+        Some(value.saturating_mul(multiplier))
+    } else {
+        None
+    }
+}
+
+/// Resolves an `interval` policy value into seconds.
+fn resolve_interval_secs(value_obj: &Bound<'_, PyAny>) -> PyResult<u64> {
+    if let Ok(secs) = value_obj.extract::<u64>() {
+        return Ok(secs);
+    }
+    if let Ok(s) = value_obj.extract::<String>() {
+        let cleaned = s.trim().to_lowercase();
+        for (singular, plural, multiplier) in [
+            (" second", " seconds", 1),
+            (" minute", " minutes", 60),
+            (" hour", " hours", 3600),
+            (" day", " days", 86400),
+        ] {
+            if let Some(secs) = parse_duration_word(&cleaned, singular, plural, multiplier) {
+                return Ok(secs);
+            }
+        }
+        if let Ok(config::RotationPolicy::IntervalSeconds(secs)) =
+            config::resolve_rotation_policy(&s)
+        {
+            return Ok(secs);
+        }
+    }
+    Err(PyValueError::new_err(
+        "interval rotation value must be seconds or a duration string",
+    ))
+}
+
+/// Resolves a `clock` policy value into a validated `HH:MM` spec.
+fn resolve_clock_spec(value_obj: &Bound<'_, PyAny>) -> PyResult<String> {
+    if let Ok(s) = value_obj.extract::<String>() {
+        let spec = s.trim().to_owned();
+        if rotate::parse_clock_spec(&spec).is_some() {
+            return Ok(spec);
+        }
+    }
+    Err(PyValueError::new_err(
+        "clock rotation value must use HH:MM 24-hour format",
+    ))
+}
+
+/// Resolves a `weekday` policy value into a 0–6 weekday index.
+fn resolve_weekday_index(value_obj: &Bound<'_, PyAny>) -> PyResult<u8> {
+    if let Ok(day) = value_obj.extract::<u8>() {
+        if day <= 6 {
+            return Ok(day);
+        }
+        return Err(PyValueError::new_err(
+            "weekday rotation value must be 0 (Monday) through 6 (Sunday)",
+        ));
+    }
+    if let Ok(s) = value_obj.extract::<String>() {
+        let weekdays = [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        ];
+        if let Some(idx) = weekdays
+            .iter()
+            .position(|&day| day == s.trim().to_lowercase())
+        {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "weekday index is always 0..6"
+            )]
+            return Ok(idx as u8);
+        }
+    }
+    Err(PyValueError::new_err(
+        "weekday rotation value must be 0-6 or a weekday name",
+    ))
+}
+
+/// Resolves a `kind`/`value` policy object into native configuration.
+fn resolve_rotation_kind(kind: &str, value_obj: &Bound<'_, PyAny>) -> PyResult<ResolvedRotation> {
+    match kind {
+        "never" => Ok((rotate::RotationPolicy::Never, None)),
+        "size" => {
+            if let Ok(bytes) = value_obj.extract::<u64>() {
+                Ok((rotate::RotationPolicy::SizeBytes(bytes), None))
+            } else if let Ok(text) = value_obj.extract::<String>() {
+                Ok((
+                    rotate::RotationPolicy::SizeBytes(config::parse_size(&text)),
+                    None,
+                ))
+            } else {
+                Err(PyValueError::new_err(
+                    "size rotation value must be a byte count or size string",
+                ))
+            }
+        }
+        "interval" => resolve_interval_secs(value_obj)
+            .map(|secs| (rotate::RotationPolicy::IntervalSeconds(secs), None)),
+        "clock" => resolve_clock_spec(value_obj)
+            .map(|spec| (rotate::RotationPolicy::ClockRotation(spec), None)),
+        "weekday" => resolve_weekday_index(value_obj)
+            .map(|day| (rotate::RotationPolicy::WeekdayRotation(day), None)),
+        "callable" => {
+            if value_obj.is_callable() {
+                Ok((
+                    rotate::RotationPolicy::Never,
+                    Some(value_obj.clone().unbind()),
+                ))
+            } else {
+                Err(PyValueError::new_err(
+                    "callable rotation value must be a callable accepting (path, size_bytes)",
+                ))
+            }
+        }
+        other => Err(PyValueError::new_err(format!(
+            "unknown rotation policy kind: {other}"
+        ))),
+    }
+}
+
+fn resolve_rotation_policy_py(rot_obj: &Bound<'_, PyAny>) -> PyResult<ResolvedRotation> {
     if rot_obj.is_none() {
-        return Ok(rotate::RotationPolicy::Never);
+        return Ok((rotate::RotationPolicy::Never, None));
     }
 
-    if let Ok(s) = rot_obj.extract::<String>() {
-        let canonical = config::parse_rotation_to_str(&s).map_err(to_py_error)?;
-        return parse_canonical_rotation(&canonical);
+    // Reject booleans explicitly: Python `bool` is an `int` subclass and
+    // must never silently become a byte count.
+    if rot_obj.is_instance_of::<pyo3::types::PyBool>() {
+        return Err(PyValueError::new_err(
+            "rotation must be a size, interval, clock/weekday spec, callable, or policy object",
+        ));
+    }
+
+    if let Ok(text) = rot_obj.extract::<String>() {
+        let canonical = config::parse_rotation_to_str(&text).map_err(to_py_error)?;
+        return parse_canonical_rotation(&canonical).map(|policy| (policy, None));
     }
 
     if let Ok(bytes) = rot_obj.extract::<u64>() {
-        return Ok(rotate::RotationPolicy::SizeBytes(bytes));
+        return Ok((rotate::RotationPolicy::SizeBytes(bytes), None));
     }
 
     if rot_obj.is_callable() {
-        return Ok(rotate::RotationPolicy::Never);
+        return Ok((
+            rotate::RotationPolicy::Never,
+            Some(rot_obj.clone().unbind()),
+        ));
     }
 
     if let (Ok(kind_obj), Ok(value_obj)) = (rot_obj.getattr("kind"), rot_obj.getattr("value")) {
         let kind = kind_obj.extract::<String>()?;
-        return match kind.as_str() {
-            "size" => {
-                if let Ok(b) = value_obj.extract::<u64>() {
-                    Ok(rotate::RotationPolicy::SizeBytes(b))
-                } else if let Ok(s) = value_obj.extract::<String>() {
-                    let bytes = config::parse_size(&s);
-                    Ok(rotate::RotationPolicy::SizeBytes(bytes))
-                } else {
-                    Ok(rotate::RotationPolicy::Never)
-                }
-            }
-            "interval" => {
-                if let Ok(secs) = value_obj.extract::<u64>() {
-                    Ok(rotate::RotationPolicy::IntervalSeconds(secs))
-                } else if let Ok(s) = value_obj.extract::<String>() {
-                    let cleaned = s.trim().to_lowercase();
-                    let seconds = if cleaned.ends_with(" seconds") || cleaned.ends_with(" second") {
-                        cleaned
-                            .split_whitespace()
-                            .next()
-                            .unwrap_or("0")
-                            .parse()
-                            .unwrap_or(0)
-                    } else if cleaned.ends_with(" minutes") || cleaned.ends_with(" minute") {
-                        cleaned
-                            .split_whitespace()
-                            .next()
-                            .unwrap_or("0")
-                            .parse::<u64>()
-                            .unwrap_or(0)
-                            * 60
-                    } else if cleaned.ends_with(" hours") || cleaned.ends_with(" hour") {
-                        cleaned
-                            .split_whitespace()
-                            .next()
-                            .unwrap_or("0")
-                            .parse::<u64>()
-                            .unwrap_or(0)
-                            * 3600
-                    } else if cleaned.ends_with(" days") || cleaned.ends_with(" day") {
-                        cleaned
-                            .split_whitespace()
-                            .next()
-                            .unwrap_or("0")
-                            .parse::<u64>()
-                            .unwrap_or(0)
-                            * 86400
-                    } else {
-                        match config::resolve_rotation_policy(&s) {
-                            Ok(config::RotationPolicy::IntervalSeconds(secs)) => secs,
-                            _ => 0,
-                        }
-                    };
-                    Ok(rotate::RotationPolicy::IntervalSeconds(seconds))
-                } else {
-                    Ok(rotate::RotationPolicy::Never)
-                }
-            }
-            _ => Ok(rotate::RotationPolicy::Never),
-        };
+        return resolve_rotation_kind(kind.as_str(), &value_obj);
     }
 
-    Ok(rotate::RotationPolicy::Never)
+    Err(PyValueError::new_err(
+        "rotation must be a size, interval, clock/weekday spec, callable, or policy object",
+    ))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -512,11 +614,25 @@ fn resolve_retention_policy_py(ret_obj: &Bound<'_, PyAny>) -> PyResult<config::R
         return config::resolve_retention_policy(&s).map_err(to_py_error);
     }
 
+    if ret_obj.is_instance_of::<pyo3::types::PyBool>() {
+        return Err(PyValueError::new_err(
+            "retention must be a file count, an age string, or a policy object",
+        ));
+    }
+
     if let Ok(count) = ret_obj.extract::<u32>() {
         return Ok(config::RetentionPolicy {
             count: Some(count),
             seconds: None,
         });
+    }
+
+    let has_count = ret_obj.hasattr("count").unwrap_or(false);
+    let has_seconds = ret_obj.hasattr("seconds").unwrap_or(false);
+    if !has_count && !has_seconds {
+        return Err(PyValueError::new_err(
+            "retention must be a file count, an age string, or a policy object",
+        ));
     }
 
     let count = if let Ok(c_obj) = ret_obj.getattr("count") {
@@ -554,7 +670,9 @@ fn resolve_compression_codec_py(
     } else if let Ok(codec_val) = comp_obj.getattr("codec") {
         codec_val.extract::<String>()?
     } else {
-        return Ok(compress::CompressionCodec::None);
+        return Err(PyValueError::new_err(
+            "compression must be a codec name or a policy object",
+        ));
     };
 
     match config::resolve_compression_codec(&codec_str).map_err(to_py_error)? {
@@ -596,6 +714,17 @@ fn strip_formatter_tags(text: &str) -> String {
 struct PyLogger {
     engine: Mutex<LoggerEngine>,
     name: String,
+    started_epoch_secs: f64,
+}
+
+/// Returns the current Unix epoch time as fractional seconds.
+fn now_epoch_secs() -> f64 {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .unwrap_or_default();
+    #[expect(clippy::cast_precision_loss)]
+    let secs = now.as_secs() as f64 + f64::from(now.subsec_nanos()) / 1e9;
+    secs
 }
 
 #[pymethods]
@@ -605,6 +734,7 @@ impl PyLogger {
         Self {
             engine: Mutex::new(LoggerEngine::new()),
             name: String::from("logly"),
+            started_epoch_secs: now_epoch_secs(),
         }
     }
 
@@ -741,10 +871,10 @@ impl PyLogger {
                     colorize.unwrap_or(false),
                 )),
                 sink_path => {
-                    let rotation_policy = if let Some(ref r) = rotation {
+                    let (rotation_policy, rotation_callable) = if let Some(ref r) = rotation {
                         resolve_rotation_policy_py(r.bind(py))?
                     } else {
-                        rotate::RotationPolicy::Never
+                        (rotate::RotationPolicy::Never, None)
                     };
                     let retention_policy = if let Some(ref r) = retention {
                         resolve_retention_policy_py(r.bind(py))?
@@ -756,6 +886,31 @@ impl PyLogger {
                     } else {
                         compress::CompressionCodec::None
                     };
+                    // A custom rotation condition calls back into Python with
+                    // the sink path and current file size; it must return a
+                    // boolean. Failures propagate as sink errors so a broken
+                    // condition is observable instead of silently ignored.
+                    let rotation_check: Option<sink::RotationCheck> =
+                        rotation_callable.map(|callback| {
+                            Arc::new(move |path: &std::path::Path, size: u64| {
+                                Python::attach(|py| {
+                                    let path_str = path.to_string_lossy();
+                                    let verdict = callback
+                                        .bind(py)
+                                        .call1((path_str.as_ref(), size))
+                                        .map_err(|e| {
+                                            LoglyError::Sink(format!(
+                                                "rotation condition raised: {e}"
+                                            ))
+                                        })?;
+                                    verdict.extract::<bool>().map_err(|e| {
+                                        LoglyError::Sink(format!(
+                                            "rotation condition must return a bool: {e}"
+                                        ))
+                                    })
+                                })
+                            }) as sink::RotationCheck
+                        });
                     let append = mode == "a";
                     Arc::new(
                         FileSink::open(
@@ -764,6 +919,7 @@ impl PyLogger {
                             filter_chain,
                             append,
                             rotation_policy,
+                            rotation_check,
                             retention_policy,
                             compression_codec,
                             delay,
@@ -857,10 +1013,12 @@ impl PyLogger {
         if disabled {
             return Ok(());
         }
+        let elapsed = now_epoch_secs() - self.started_epoch_secs;
         py.detach(|| {
-            let record = record::LogRecord::builder(lvl, message)
+            let mut record = record::LogRecord::builder(lvl, message)
                 .name(self.name.clone())
                 .build();
+            record.elapsed_secs = Some(elapsed.max(0.0));
             engine::LoggerEngine::deliver(&sinks, &record).map_err(to_py_error)
         })
     }
@@ -928,6 +1086,7 @@ impl PyLogger {
         if let Some(exc) = exception {
             record.exception = Some(exc);
         }
+        record.elapsed_secs = Some((now_epoch_secs() - self.started_epoch_secs).max(0.0));
 
         // Snapshot under a short lock, then dispatch outside it: sinks may
         // perform blocking file/network/compression I/O and invoke Python
@@ -967,6 +1126,10 @@ impl PyLogger {
     }
 
     fn warning(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "WARNING", message)
+    }
+
+    fn warn(&self, py: Python<'_>, message: &str) -> PyResult<()> {
         self.log_message(py, "WARNING", message)
     }
 
@@ -1314,6 +1477,13 @@ impl PyUdpSink {
                 .write(line)
                 .map_err(|e| PyRuntimeError::new_err(e.to_string()))
         })
+    }
+
+    fn flush(&self, py: Python<'_>) {
+        // UDP delivery is fire-and-forget; the inner flush is a no-op.
+        py.detach(|| {
+            self.inner.flush();
+        });
     }
 }
 

@@ -84,6 +84,42 @@ def task():
     raise RuntimeError("Failed")
 ```
 
+## Custom Catch Messages
+
+```python
+with logger.catch(message="payment failed"):
+    charge_card()
+```
+
+## Async and Generator Functions
+
+`catch()` also works as an async context manager and as a decorator for
+`async def`, generator, and async-generator functions. For generators, a
+caught exception ends iteration after being logged.
+
+```python
+@logger.catch()
+async def fetch():
+    raise ValueError("network down")
+
+
+await fetch()
+
+
+@logger.catch()
+def stream():
+    yield 1
+    raise ValueError("interrupted")
+
+
+for _item in stream():
+    pass
+
+
+async with logger.catch():
+    await fetch()
+```
+
 ## opt(exception=...)
 
 ```python

@@ -163,6 +163,28 @@ logger.add("app.log", rotation="never")
 logger.add("app.log", rotation=None, mode="w")
 ```
 
+### Custom Rotation Conditions
+
+Pass a callable to rotate on your own rule. It receives the sink path and
+the current file size in bytes after each write, and must return a boolean.
+It is consulted whenever the other strategies do not trigger. Errors raised
+by the condition propagate as sink errors so a broken condition is never
+silent. Custom conditions require a file path sink.
+
+```python
+from logly import logger
+from logly.models import RotationPolicy
+
+# Rotate once the file passes 10 MB
+logger.add("app.log", rotation=lambda path, size: size > 10_000_000)
+
+# Same rule as a policy object
+logger.add(
+    "app.log",
+    rotation=RotationPolicy(kind="callable", value=lambda path, size: size > 10_000_000),
+)
+```
+
 ### Rotated File Naming
 
 Rotated files are named with a Unix timestamp:
@@ -455,6 +477,9 @@ logger.add(
 | Clock times | `"00:00"`, `"12:30"`, `"18:45"` |
 | Weekdays | `"monday"`, `"friday"`, `"sunday"` |
 | Weekday+clock | `"friday at 18:00"`, `"monday at 03:30"` |
+| Byte counts | `1024`, `10_000_000` |
+| Custom conditions | `lambda path, size: size > 10_000_000`, `RotationPolicy(kind="callable", value=...)` |
+| Policy objects | `RotationPolicy(kind="size", value=...)`, `RotationPolicy(kind="clock", value="00:00")` |
 
 ### Retention Values Accepted
 
