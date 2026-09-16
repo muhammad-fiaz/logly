@@ -30,7 +30,9 @@ def _bench(label: str, iterations: int, func) -> None:
 
 
 def main() -> None:
-    iterations = int(sys.argv[sys.argv.index("--iterations") + 1]) if "--iterations" in sys.argv else 2000
+    iterations = (
+        int(sys.argv[sys.argv.index("--iterations") + 1]) if "--iterations" in sys.argv else 2000
+    )
 
     from logly import Logger
 
