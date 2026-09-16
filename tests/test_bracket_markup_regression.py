@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from logly import Logger, parse_rich_markup, strip_rich_tags
 
 
 def _capture(
-    fmt: str = "{message}", colorize: bool = False, **kwargs: object
+    fmt: str = "{message}", colorize: bool = False, **kwargs: Any
 ) -> tuple[Logger, list[str], int]:
     logger = Logger()
     messages: list[str] = []
@@ -323,7 +324,7 @@ class TestSinksStructuredExceptions:
             logger.bind(user="alice").info("hi [{}]", "there")
             with logger.contextualize(req="123"):
                 logger.info("req [{}]", "x")
-            logger.patch(lambda r: r).info("patched [{}]", "y")
+            logger.patch(lambda r: None).info("patched [{}]", "y")
         finally:
             logger.remove(sink_id)
         assert messages == ["hi [there]\n", "req [x]\n", "patched [y]\n"]
