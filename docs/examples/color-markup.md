@@ -6,7 +6,8 @@ description: Use ANSI colors, styles, 256-color values, and RGB values in Logly 
 # Color Markup
 
 This example writes colored records to the terminal. Set `colorize=True` for
-ANSI-capable output; markup is removed for plain-text sinks.
+ANSI-capable output; recognized markup is removed for plain-text sinks while
+ordinary square brackets such as `[hello]` or `[]` are preserved literally.
 
 ```python
 from logly import logger

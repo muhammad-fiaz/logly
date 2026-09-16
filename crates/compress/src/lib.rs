@@ -76,6 +76,36 @@ impl std::fmt::Display for CompressionCodec {
     }
 }
 
+impl CompressionCodec {
+    /// Returns the file extension used for compressed archives.
+    ///
+    /// Returns `None` for [`CompressionCodec::None`], which produces no
+    /// archive. The mapping is the single source of truth for archive
+    /// naming: `Gzip` → `"gz"`, `Zip` → `"zip"`, `Bz2` → `"bz2"`,
+    /// `Xz` → `"xz"`, `Zstd` → `"zst"`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use compress::CompressionCodec;
+    ///
+    /// assert_eq!(CompressionCodec::Gzip.extension(), Some("gz"));
+    /// assert_eq!(CompressionCodec::Zstd.extension(), Some("zst"));
+    /// assert_eq!(CompressionCodec::None.extension(), None);
+    /// ```
+    #[must_use]
+    pub fn extension(&self) -> Option<&'static str> {
+        match self {
+            Self::None => None,
+            Self::Gzip => Some("gz"),
+            Self::Zip => Some("zip"),
+            Self::Bz2 => Some("bz2"),
+            Self::Xz => Some("xz"),
+            Self::Zstd => Some("zst"),
+        }
+    }
+}
+
 /// Compresses a single file using the specified codec.
 ///
 /// Reads the source file, applies the chosen compression algorithm, and writes
@@ -283,16 +313,20 @@ fn is_rotated_suffix(remainder: &str) -> bool {
 }
 
 fn compress_gzip(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    write_compressed_artifact(path, "gz", |input, staged| {
-        let mut encoder = GzEncoder::new(staged, Compression::default());
-        std::io::copy(input, &mut encoder).map_err(|e| {
-            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-        })?;
-        encoder.finish().map_err(|e| {
-            LoglyError::Compression(format!("failed to finish gzip compression: {e}"))
-        })?;
-        Ok(())
-    })
+    write_compressed_artifact(
+        path,
+        CompressionCodec::Gzip.extension().unwrap_or("gz"),
+        |input, staged| {
+            let mut encoder = GzEncoder::new(staged, Compression::default());
+            std::io::copy(input, &mut encoder).map_err(|e| {
+                LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+            })?;
+            encoder.finish().map_err(|e| {
+                LoglyError::Compression(format!("failed to finish gzip compression: {e}"))
+            })?;
+            Ok(())
+        },
+    )
 }
 
 fn compress_zip(path: &Path) -> LoglyResult<std::path::PathBuf> {
@@ -305,58 +339,76 @@ fn compress_zip(path: &Path) -> LoglyResult<std::path::PathBuf> {
     // Stream the input into the entry instead of buffering the whole file:
     // `ZipWriter` implements `Write` once the entry is started, and only the
     // central directory (written at `finish`) requires seeking.
-    write_compressed_artifact(path, "zip", |input, staged| {
-        let mut zip = zip::ZipWriter::new(staged);
-        let options = zip::write::SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
-        zip.start_file(&file_name, options)
-            .map_err(|e| LoglyError::Compression(format!("failed to start zip entry: {e}")))?;
-        std::io::copy(input, &mut zip)
-            .map_err(|e| LoglyError::Compression(format!("failed to write zip entry: {e}")))?;
-        zip.finish()
-            .map_err(|e| LoglyError::Compression(format!("failed to finish zip archive: {e}")))?;
-        Ok(())
-    })
+    write_compressed_artifact(
+        path,
+        CompressionCodec::Zip.extension().unwrap_or("zip"),
+        |input, staged| {
+            let mut zip = zip::ZipWriter::new(staged);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated);
+            zip.start_file(&file_name, options)
+                .map_err(|e| LoglyError::Compression(format!("failed to start zip entry: {e}")))?;
+            std::io::copy(input, &mut zip)
+                .map_err(|e| LoglyError::Compression(format!("failed to write zip entry: {e}")))?;
+            zip.finish().map_err(|e| {
+                LoglyError::Compression(format!("failed to finish zip archive: {e}"))
+            })?;
+            Ok(())
+        },
+    )
 }
 
 fn compress_bz2(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    write_compressed_artifact(path, "bz2", |input, staged| {
-        let mut encoder = BzEncoder::new(staged, BzCompression::default());
-        std::io::copy(input, &mut encoder).map_err(|e| {
-            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-        })?;
-        encoder.finish().map_err(|e| {
-            LoglyError::Compression(format!("failed to finish bz2 compression: {e}"))
-        })?;
-        Ok(())
-    })
+    write_compressed_artifact(
+        path,
+        CompressionCodec::Bz2.extension().unwrap_or("bz2"),
+        |input, staged| {
+            let mut encoder = BzEncoder::new(staged, BzCompression::default());
+            std::io::copy(input, &mut encoder).map_err(|e| {
+                LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+            })?;
+            encoder.finish().map_err(|e| {
+                LoglyError::Compression(format!("failed to finish bz2 compression: {e}"))
+            })?;
+            Ok(())
+        },
+    )
 }
 
 fn compress_xz(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    write_compressed_artifact(path, "xz", |input, staged| {
-        let mut encoder = XzEncoder::new(staged, 6);
-        std::io::copy(input, &mut encoder).map_err(|e| {
-            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-        })?;
-        encoder.finish().map_err(|e| {
-            LoglyError::Compression(format!("failed to finish xz compression: {e}"))
-        })?;
-        Ok(())
-    })
+    write_compressed_artifact(
+        path,
+        CompressionCodec::Xz.extension().unwrap_or("xz"),
+        |input, staged| {
+            let mut encoder = XzEncoder::new(staged, 6);
+            std::io::copy(input, &mut encoder).map_err(|e| {
+                LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+            })?;
+            encoder.finish().map_err(|e| {
+                LoglyError::Compression(format!("failed to finish xz compression: {e}"))
+            })?;
+            Ok(())
+        },
+    )
 }
 
 fn compress_zstd(path: &Path) -> LoglyResult<std::path::PathBuf> {
-    write_compressed_artifact(path, "zst", |input, staged| {
-        let mut encoder = ZstdEncoder::new(staged, 0)
-            .map_err(|e| LoglyError::Compression(format!("failed to create zstd encoder: {e}")))?;
-        std::io::copy(input, &mut encoder).map_err(|e| {
-            LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
-        })?;
-        encoder.finish().map_err(|e| {
-            LoglyError::Compression(format!("failed to finish zstd compression: {e}"))
-        })?;
-        Ok(())
-    })
+    write_compressed_artifact(
+        path,
+        CompressionCodec::Zstd.extension().unwrap_or("zst"),
+        |input, staged| {
+            let mut encoder = ZstdEncoder::new(staged, 0).map_err(|e| {
+                LoglyError::Compression(format!("failed to create zstd encoder: {e}"))
+            })?;
+            std::io::copy(input, &mut encoder).map_err(|e| {
+                LoglyError::Compression(format!("failed to compress {}: {e}", path.display()))
+            })?;
+            encoder.finish().map_err(|e| {
+                LoglyError::Compression(format!("failed to finish zstd compression: {e}"))
+            })?;
+            Ok(())
+        },
+    )
 }
 
 #[cfg(test)]
@@ -638,6 +690,100 @@ mod tests {
         assert!(!compressed.to_string_lossy().ends_with(".part"));
         assert!(dir.join("staged_test.log.gz").exists());
         assert!(path.exists(), "source must survive successful compression");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    fn truncate_half(path: &Path) {
+        let raw = fs::read(path).unwrap();
+        assert!(raw.len() > 64, "fixture too small to truncate");
+        fs::write(path, &raw[..raw.len() / 2]).unwrap();
+    }
+
+    #[test]
+    #[allow(clippy::cast_possible_truncation)]
+    fn truncated_archives_are_detected() {
+        let dir = test_dir("truncated");
+        // Deterministic pseudo-random payload: incompressible enough that
+        // every truncation point destroys decodability. The low byte is
+        // taken deliberately, hence the truncation cast above.
+        let payload: Vec<u8> = (0..20_000u32)
+            .map(|i| (i.wrapping_mul(2_654_435_761) >> 8) as u8)
+            .collect();
+        let cases = [
+            (CompressionCodec::Gzip, "t.log"),
+            (CompressionCodec::Bz2, "t2.log"),
+            (CompressionCodec::Xz, "t3.log"),
+            (CompressionCodec::Zip, "t4.log"),
+            (CompressionCodec::Zstd, "t5.log"),
+        ];
+        for (codec, name) in cases {
+            let path = create_test_file(&dir, name, &payload);
+            let compressed = compress_file(&path, &codec).unwrap();
+            truncate_half(&compressed);
+            let raw = fs::read(&compressed).unwrap();
+            let intact = match codec {
+                CompressionCodec::Gzip => {
+                    let mut decoder = flate2::read::GzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Bz2 => {
+                    let mut decoder = bzip2::read::BzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Xz => {
+                    let mut decoder = xz2::read::XzDecoder::new(&raw[..]);
+                    let mut out = Vec::new();
+                    decoder.read_to_end(&mut out).is_ok() && out == payload
+                }
+                CompressionCodec::Zip => (|| {
+                    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&raw)).ok()?;
+                    let mut entry = archive.by_index(0).ok()?;
+                    let mut out = Vec::new();
+                    entry.read_to_end(&mut out).ok()?;
+                    Some(out == payload)
+                })()
+                .unwrap_or(false),
+                CompressionCodec::Zstd => {
+                    zstd::decode_all(&raw[..]).is_ok_and(|out| out == payload)
+                }
+                CompressionCodec::None => unreachable!("test matrix excludes None"),
+            };
+            assert!(!intact, "{codec:?} must reject a truncated archive");
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn directory_source_fails_without_artifact() {
+        let dir = test_dir("dir_source");
+        let result = compress_file(&dir, &CompressionCodec::Gzip);
+        assert!(result.is_err());
+        assert!(
+            dir.read_dir().unwrap().next().is_none(),
+            "no artifact may remain after failure"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn blocked_destination_fails_and_keeps_source() {
+        let dir = test_dir("blocked_dest");
+        let path = create_test_file(&dir, "blocked.log", b"precious log data");
+        // Occupy the exact output path with a directory so creation fails.
+        fs::create_dir(dir.join("blocked.log.gz")).unwrap();
+        let result = compress_file(&path, &CompressionCodec::Gzip);
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            b"precious log data",
+            "source must survive failed compression"
+        );
+        assert!(
+            !dir.join("blocked.log.gz.part").exists(),
+            "staged file must be cleaned up"
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 

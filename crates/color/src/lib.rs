@@ -613,20 +613,196 @@ pub fn colorize(text: &str, color: &str, colorize: bool) -> String {
     }
 }
 
+/// Maximum tag length considered for bracket markup.
+///
+/// Valid style/color tags are short (e.g. `red`, `bold red on white`,
+/// `rgb(255,0,0)`). Bounding the lookahead keeps literal payloads such as
+/// JSON or URLs from being scanned as markup and preserves single-pass
+/// performance.
+const MAX_BRACKET_TAG_LEN: usize = 256;
+
+/// Peeks at a potential `[...]` expression without consuming the caller.
+///
+/// `chars` must be positioned immediately after the opening `[`.
+/// Returns `(is_closing, tag)` when a closing `]` is found within bounds,
+/// or `None` when the bracket is unterminated or implausibly long.
+fn peek_bracket_tag(chars: &std::iter::Peekable<std::str::Chars<'_>>) -> Option<(bool, String)> {
+    let mut look = chars.clone();
+    let mut is_closing = false;
+    if look.peek() == Some(&'/') {
+        is_closing = true;
+        look.next();
+    }
+    let mut tag = String::new();
+    for c in look.by_ref() {
+        if c == ']' {
+            return Some((is_closing, tag));
+        }
+        // A nested opening bracket can never be part of a valid tag; the
+        // outer `[` is therefore literal (e.g. `[[value]]` keeps the first
+        // `[`). Return early so the caller preserves only the outer `[`.
+        if c == '[' {
+            tag.push(c);
+            return Some((is_closing, tag));
+        }
+        tag.push(c);
+        if tag.len() > MAX_BRACKET_TAG_LEN {
+            return Some((is_closing, tag));
+        }
+    }
+    None
+}
+
+/// Checks whether the `[...]` expression starting at the caller's position
+/// (immediately after `\`, with `[` as the next char) forms valid markup.
+fn peek_escaped_bracket_valid(chars: &std::iter::Peekable<std::str::Chars<'_>>) -> Option<String> {
+    let mut look = chars.clone();
+    // Consume the `[` itself.
+    if look.next() != Some('[') {
+        return None;
+    }
+    let (is_closing, tag) = peek_bracket_tag(&look)?;
+    if is_closing {
+        if resolve_rich_tag(&tag).is_some() {
+            Some(format!("[/{tag}]"))
+        } else {
+            None
+        }
+    } else if resolve_rich_tag(&tag).is_some() {
+        Some(format!("[{tag}]"))
+    } else {
+        None
+    }
+}
+
+/// Consumes a bracketed `tag]` (and the leading `/` for closing tags).
+fn consume_bracket_tag(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, is_closing: bool) {
+    if is_closing {
+        chars.next();
+    }
+    for c in chars.by_ref() {
+        if c == ']' {
+            break;
+        }
+    }
+}
+
+/// Handles a `\` escape for the colorized path.
+///
+/// `\[red]` (valid markup) emits `[red]` literally; `\[some]` (literal
+/// brackets) preserves the backslash.
+fn handle_escape_parse(
+    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+    result: &mut String,
+    backslash: char,
+) {
+    if chars.peek() == Some(&'[')
+        && let Some(literal) = peek_escaped_bracket_valid(chars)
+    {
+        let is_closing = literal.starts_with("[/");
+        chars.next();
+        consume_bracket_tag(chars, is_closing);
+        result.push_str(&literal);
+    } else if chars.peek() == Some(&'<') {
+        chars.next();
+        result.push('<');
+    } else {
+        result.push(backslash);
+    }
+}
+
+/// Handles one `<...>` tag for the colorized path.
+fn handle_angle_parse(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, result: &mut String) {
+    let mut tag = String::new();
+    let mut is_closing = false;
+    if chars.peek() == Some(&'/') {
+        is_closing = true;
+        chars.next();
+    }
+    for c in chars.by_ref() {
+        if c == '>' {
+            break;
+        }
+        tag.push(c);
+    }
+    if is_closing {
+        let lower = tag.to_lowercase();
+        let code = resolve_color_code(&lower);
+        if tag.is_empty() || !code.is_empty() {
+            result.push_str("\x1b[0m");
+        }
+    } else if !tag.is_empty() {
+        let code = if tag.contains(',') {
+            resolve_comma_tag(&tag)
+        } else {
+            let is_uppercase = tag.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
+            if is_uppercase && tag.len() > 1 {
+                resolve_color_code(&tag).into()
+            } else {
+                let lower = tag.to_lowercase();
+                resolve_color_code(&lower).into()
+            }
+        };
+        if let Some(code) = code
+            && !code.is_empty()
+        {
+            use std::fmt::Write;
+            let _ = write!(result, "\x1b[{code}m");
+        }
+    }
+}
+
+/// Handles one `[...]` expression for the colorized path.
+///
+/// Only recognized style/color tags emit ANSI; all other bracketed text
+/// remains literal so message content is never silently removed.
+fn handle_bracket_parse(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, result: &mut String) {
+    match peek_bracket_tag(chars) {
+        None => {
+            result.push('[');
+        }
+        Some((is_closing, tag)) => {
+            if is_closing {
+                if resolve_rich_tag(&tag).is_some() {
+                    consume_bracket_tag(chars, true);
+                    result.push_str("\x1b[0m");
+                } else {
+                    result.push('[');
+                }
+            } else if tag.is_empty() {
+                result.push('[');
+            } else if let Some(code) = resolve_rich_tag(&tag) {
+                consume_bracket_tag(chars, false);
+                if code.starts_with("\x1b[") {
+                    result.push_str(&code);
+                } else {
+                    use std::fmt::Write;
+                    let _ = write!(result, "\x1b[{code}m");
+                }
+            } else {
+                result.push('[');
+            }
+        }
+    }
+}
+
 /// Parses Rich-style markup tags and returns ANSI-escaped text.
 ///
 /// Supports tags like `<bold>`, `<red>`, `<bold red>`, `<bold red on white>`,
 /// `<dim cyan>`, `<italic>`, `<underline>`, `<strike>`, `<reverse>`, `<blink>`,
 /// and closing tags `</bold>`, `</red>`, etc.
 ///
-/// Nested tags are supported. Unknown tags are stripped (not converted to ANSI).
-/// HTML entities (`&lt;`, `&gt;`, `&amp;`) are decoded.
+/// Nested tags are supported. Unknown angle-bracket tags are stripped (not
+/// converted to ANSI). Square-bracket content is preserved literally unless
+/// it forms a recognized style/color tag such as `[red]`, `[bold]`, or
+/// `[bold red on white]`. HTML entities (`&lt;`, `&gt;`, `&amp;`) are decoded.
 ///
-/// When `colorize` is `false`, all tags are stripped and only plain text is returned.
+/// When `colorize` is `false`, recognized tags are stripped and all other
+/// text (including literal square brackets) is returned unchanged.
 ///
 /// # Arguments
 ///
-/// * `text` - Text containing Rich-style markup tags
+/// * `text` - Text containing markup tags
 /// * `colorize` - Whether to convert tags to ANSI escape codes
 ///
 /// # Examples
@@ -643,6 +819,7 @@ pub fn colorize(text: &str, color: &str, colorize: bool) -> String {
 /// assert!(result.contains("\x1b[32m"));
 /// ```
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     if !colorize {
         return strip_rich_tags(text);
@@ -652,104 +829,28 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
 
     while let Some(ch) = chars.next() {
         if ch == '\\' {
-            if let Some(&next) = chars.peek() {
-                if next == '<' || next == '[' {
-                    chars.next();
-                    result.push(next);
-                } else {
-                    result.push(ch);
-                }
-            } else {
+            if chars.peek().is_none() {
                 result.push(ch);
+            } else {
+                handle_escape_parse(&mut chars, &mut result, ch);
             }
         } else if ch == '<' {
-            // Handle <tag> syntax (angle-bracket markup)
-            let mut tag = String::new();
-            let mut is_closing = false;
-
-            if chars.peek() == Some(&'/') {
-                is_closing = true;
-                chars.next();
-            }
-
-            for c in chars.by_ref() {
+            // Unterminated `<` stays literal so text is never lost.
+            let mut found_close = false;
+            for c in chars.clone().by_ref() {
                 if c == '>' {
+                    found_close = true;
                     break;
                 }
-                tag.push(c);
             }
-
-            if is_closing {
-                // Closing tag: emit reset only for known tags or generic </>
-                let lower = tag.to_lowercase();
-                let code = resolve_color_code(&lower);
-                if tag.is_empty() || !code.is_empty() {
-                    result.push_str("\x1b[0m");
-                }
-            } else if tag.is_empty() {
-                // Empty tag: no-op
+            if found_close {
+                handle_angle_parse(&mut chars, &mut result);
             } else {
-                // Opening tag: try comma syntax first, then standard
-                let code = if tag.contains(',') {
-                    resolve_comma_tag(&tag)
-                } else {
-                    // Check for uppercase (background) or lowercase (foreground)
-                    let is_uppercase = tag.chars().all(|c| c.is_uppercase() || !c.is_alphabetic());
-                    if is_uppercase && tag.len() > 1 {
-                        resolve_color_code(&tag).into()
-                    } else {
-                        let lower = tag.to_lowercase();
-                        resolve_color_code(&lower).into()
-                    }
-                };
-
-                if let Some(code) = code
-                    && !code.is_empty()
-                {
-                    use std::fmt::Write;
-                    let _ = write!(result, "\x1b[{code}m");
-                }
-                // Unknown tag: strip it entirely
+                result.push('<');
             }
         } else if ch == '[' {
-            // Handle [tag] syntax (Rich-style)
-            let mut tag = String::new();
-            let mut is_closing = false;
-
-            if chars.peek() == Some(&'/') {
-                is_closing = true;
-                chars.next();
-            }
-
-            for c in chars.by_ref() {
-                if c == ']' {
-                    break;
-                }
-                tag.push(c);
-            }
-
-            if is_closing {
-                // Closing tag: emit reset only for known tags or generic </]>
-                if tag.is_empty() {
-                    result.push_str("\x1b[0m");
-                } else if let Some(code) = resolve_rich_tag(&tag) {
-                    // Only emit reset if the tag was valid when opened
-                    // Since we can't track state, emit reset for any known tag
-                    let _ = code; // tag was resolved
-                    result.push_str("\x1b[0m");
-                }
-            } else if tag.is_empty() {
-                // Empty tag: no-op
-            } else {
-                // Opening tag: resolve Rich tag
-                if let Some(code) = resolve_rich_tag(&tag) {
-                    use std::fmt::Write;
-                    let _ = write!(result, "\x1b[{code}m");
-                }
-                // Unknown tag: strip it entirely
-            }
+            handle_bracket_parse(&mut chars, &mut result);
         } else if ch == '&' {
-            // HTML entity check: &lt; &gt; &amp;
             if let Some(entity) = parse_html_entity(&mut chars) {
                 if let Some(decoded) = decode_html_entity(&entity) {
                     result.push(decoded);
@@ -796,13 +897,51 @@ pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String 
     }
 }
 
-/// Strips Rich-style markup tags from text, returning plain text.
+/// Handles a `\` escape for the stripping path.
+fn handle_escape_strip(
+    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+    result: &mut String,
+    backslash: char,
+) {
+    if chars.peek() == Some(&'[')
+        && let Some(literal) = peek_escaped_bracket_valid(chars)
+    {
+        let is_closing = literal.starts_with("[/");
+        chars.next();
+        consume_bracket_tag(chars, is_closing);
+        result.push_str(&literal);
+    } else if chars.peek() == Some(&'<') {
+        chars.next();
+        result.push('<');
+    } else {
+        result.push(backslash);
+    }
+}
+
+/// Handles one `[...]` expression for the stripping path.
 ///
-/// Removes all `<tag>` and `</tag>` constructs. HTML entities are decoded.
+/// Only recognized tags are removed; all other bracketed text stays literal.
+fn handle_bracket_strip(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, result: &mut String) {
+    match peek_bracket_tag(chars) {
+        Some((is_closing, tag)) if !tag.is_empty() && resolve_rich_tag(&tag).is_some() => {
+            consume_bracket_tag(chars, is_closing);
+        }
+        None | Some(_) => {
+            result.push('[');
+        }
+    }
+}
+
+/// Strips markup tags from text, returning plain text.
+///
+/// Removes recognized `<tag>`/`</tag>` constructs and recognized
+/// square-bracket style tags such as `[red]`/`[/red]`. Ordinary square
+/// brackets (`[hello]`, `[]`, `[123]`, paths, JSON, URLs, ...) are preserved
+/// literally. HTML entities are decoded.
 ///
 /// # Arguments
 ///
-/// * `text` - Text containing Rich-style markup tags
+/// * `text` - Text containing markup tags
 ///
 /// # Examples
 ///
@@ -816,36 +955,40 @@ pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String 
 /// assert_eq!(plain, "error ok");
 /// ```
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn strip_rich_tags(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
 
     while let Some(ch) = chars.next() {
         if ch == '\\' {
-            if let Some(&next) = chars.peek() {
-                if next == '<' || next == '[' {
-                    chars.next();
-                    result.push(next);
-                } else {
-                    result.push(ch);
-                }
-            } else {
+            if chars.peek().is_none() {
                 result.push(ch);
+            } else {
+                handle_escape_strip(&mut chars, &mut result, ch);
             }
         } else if ch == '<' {
-            // Skip until closing >
-            for c in chars.by_ref() {
+            // Angle-bracket markup keeps its historical contract: any
+            // `<...>` up to the next `>` is a tag and is removed.
+            // Unterminated `<` stays literal so text is never lost.
+            let mut found_close = false;
+            for c in chars.clone().by_ref() {
                 if c == '>' {
+                    found_close = true;
                     break;
                 }
+            }
+            if found_close {
+                for c in chars.by_ref() {
+                    if c == '>' {
+                        break;
+                    }
+                }
+            } else {
+                result.push('<');
             }
         } else if ch == '[' {
-            // Skip until closing ]
-            for c in chars.by_ref() {
-                if c == ']' {
-                    break;
-                }
-            }
+            handle_bracket_strip(&mut chars, &mut result);
         } else if ch == '&' {
             if let Some(entity) = parse_html_entity(&mut chars) {
                 if let Some(decoded) = decode_html_entity(&entity) {
@@ -1524,5 +1667,116 @@ mod tests {
     #[test]
     fn resolve_color_code_compound_strike_magenta() {
         assert_eq!(resolve_color_code("strike magenta"), "9;35");
+    }
+
+    #[test]
+    fn bracket_literals_preserved_when_colorized() {
+        for literal in [
+            "[hello]",
+            "[]",
+            "[ hello ]",
+            "[123]",
+            "[INFO]",
+            "[unknown]",
+            "[foo bar]",
+            "do [some]things",
+            "do [ some ]things",
+            "do [] somethings",
+            "[user@example.com]",
+            "[/path/to/file]",
+            "[C:\\Users\\test]",
+            "text=[[value]]",
+            "array[0",
+        ] {
+            assert_eq!(parse_rich_markup(literal, true), literal, "{literal}");
+        }
+    }
+
+    #[test]
+    fn bracket_literals_preserved_when_stripped() {
+        for literal in [
+            "[hello]",
+            "[]",
+            "[ hello ]",
+            "[123]",
+            "[INFO]",
+            "[unknown]",
+            "[foo bar]",
+            "do [some]things",
+            "do [ some ]things",
+            "do [] somethings",
+            "text=[[value]]",
+            "array[0",
+        ] {
+            assert_eq!(parse_rich_markup(literal, false), literal, "{literal}");
+            assert_eq!(strip_rich_tags(literal), literal, "{literal}");
+        }
+    }
+
+    #[test]
+    fn bracket_valid_markup_still_works() {
+        assert_eq!(
+            parse_rich_markup("[red]Error[/red]", true),
+            "\x1b[31mError\x1b[0m"
+        );
+        assert_eq!(
+            parse_rich_markup("[bold]Important[/bold]", true),
+            "\x1b[1mImportant\x1b[0m"
+        );
+        assert_eq!(parse_rich_markup("[red]Error[/red]", false), "Error");
+        assert_eq!(strip_rich_tags("[red]Error[/red]"), "Error");
+        assert_eq!(
+            parse_rich_markup("[bold red on white]hi[/bold red on white]", true),
+            "\x1b[1;31;47mhi\x1b[0m"
+        );
+    }
+
+    #[test]
+    fn bracket_escapes_preserve_backslash_for_literals() {
+        assert_eq!(
+            parse_rich_markup(r"\[some] literal", true),
+            r"\[some] literal"
+        );
+        assert_eq!(strip_rich_tags(r"\[some] literal"), r"\[some] literal");
+        assert_eq!(parse_rich_markup(r"\[red] literal", true), "[red] literal");
+        assert_eq!(strip_rich_tags(r"\[red] literal"), "[red] literal");
+        assert_eq!(strip_rich_tags(r"\[/red] literal"), "[/red] literal");
+    }
+
+    #[test]
+    fn bracket_unknown_closing_preserved() {
+        assert_eq!(parse_rich_markup("[/unknown]", true), "[/unknown]");
+        assert_eq!(strip_rich_tags("[/unknown]"), "[/unknown]");
+        assert_eq!(parse_rich_markup("[/]", true), "[/]");
+        assert_eq!(strip_rich_tags("[/]"), "[/]");
+    }
+
+    #[test]
+    fn bracket_formatted_messages_preserved() {
+        assert_eq!(parse_rich_markup("do somethings", true), "do somethings");
+        assert_eq!(
+            parse_rich_markup("do [some]things", true),
+            "do [some]things"
+        );
+        assert_eq!(strip_rich_tags(r"do \[some]things"), r"do \[some]things");
+        assert_eq!(strip_rich_tags(r"do [some\]things"), r"do [some\]things");
+        assert_eq!(strip_rich_tags("do [ some ]things"), "do [ some ]things");
+        assert_eq!(strip_rich_tags("do [] somethings"), "do [] somethings");
+    }
+
+    #[test]
+    fn bracket_ansi_passthrough() {
+        let ansi = "\x1b[31mhi\x1b[0m";
+        assert_eq!(strip_rich_tags(ansi), ansi);
+        assert_eq!(parse_rich_markup(ansi, false), ansi);
+    }
+
+    #[test]
+    fn bracket_not_style_reset() {
+        assert_eq!(
+            parse_rich_markup("[not bold]x[/not bold]", true),
+            "\x1b[0mx\x1b[0m"
+        );
+        assert_eq!(strip_rich_tags("[not bold]x[/not bold]"), "x");
     }
 }

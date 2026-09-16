@@ -985,6 +985,10 @@ impl PyLogger {
     fn fatal(&self, py: Python<'_>, message: &str) -> PyResult<()> {
         self.log_message(py, "FATAL", message)
     }
+
+    fn audit(&self, py: Python<'_>, message: &str) -> PyResult<()> {
+        self.log_message(py, "AUDIT", message)
+    }
 }
 
 /// Registers a custom logging level with optional icon.

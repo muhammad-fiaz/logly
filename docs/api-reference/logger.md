@@ -171,6 +171,7 @@ sink_id = logger.add("app.log", level="INFO", rotation="daily")
 | `patch` | `Callable \| None` | `None` | Patch function for all records |
 | `encoding` | `str` | `"utf-8"` | File encoding |
 | `delay` | `bool` | `False` | Delay file opening until first write |
+| `watch` | `bool` | `False` | Reopen the log file if deleted or replaced externally |
 | `context` | `str \| BaseContext \| None` | `None` | Multiprocessing context for queue-based sinks |
 | `catch` | `bool` | `True` | Catch sink errors silently |
 | `mode` | `str` | `"a"` | File mode: `"a"` (append) or `"w"` (overwrite) |
@@ -491,17 +492,21 @@ Parse log files using regex patterns. This is a **static method** returning a ge
 entries = list(logger.parse("app.log"))
 
 # Custom pattern
-entries = list(logger.parse(
-    "app.log",
-    pattern=r"(?P<time>\d{4}-\d{2}-\d{2}) (?P<level>\w+) (?P<message>.+)",
-))
+entries = list(
+    logger.parse(
+        "app.log",
+        pattern=r"(?P<time>\d{4}-\d{2}-\d{2}) (?P<level>\w+) (?P<message>.+)",
+    )
+)
 
 # With type casting (values are callables, e.g. int)
-entries = list(logger.parse(
-    "app.log",
-    pattern=r"(?P<time>\S+) (?P<level>\w+) (?P<message>.+)",
-    cast={"level": int},
-))
+entries = list(
+    logger.parse(
+        "app.log",
+        pattern=r"(?P<time>\S+) (?P<level>\w+) (?P<message>.+)",
+        cast={"level": int},
+    )
+)
 ```
 
 **Parameters:**

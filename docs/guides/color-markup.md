@@ -115,6 +115,18 @@ When using the optional Rich integration, `RichSink` can be configured as a
 sink for Rich console rendering while the same markup remains valid for the
 standard console sink.
 
+## Literal square brackets
+
+Ordinary square brackets are literal text. Only a recognized style/color
+tag such as `[red]`, `[bold]`, or `[bold red on white]` is interpreted as
+markup. All other bracketed content is preserved unchanged in every sink:
+
+```python
+logger.info("do [{}]things", "some")  # do [some]things
+logger.info("value=[{}]", "test")  # value=[test]
+logger.info("[hello] [] [123] [INFO]")  # preserved literally
+```
+
 ## Nesting and escaping
 
 Tags can be nested. A short closing tag (`</>`) closes the current style.
@@ -124,12 +136,13 @@ Prefix a tag with a backslash to print it literally:
 logger.info("<bold><red>Error:</red></bold> connection failed")
 logger.info(r"\<red> is printed literally")
 
-# Rich-style escaping
+# Rich-style escaping (only needed for recognized tags)
 logger.info(r"\[red] is printed literally")
 ```
 
-The `strip_rich_tags()` helper removes markup and decodes common HTML entities
-when preparing plain-text output.
+The `strip_rich_tags()` helper removes recognized markup and decodes common
+HTML entities when preparing plain-text output. Unrecognized bracketed text
+such as `[hello]` or `[]` is preserved literally.
 
 ## API Reference
 

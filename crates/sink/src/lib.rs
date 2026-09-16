@@ -296,11 +296,18 @@ impl Sink for FileSink {
 
         // Check rotation after writing
         let action = rotate::check_rotation(&self.path, &self.rotation, line_bytes)?;
-        if let rotate::RotationAction::RotateTo(rotated_path) = action {
+        if let rotate::RotationAction::RotateTo(_) = action {
             if let Some(f) = guard.take() {
                 drop(f);
             }
-            rotate::perform_rotation(&self.path, rotate::OverwriteMode::Append)?;
+            // Reserve the compressed sibling name so rapid successive
+            // rotations sharing one timestamp cannot overwrite each
+            // other's archives once the rotated file is compressed and
+            // removed. Compress the path rotation actually created rather
+            // than the separately generated guess from `check_rotation`.
+            let reserved: Vec<&str> = compress::CompressionCodec::extension(&self.compression)
+                .map_or_else(Vec::new, |ext| vec![ext]);
+            let rotated = rotate::perform_rotation_reserving(&self.path, &reserved)?;
             let f = OpenOptions::new()
                 .create(true)
                 .write(true)
@@ -310,10 +317,10 @@ impl Sink for FileSink {
             *guard = Some(f);
 
             if self.compression != compress::CompressionCodec::None
-                && let Ok(compressed) = compress::compress_file(&rotated_path, &self.compression)
-                && compressed != rotated_path
+                && let Ok(compressed) = compress::compress_file(&rotated, &self.compression)
+                && compressed != rotated
             {
-                let _ = std::fs::remove_file(&rotated_path);
+                let _ = std::fs::remove_file(&rotated);
             }
 
             let dir = self.path.parent().unwrap_or_else(|| Path::new("."));
@@ -631,5 +638,51 @@ mod tests {
         let record = LogRecord::builder(LogLevel::new("INFO", 20, None), "test").build();
         sink.handle(&record).unwrap();
         assert_eq!(written.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn rapid_rotations_keep_distinct_compressed_archives() {
+        // Successive size-triggered rotations within one timestamp second
+        // must not overwrite each other's compressed archives.
+        let dir = std::env::temp_dir().join("logly_sink_rapid_rotation");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("rapid.log");
+
+        let sink = FileSink::open(
+            &path,
+            info_formatter(),
+            info_filter(),
+            true,
+            rotate::RotationPolicy::SizeBytes(64),
+            config::RetentionPolicy::default(),
+            compress::CompressionCodec::Gzip,
+            false,
+            false,
+        )
+        .unwrap();
+        for i in 0..40 {
+            let record =
+                LogRecord::builder(LogLevel::new("INFO", 20, None), format!("record-{i:04}"))
+                    .build();
+            sink.handle(&record).unwrap();
+        }
+        sink.flush().unwrap();
+
+        let archives: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("gz"))
+            })
+            .collect();
+        assert!(
+            archives.len() >= 2,
+            "expected distinct archives for rapid rotations, found {archives:?}"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
