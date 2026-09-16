@@ -7,7 +7,6 @@ formatted logging while valid markup continues to work.
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 from logly import Logger, parse_rich_markup, strip_rich_tags
@@ -25,10 +24,12 @@ def _capture(
 
 
 def _capture_file(
+    tmp_path: Path,
     fmt: str = "{message}",
+    name: str = "test.log",
 ) -> tuple[Logger, Path, int]:
     logger = Logger()
-    tmp = Path(tempfile.mktemp(suffix=".log"))
+    tmp = tmp_path / name
     sink_id = logger.add(str(tmp), level="DEBUG", format=fmt, colorize=False)
     return logger, tmp, sink_id
 
@@ -82,7 +83,7 @@ class TestBracketFormattingCore:
             logger.remove(sink_id)
         assert messages == ["do [] somethings\n"]
 
-    def test_file_sink_matches_issue_cases(self) -> None:
+    def test_file_sink_matches_issue_cases(self, tmp_path: Path) -> None:
         cases = [
             ("do {}things", ("some",), "do somethings"),
             ("do [{}]things", ("some",), "do [some]things"),
@@ -91,7 +92,7 @@ class TestBracketFormattingCore:
             ("do [ {} ]things", ("some",), "do [ some ]things"),
             ("do [] {}things", ("some",), "do [] somethings"),
         ]
-        logger, tmp, sink_id = _capture_file()
+        logger, tmp, sink_id = _capture_file(tmp_path)
         try:
             for fmt, args, _ in cases:
                 logger.info(fmt, *args)
@@ -99,7 +100,6 @@ class TestBracketFormattingCore:
             lines = tmp.read_text(encoding="utf-8").splitlines()
         finally:
             logger.remove(sink_id)
-            tmp.unlink(missing_ok=True)
         assert lines == [expected for _, _, expected in cases]
 
 
@@ -146,9 +146,9 @@ class TestLiteralBrackets:
                 logger.remove(sink_id)
             assert messages == [expected + "\n"], (fmt, args)
 
-    def test_file_sink_preserves_literals(self) -> None:
+    def test_file_sink_preserves_literals(self, tmp_path: Path) -> None:
         literals = ["[hello]", "[]", "[ hello ]", "[123]", "[INFO]", "[unknown]"]
-        logger, tmp, sink_id = _capture_file()
+        logger, tmp, sink_id = _capture_file(tmp_path)
         try:
             for text in literals:
                 logger.info(text)
@@ -156,7 +156,6 @@ class TestLiteralBrackets:
             lines = tmp.read_text(encoding="utf-8").splitlines()
         finally:
             logger.remove(sink_id)
-            tmp.unlink(missing_ok=True)
         assert lines == literals
 
 
@@ -212,8 +211,8 @@ class TestValidMarkupStillWorks:
         assert "\x1b[31mError\x1b[0m" in messages[0]
         assert "\x1b[1mImportant\x1b[0m" in messages[1]
 
-    def test_bracket_markup_stripped_for_plain_sink(self) -> None:
-        logger, tmp, sink_id = _capture_file()
+    def test_bracket_markup_stripped_for_plain_sink(self, tmp_path: Path) -> None:
+        logger, tmp, sink_id = _capture_file(tmp_path)
         try:
             logger.info("[red]Error[/red]")
             logger.info("[bold]Important[/bold]")
@@ -221,7 +220,6 @@ class TestValidMarkupStillWorks:
             content = tmp.read_text(encoding="utf-8")
         finally:
             logger.remove(sink_id)
-            tmp.unlink(missing_ok=True)
         assert "Error" in content
         assert "Important" in content
         assert "[red]" not in content
@@ -340,11 +338,11 @@ class TestSinksStructuredExceptions:
         assert messages[0] == "value=[test]\n"
         assert messages[1] == "do [{}]things\n"
 
-    def test_file_and_custom_consistent_for_literals(self) -> None:
+    def test_file_and_custom_consistent_for_literals(self, tmp_path: Path) -> None:
         literals = ["[hello]", "[]", "[ hello ]", "do [some]things"]
-        for text in literals:
+        for index, text in enumerate(literals):
             c_logger, c_messages, c_id = _capture()
-            f_logger, tmp, f_id = _capture_file()
+            f_logger, tmp, f_id = _capture_file(tmp_path, name=f"case-{index}.log")
             try:
                 c_logger.info(text)
                 f_logger.info(text)
@@ -353,7 +351,6 @@ class TestSinksStructuredExceptions:
             finally:
                 c_logger.remove(c_id)
                 f_logger.remove(f_id)
-                tmp.unlink(missing_ok=True)
             assert c_messages == [text + "\n"]
             assert file_content == text + "\n"
 
