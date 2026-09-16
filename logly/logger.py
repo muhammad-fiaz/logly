@@ -293,7 +293,7 @@ def _validate_sink_args(
             kind = rotation.kind
             if kind not in ("never", "size", "interval", "clock", "weekday", "callable"):
                 raise ValueError(f"unknown rotation policy kind: {kind!r}")
-            if kind == "callable" and not callable(getattr(rotation, "value", None)):
+            if kind == "callable" and not (hasattr(rotation, "value") and callable(rotation.value)):
                 raise ValueError("callable rotation policy value must be callable")
         else:
             raise TypeError(f"invalid rotation policy: {rotation!r}")
