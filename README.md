@@ -532,7 +532,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgements
 
-Logly is backed by an independent, from-scratch Rust implementation with a Python-native API.
+Logly’s API is inspired by [Loguru](https://github.com/Delgan/loguru), while Logly itself is an independent, from-scratch implementation written in Rust with a Python-native API. It is developed independently and does not use or derive from Loguru’s implementation.
+
 
 ---
 
