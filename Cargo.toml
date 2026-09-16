@@ -5,7 +5,6 @@ members = [
     "crates/compress",
     "crates/concurrency",
     "crates/config",
-    "crates/context",
     "crates/core",
     "crates/error",
     "crates/filter",
@@ -14,7 +13,6 @@ members = [
     "crates/network",
     "crates/record",
     "crates/rotate",
-    "crates/schedule",
     "crates/sink",
     "crates/source",
 ]
@@ -34,7 +32,6 @@ color = { path = "crates/color" }
 compress = { path = "crates/compress" }
 concurrency = { path = "crates/concurrency" }
 config = { path = "crates/config" }
-context = { path = "crates/context" }
 engine = { package = "core", path = "crates/core" }
 error = { path = "crates/error" }
 filter = { path = "crates/filter" }
@@ -43,7 +40,6 @@ levels = { path = "crates/levels" }
 network = { path = "crates/network" }
 record = { path = "crates/record" }
 rotate = { path = "crates/rotate" }
-schedule = { path = "crates/schedule" }
 sink = { path = "crates/sink" }
 source = { path = "crates/source" }
 
@@ -91,7 +87,6 @@ strip = "symbols"
 color.workspace = true
 compress.workspace = true
 config.workspace = true
-context.workspace = true
 engine.workspace = true
 error.workspace = true
 filter.workspace = true

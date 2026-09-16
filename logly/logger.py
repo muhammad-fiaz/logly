@@ -28,6 +28,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 import types
 import weakref
 from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping
@@ -36,7 +37,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Literal, TypeGuard, TypeVar, cast, overload
+from typing import Any, Final, Literal, TypeGuard, TypeVar, cast, overload
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -64,6 +65,28 @@ _CatchT = TypeVar("_CatchT")
 
 _context: ContextVar[dict[str, object] | None] = ContextVar("logly_context", default=None)
 _logly_level_tls: threading.local = threading.local()
+
+# Frame names belonging to the logging machinery itself. Stored once so the
+# per-call caller-attribution walk does not rebuild the set every time.
+_INTERNAL_FRAMES: Final = frozenset(
+    {
+        "trace",
+        "debug",
+        "info",
+        "notice",
+        "success",
+        "warning",
+        "warn",
+        "error",
+        "exception",
+        "fail",
+        "critical",
+        "fatal",
+        "audit",
+        "__exit__",
+        "_catch_wrapper",
+    }
+)
 
 # Loggers owning background (`enqueue=True`) sinks, mapped to the pid that
 # created them. A single interpreter-shutdown hook drains them while the
@@ -682,6 +705,9 @@ class Logger:
                 )
                 handler.emit(record)
 
+            # Marker read by log() to decide whether the per-record numeric
+            # level must be published for handler filtering.
+            _handler_sink._logly_captures_level = True  # type: ignore[attr-defined]
             sink = _handler_sink
 
         # Detect coroutine function or async callable — schedule on event loop
@@ -1378,50 +1404,54 @@ class Logger:
                     "template string messages cannot be combined with format arguments"
                 )
             rendered = _render_template_string(message)
-        elif self._options.raw:
-            rendered = str(message)
         else:
-            effective_kwargs = dict(kwargs) if kwargs else {}
-            if self._options.record:
-                import inspect as _inspect
+            message_str = str(message)
+            if self._options.raw:
+                rendered = message_str
+            else:
+                # Only build the `{record}` template variable when the message
+                # can actually reference it; the frame walk below is skipped
+                # otherwise.
+                if self._options.record and "record" in message_str:
+                    frame = inspect.currentframe()
+                    caller_file: str | None = None
+                    caller_line: int | None = None
+                    caller_func: str | None = None
+                    caller_module: str | None = None
+                    if frame is not None and frame.f_back is not None:
+                        caller = frame.f_back
+                        if caller is not None:
+                            caller_file = caller.f_code.co_filename
+                            caller_line = caller.f_lineno
+                            caller_func = caller.f_code.co_name
+                            caller_module = caller.f_code.co_filename
+                            if caller_module:
+                                caller_module = os.path.splitext(os.path.basename(caller_module))[0]
 
-                frame = _inspect.currentframe()
-                caller_file: str | None = None
-                caller_line: int | None = None
-                caller_func: str | None = None
-                caller_module: str | None = None
-                if frame is not None and frame.f_back is not None:
-                    caller = frame.f_back
-                    if caller is not None:
-                        caller_file = caller.f_code.co_filename
-                        caller_line = caller.f_lineno
-                        caller_func = caller.f_code.co_name
-                        caller_module = caller.f_code.co_filename
-                        if caller_module:
-                            caller_module = os.path.splitext(os.path.basename(caller_module))[0]
+                    record_sub = {
+                        "message": message_str,
+                        "level": level_name,
+                        "name": self._name,
+                        "file": caller_file or "",
+                        "line": caller_line or 0,
+                        "function": caller_func or "",
+                        "module": caller_module or "",
+                    }
+                    effective_kwargs: dict[str, object] = {**kwargs, "record": record_sub}
+                else:
+                    effective_kwargs = dict(kwargs) if kwargs else {}
 
-                record_sub = {
-                    "message": str(message),
-                    "level": level_name,
-                    "name": self._name,
-                    "file": caller_file or "",
-                    "line": caller_line or 0,
-                    "function": caller_func or "",
-                    "module": caller_module or "",
-                }
-                effective_kwargs["record"] = record_sub
+                rendered = render_message(
+                    message_str,
+                    args if args else None,
+                    effective_kwargs if effective_kwargs else None,
+                    lazy=self._options.lazy,
+                )
 
-            py_args = [a for a in args] if args else None
-            py_kwargs = effective_kwargs if effective_kwargs else None
-            rendered = render_message(
-                str(message),
-                py_args,
-                py_kwargs,
-                lazy=self._options.lazy,
-            )
-
-        extra_map: dict[str, object] = {k: v for k, v in self._bound.items()}
-        extra_map.update({k: v for k, v in _current_context().items()})
+        if self._bound:
+            extra_map: dict[str, object] = {**self._bound, **_current_context()}
+        else:
+            extra_map = _current_context()
 
         exc_text: str | None = None
         exc_tuple: tuple[object, object, str] | None = None
@@ -1433,26 +1463,32 @@ class Logger:
             active_exc = sys.exc_info()[1]
             exc_opt = active_exc if active_exc is not None else None
         if exc_opt is not None and exc_opt is not False:
-            exc_text = format_exception_text(exc_opt, self._options.backtrace)
-            # Guard against the legacy native placeholder for bare `True`
-            # (no active exception). It carries no traceback and must never
-            # be appended to the dispatched message.
-            if exc_text == "exception=True":
-                exc_text = None
+            # The traceback is rendered once here and reused: the native
+            # formatter would produce the identical text via its own
+            # traceback call, and the record tuple needs it too. The tuple
+            # itself is only built when something can observe it (patchers
+            # or opt(record=True)).
             if isinstance(exc_opt, BaseException):
-                import traceback as _traceback
-
-                exc_tuple = (
-                    type(exc_opt),
-                    exc_opt,
-                    "".join(
-                        _traceback.format_exception(type(exc_opt), exc_opt, exc_opt.__traceback__)
-                    ),
+                tb_text = "".join(
+                    traceback.format_exception(type(exc_opt), exc_opt, exc_opt.__traceback__)
                 )
+                if self._patchers or self._options.record:
+                    exc_tuple = (type(exc_opt), exc_opt, tb_text)
+                if self._options.backtrace:
+                    exc_text = tb_text
+                else:
+                    exc_text = format_exception_text(exc_opt, False)
                 if self._options.diagnose and exc_opt.__traceback__ is not None:
                     diag = _diagnose_suffix(exc_opt)
                     if diag:
                         exc_text = f"{exc_text.rstrip()}\n{diag}" if exc_text else diag
+            else:
+                exc_text = format_exception_text(exc_opt, self._options.backtrace)
+                # Guard against the legacy native placeholder for bare `True`
+                # (no active exception). It carries no traceback and must never
+                # be appended to the dispatched message.
+                if exc_text == "exception=True":
+                    exc_text = None
 
         file_val: str | None = None
         line_val: int | None = None
@@ -1460,29 +1496,10 @@ class Logger:
         module_val: str | None = None
 
         if self._options.capture:
-            import inspect as _inspect
-
-            frame = _inspect.currentframe()
+            frame = inspect.currentframe()
             if frame is not None:
                 cap_frame: types.FrameType | None = frame.f_back
-                internal_frames = {
-                    "trace",
-                    "debug",
-                    "info",
-                    "notice",
-                    "success",
-                    "warning",
-                    "warn",
-                    "error",
-                    "exception",
-                    "fail",
-                    "critical",
-                    "fatal",
-                    "audit",
-                    "__exit__",
-                    "_catch_wrapper",
-                }
-                while cap_frame is not None and cap_frame.f_code.co_name in internal_frames:
+                while cap_frame is not None and cap_frame.f_code.co_name in _INTERNAL_FRAMES:
                     cap_frame = cap_frame.f_back
                 for _ in range(self._options.depth):
                     if cap_frame is not None:
@@ -1498,61 +1515,62 @@ class Logger:
         # returned record dict and the native dispatch below.
         thread_name = threading.current_thread().name
         process_id = os.getpid()
-        record_dict: dict[str, object] = {
-            "message": rendered,
-            "level": level_name,
-            "extra": dict(extra_map),
-            "name": self._name,
-        }
-        if file_val:
-            record_dict["file"] = file_val
-        if line_val is not None:
-            record_dict["line"] = line_val
-        if func_val:
-            record_dict["function"] = func_val
-        if module_val:
-            record_dict["module"] = module_val
-        record_dict["thread"] = thread_name
-        record_dict["process"] = process_id
-        record_dict["exception"] = exc_tuple
-        record_dict["elapsed"] = datetime.timedelta(
-            seconds=max(0.0, time.time() - self._start_time)
-        )
+        if self._patchers or self._options.record:
+            record_dict: dict[str, object] = {
+                "message": rendered,
+                "level": level_name,
+                "extra": dict(extra_map),
+                "name": self._name,
+            }
+            if file_val:
+                record_dict["file"] = file_val
+            if line_val is not None:
+                record_dict["line"] = line_val
+            if func_val:
+                record_dict["function"] = func_val
+            if module_val:
+                record_dict["module"] = module_val
+            record_dict["thread"] = thread_name
+            record_dict["process"] = process_id
+            record_dict["exception"] = exc_tuple
+            record_dict["elapsed"] = datetime.timedelta(
+                seconds=max(0.0, time.time() - self._start_time)
+            )
 
-        for patcher in self._patchers:
-            try:
-                patcher(record_dict)
-            except Exception:
+            for patcher in self._patchers:
+                try:
+                    patcher(record_dict)
+                except Exception:
+                    pass
+
+            rendered = str(record_dict.get("message", rendered))
+            patched_extra = record_dict.get("extra", extra_map)
+            if isinstance(patched_extra, dict):
+                extra_map = {k: v for k, v in patched_extra.items()}
+            patched_file = record_dict.get("file", file_val)
+            if isinstance(patched_file, Path):
+                patched_file = str(patched_file)
+            if isinstance(patched_file, str) and patched_file:
+                file_val = patched_file
+            patched_line = record_dict.get("line", line_val)
+            if isinstance(patched_line, bool):
                 pass
-
-        rendered = str(record_dict.get("message", rendered))
-        patched_extra = record_dict.get("extra", extra_map)
-        if isinstance(patched_extra, dict):
-            extra_map = {k: v for k, v in patched_extra.items()}
-        patched_file = record_dict.get("file", file_val)
-        if isinstance(patched_file, Path):
-            patched_file = str(patched_file)
-        if isinstance(patched_file, str) and patched_file:
-            file_val = patched_file
-        patched_line = record_dict.get("line", line_val)
-        if isinstance(patched_line, bool):
-            pass
-        elif isinstance(patched_line, int) and patched_line >= 0:
-            line_val = patched_line
-        patched_func = record_dict.get("function", func_val)
-        if isinstance(patched_func, str) and patched_func:
-            func_val = patched_func
-        patched_module = record_dict.get("module", module_val)
-        if isinstance(patched_module, str) and patched_module:
-            module_val = patched_module
-        patched_thread = record_dict.get("thread", thread_name)
-        if isinstance(patched_thread, str) and patched_thread:
-            thread_name = patched_thread
-        patched_process = record_dict.get("process", process_id)
-        if isinstance(patched_process, bool):
-            pass
-        elif isinstance(patched_process, int) and patched_process >= 0:
-            process_id = patched_process
+            elif isinstance(patched_line, int) and patched_line >= 0:
+                line_val = patched_line
+            patched_func = record_dict.get("function", func_val)
+            if isinstance(patched_func, str) and patched_func:
+                func_val = patched_func
+            patched_module = record_dict.get("module", module_val)
+            if isinstance(patched_module, str) and patched_module:
+                module_val = patched_module
+            patched_thread = record_dict.get("thread", thread_name)
+            if isinstance(patched_thread, str) and patched_thread:
+                thread_name = patched_thread
+            patched_process = record_dict.get("process", process_id)
+            if isinstance(patched_process, bool):
+                pass
+            elif isinstance(patched_process, int) and patched_process >= 0:
+                process_id = patched_process
 
         # Ensure the traceback is visible even when the sink format does not
         # contain an `{exception}` token (e.g. the default format). The native
@@ -1595,7 +1613,13 @@ class Logger:
         # Convert extra values to strings for Rust-side storage
         extra_str_map: dict[str, str] = {k: str(v) for k, v in extra_map.items()}
 
-        _logly_level_tls.level = inspect_level(level_name)[1]
+        # The numeric level is consumed only by stdlib-handler sinks via
+        # thread-local state; skip the registry lookup when no such sink
+        # is installed.
+        if any(
+            getattr(sink, "_logly_captures_level", False) for sink, _ in self._sink_configs.values()
+        ):
+            _logly_level_tls.level = inspect_level(level_name)[1]
 
         self._native.log_structured(
             level=level_name,

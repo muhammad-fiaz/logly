@@ -40,28 +40,54 @@ use std::collections::HashMap;
 /// - FAIL: bold magenta (extra level)
 /// - CRITICAL: bold white on red background (highlighted)
 /// - FATAL: bold white on red background (extra level)
-fn default_color_map() -> HashMap<&'static str, &'static str> {
-    HashMap::from([
-        ("TRACE", "bold_cyan"),
-        ("DEBUG", "bold_blue"),
-        ("INFO", "bold"),
-        ("NOTICE", "bold_cyan"),
-        ("SUCCESS", "bold_green"),
-        ("WARNING", "bold_yellow"),
-        ("ERROR", "bold_red"),
-        ("FAIL", "bold_magenta"),
-        ("CRITICAL", "bold_red_bg"),
-        ("FATAL", "bold_red_bg"),
-        // Bright variants available for custom use
-        ("bright_black", "bright_black"),
-        ("bright_red", "bright_red"),
-        ("bright_green", "bright_green"),
-        ("bright_yellow", "bright_yellow"),
-        ("bright_blue", "bright_blue"),
-        ("bright_magenta", "bright_magenta"),
-        ("bright_cyan", "bright_cyan"),
-        ("bright_white", "bright_white"),
-    ])
+///
+/// Kept as a flat table so lookups are a branchless-ish match with no
+/// per-call hash-map allocation on the logging hot path.
+const DEFAULT_COLOR_ENTRIES: &[(&str, &str)] = &[
+    ("TRACE", "bold_cyan"),
+    ("DEBUG", "bold_blue"),
+    ("INFO", "bold"),
+    ("NOTICE", "bold_cyan"),
+    ("SUCCESS", "bold_green"),
+    ("WARNING", "bold_yellow"),
+    ("ERROR", "bold_red"),
+    ("FAIL", "bold_magenta"),
+    ("CRITICAL", "bold_red_bg"),
+    ("FATAL", "bold_red_bg"),
+    // Bright variants available for custom use
+    ("bright_black", "bright_black"),
+    ("bright_red", "bright_red"),
+    ("bright_green", "bright_green"),
+    ("bright_yellow", "bright_yellow"),
+    ("bright_blue", "bright_blue"),
+    ("bright_magenta", "bright_magenta"),
+    ("bright_cyan", "bright_cyan"),
+    ("bright_white", "bright_white"),
+];
+
+/// Returns the default style for a level or color name.
+///
+/// Returns `""` for unrecognized names.
+fn default_level_style(name: &str) -> &'static str {
+    match name {
+        "TRACE" | "NOTICE" => "bold_cyan",
+        "DEBUG" => "bold_blue",
+        "INFO" => "bold",
+        "SUCCESS" => "bold_green",
+        "WARNING" => "bold_yellow",
+        "ERROR" => "bold_red",
+        "FAIL" => "bold_magenta",
+        "CRITICAL" | "FATAL" => "bold_red_bg",
+        "bright_black" => "bright_black",
+        "bright_red" => "bright_red",
+        "bright_green" => "bright_green",
+        "bright_yellow" => "bright_yellow",
+        "bright_blue" => "bright_blue",
+        "bright_magenta" => "bright_magenta",
+        "bright_cyan" => "bright_cyan",
+        "bright_white" => "bright_white",
+        _ => "",
+    }
 }
 
 /// Applies level color when colorization is enabled.
@@ -98,10 +124,9 @@ pub fn paint(level: &LogLevel, text: &str, colorize: bool) -> String {
     if !colorize {
         return text.to_owned();
     }
-    let color_name = level.color().unwrap_or_else(|| {
-        let map = default_color_map();
-        map.get(level.name()).copied().unwrap_or("")
-    });
+    let color_name = level
+        .color()
+        .unwrap_or_else(|| default_level_style(level.name()));
     let code = resolve_color_code(color_name);
     if code.is_empty() {
         text.to_owned()
@@ -515,9 +540,9 @@ impl Theme {
     /// (TRACE=dim, DEBUG=blue, INFO="", WARNING=yellow, ERROR=red, etc.).
     #[must_use]
     pub fn defaults() -> Self {
-        let colors = default_color_map()
-            .into_iter()
-            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+        let colors = DEFAULT_COLOR_ENTRIES
+            .iter()
+            .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
             .collect();
         Self { colors }
     }
@@ -824,6 +849,9 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     if !colorize {
         return strip_rich_tags(text);
     }
+    if !needs_markup_scan(text) {
+        return text.to_owned();
+    }
     let mut result = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
 
@@ -851,13 +879,7 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
         } else if ch == '[' {
             handle_bracket_parse(&mut chars, &mut result);
         } else if ch == '&' {
-            if let Some(entity) = parse_html_entity(&mut chars) {
-                if let Some(decoded) = decode_html_entity(&entity) {
-                    result.push(decoded);
-                } else {
-                    result.push_str(&entity);
-                }
-            }
+            handle_entity(&mut chars, &mut result);
         } else {
             result.push(ch);
         }
@@ -866,16 +888,36 @@ pub fn parse_rich_markup(text: &str, colorize: bool) -> String {
     result
 }
 
+/// Reports whether `text` can contain markup worth parsing.
+///
+/// Only `<`, `[`, `\`, and `&` can start a markup construct or escape. Plain
+/// messages take this single byte scan and skip parsing (and its
+/// allocation) entirely.
+#[must_use]
+fn needs_markup_scan(text: &str) -> bool {
+    text.bytes()
+        .any(|byte| matches!(byte, b'<' | b'[' | b'\\' | b'&'))
+}
+
 /// Renders markup in a log line with level-aware tags resolved.
 ///
 /// The `<level>` and `<lvl>` tags use the configured color of `level`.
 /// All other tags are handled by [`parse_rich_markup`].
 #[must_use]
 pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String {
-    let level_style = level.color().unwrap_or_else(|| {
-        let colors = default_color_map();
-        colors.get(level.name()).copied().unwrap_or("")
-    });
+    let has_level_tag = text.contains("<level>") || text.contains("<lvl>");
+    if !has_level_tag && !needs_markup_scan(text) {
+        // Nothing to interpret: stripping is the identity and colorizing
+        // only wraps the line in the level style.
+        return if colorize {
+            paint(level, text, true)
+        } else {
+            text.to_owned()
+        };
+    }
+    let level_style = level
+        .color()
+        .unwrap_or_else(|| default_level_style(level.name()));
     let opening = if level_style.is_empty() {
         String::new()
     } else if level_style.starts_with('<') {
@@ -883,11 +925,17 @@ pub fn parse_log_markup(level: &LogLevel, text: &str, colorize: bool) -> String 
     } else {
         format!("<{level_style}>")
     };
-    let marked = text.replace("<level>", &opening).replace("<lvl>", &opening);
-    let marked = if opening.is_empty() {
-        marked
+    // `str::replace` scans even on mismatch, so only rewrite when a level
+    // tag is actually present.
+    let marked = if has_level_tag {
+        let marked = text.replace("<level>", &opening).replace("<lvl>", &opening);
+        if opening.is_empty() {
+            marked
+        } else {
+            marked.replace("</level>", "</>").replace("</lvl>", "</>")
+        }
     } else {
-        marked.replace("</level>", "</>").replace("</lvl>", "</>")
+        text.to_owned()
     };
     let rendered = parse_rich_markup(&marked, colorize);
     if colorize && !text.contains('<') {
@@ -957,6 +1005,9 @@ fn handle_bracket_strip(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, re
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn strip_rich_tags(text: &str) -> String {
+    if !needs_markup_scan(text) {
+        return text.to_owned();
+    }
     let mut result = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
 
@@ -990,13 +1041,7 @@ pub fn strip_rich_tags(text: &str) -> String {
         } else if ch == '[' {
             handle_bracket_strip(&mut chars, &mut result);
         } else if ch == '&' {
-            if let Some(entity) = parse_html_entity(&mut chars) {
-                if let Some(decoded) = decode_html_entity(&entity) {
-                    result.push(decoded);
-                } else {
-                    result.push_str(&entity);
-                }
-            }
+            handle_entity(&mut chars, &mut result);
         } else {
             result.push(ch);
         }
@@ -1205,12 +1250,16 @@ fn decode_html_entity(entity: &str) -> Option<char> {
     }
 }
 
-/// Parses an HTML entity from the character iterator.
+/// Peeks at an HTML entity (`&...;`) using lookahead only.
 ///
-/// Returns the entity string if a semicolon was found, or `None` if not a valid entity.
-fn parse_html_entity(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Option<String> {
+/// Returns the entity string (including `&` and `;`) when a semicolon is
+/// found within bounds, without consuming the caller's iterator. Returns
+/// `None` otherwise, leaving the iterator untouched so malformed input
+/// such as a lone `&` loses no text.
+fn peek_html_entity(chars: &std::iter::Peekable<std::str::Chars<'_>>) -> Option<String> {
+    let mut look = chars.clone();
     let mut entity = String::from("&");
-    for c in chars.by_ref() {
+    for c in look.by_ref() {
         entity.push(c);
         if c == ';' {
             return Some(entity);
@@ -1220,6 +1269,25 @@ fn parse_html_entity(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Op
         }
     }
     None
+}
+
+/// Handles one `&` in markup text, preserving malformed input literally.
+///
+/// Recognized entities decode; anything else — including a trailing `&`
+/// with nothing after it — is emitted verbatim so message text is never lost.
+fn handle_entity(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, result: &mut String) {
+    if let Some(entity) = peek_html_entity(chars) {
+        for _ in 1..entity.chars().count() {
+            chars.next();
+        }
+        if let Some(decoded) = decode_html_entity(&entity) {
+            result.push(decoded);
+        } else {
+            result.push_str(&entity);
+        }
+    } else {
+        result.push('&');
+    }
 }
 
 /// Resolves a Rich-style `[tag]` to an ANSI escape code.
@@ -1778,5 +1846,22 @@ mod tests {
             "\x1b[0mx\x1b[0m"
         );
         assert_eq!(strip_rich_tags("[not bold]x[/not bold]"), "x");
+    }
+
+    #[test]
+    fn lone_ampersand_preserved() {
+        assert_eq!(parse_rich_markup("fish & chips", true), "fish & chips");
+        assert_eq!(strip_rich_tags("fish & chips"), "fish & chips");
+        assert_eq!(parse_rich_markup("a&", true), "a&");
+        assert_eq!(strip_rich_tags("a&"), "a&");
+        assert_eq!(parse_rich_markup("a & b &lt; c", true), "a & b < c");
+    }
+
+    #[test]
+    fn plain_text_skips_parsing() {
+        let plain = "do somethings with no markup at all";
+        assert_eq!(parse_rich_markup(plain, true), plain);
+        assert_eq!(parse_rich_markup(plain, false), plain);
+        assert_eq!(strip_rich_tags(plain), plain);
     }
 }

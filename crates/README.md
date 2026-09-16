@@ -15,11 +15,9 @@ logly (Python extension)
 ├── source        Source location & editor links
 ├── color         ANSI rendering & markup parsing
 ├── config        Configuration types & policies
-├── context       Bind, patch, & scoped context
 ├── compress      Gzip, Zip, Bz2, Xz, Zstd codecs
 ├── concurrency   Worker pool & backpressure
 ├── rotate        Size, time, clock, weekday rotation
-├── schedule      Periodic task scheduler
 ├── network       HTTP, TCP, UDP, Syslog sinks
 └── error         Unified error types
 ```
@@ -37,11 +35,9 @@ logly (Python extension)
 | **[source](source/)** | Source location capture, clickable editor links (VS Code, JetBrains, Vim, Emacs, Sublime), and surrounding context reading. |
 | **[color](color/)** | ANSI color rendering — maps levels to styles, parses angle-bracket and Rich-style markup, supports themes. |
 | **[config](config/)** | Serialization-friendly configuration types for sinks, rotation, retention, compression, and enqueue modes. |
-| **[context](context/)** | Structured context primitives for `bind()`, `contextualize()`, and `patch()` — merges key-value pairs into records. |
 | **[compress](compress/)** | Compression codecs (Gzip, Zip, Bz2, Xz, Zstd) for rotated log files with retention-based cleanup. |
 | **[concurrency](concurrency/)** | Background worker thread pool with channel-based dispatch and configurable backpressure. |
 | **[rotate](rotate/)** | File rotation policies — size, interval, clock, and weekday triggers with non-destructive file renaming. |
-| **[schedule](schedule/)** | Lightweight periodic task scheduler for rotation, cleanup, and health checks. |
 | **[network](network/)** | Network sinks — HTTP/JSON (with batching), TCP, UDP, and Syslog transports for remote log forwarding. |
 | **[error](error/)** | Canonical `LoglyError` enum and `LoglyResult<T>` type alias shared across all crates. |
 
@@ -53,9 +49,8 @@ levels ← record ← core ← sink ← format
                   ↑       ↑       ↑
                 filter  source  color
                         ↑
-                      config ← context
+                      config
                                 ↑
-                          compress, concurrency, rotate, schedule, network
 ```
 
 ## Development

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 import sys
-from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping
+from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping, Sequence
 from pathlib import Path
 from types import TracebackType
 from typing import Any, TypeVar, overload
@@ -1308,7 +1308,7 @@ def format_exception_text(exc: Any, backtrace: bool = False) -> str | None:
 
 def render_message(
     message: str,
-    args: list[Any] | None = None,
+    args: Sequence[Any] | None = None,
     kwargs: dict[str, Any] | None = None,
     lazy: bool = False,
 ) -> str:
